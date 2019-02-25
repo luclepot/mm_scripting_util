@@ -3,7 +3,8 @@ import mm_scripting_util as mm
 
 def test_valid_morphing_function():
     t = mm.core.miner(
-            loglevel=10
+            loglevel=10,
+        autodestruct=True
         )
     t.run_morphing(
         morphing_trials=1000,
@@ -13,10 +14,12 @@ def test_valid_morphing_function():
 
 def test_simple_collision():
     t = mm.core.miner(
-            loglevel=10
+            loglevel=10,
+        autodestruct=True
         )
     j = mm.core.miner(
-        loglevel=10
+        loglevel=10,
+        autodestruct=True
     )
     t.run_morphing(
         morphing_trials=1000,

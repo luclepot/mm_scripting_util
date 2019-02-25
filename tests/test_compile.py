@@ -2,7 +2,8 @@ import mm_scripting_util as mm
 import os 
 
 def test_valid_init_function(): 
-    t = mm.core.miner(loglevel=10)
+    t = mm.core.miner(loglevel=10,
+        autodestruct=True)
     assert(t._check_valid_init())
 
     t.destroy_sample() 
@@ -18,7 +19,7 @@ def test_general():
     print("directory:", tdir)
 
 def test_named():
-    t = mm.core.miner(name="test_compile_miner", path=None, loglevel=10)
+    t = mm.core.miner(name="test_compile_miner", path=None, loglevel=10,autodestruct=True)
     tdir = t.dir 
     assert(os.path.exists(tdir))    
     t.destroy_sample() 
@@ -26,7 +27,7 @@ def test_named():
     print("directory:", tdir)
 
 def test_with_path():
-    t = mm.core.miner(name="test_compile_miner", path=os.getcwd() + "/..", loglevel=10)
+    t = mm.core.miner(name="test_compile_miner", path=os.getcwd() + "/..", loglevel=10,autodestruct=True)
     tdir = t.dir 
     assert(os.path.exists(tdir))    
     t.destroy_sample() 

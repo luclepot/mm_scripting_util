@@ -3,7 +3,8 @@ import mm_scripting_util as mm
 def test_run_basic(): 
     t = mm.core.miner(
         name="mg5_run_small",
-        loglevel=10
+        loglevel=10,
+        autodestruct=True
     )
     t.setup_cards(
         n_samples=1000,

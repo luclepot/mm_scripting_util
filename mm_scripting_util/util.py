@@ -217,7 +217,7 @@ class mm_backend_util(
                         line = line.split("=")
                         assert(len(line) == 2)
                         self.params[line[0]] = line[1]
-            self.params["parameters"] = [p for p in parameters if p is not None]          
+            self.params["parameters"] = dict([(p["name"],p) for p in parameters if p is not None])
 
         # verify required backend parameters in backend file
         if self._check_valid_backend():
@@ -240,7 +240,7 @@ class mm_backend_util(
             valid_flag = False
         for exp_param in self.params["parameters"]:
             for req_exp_param in self.required_experimental_params:
-                if req_exp_param not in exp_param:
+                if req_exp_param not in self.params["parameters"][exp_param]:
                     self.log.error("Required experimental parameter '{}' not in parameter '{}'".format(req_exp_param, exp_param))
                     valid_flag = False
         if not valid_flag: 
@@ -254,7 +254,7 @@ class mm_backend_util(
         ):
         og = line
         line = line.split(": ")
-        name = line[0]
+        name = line[0].lstrip("parameter ")
         line = line[1]
         try:
             linedict = {}
@@ -267,11 +267,12 @@ class mm_backend_util(
                     # convert to a tuple
                 elif value[0] in ["parameter_range"]:
                     value[1] = tuple([float(v) for v in value[1].lstrip("(").rstrip(")").split(",")])
+                elif value[0] in ["parameter_benchmarks"]:
+                    value[1] = [tuple((float(tup[0]), str(tup[1].lstrip("'").rstrip("'")))) for tup in [elt.lstrip("[(").rstrip(")]").split(",") for elt in value[1].split("),(")]]
                 elif value[0] not in self.required_experimental_params:
                     self.log.error("invalid parameter argument '{}'.".format(value[0]))
                     return None
                 linedict[value[0]] = value[1]
-            assert(len(linedict) == 4)
             linedict["name"] = name
             return linedict
         

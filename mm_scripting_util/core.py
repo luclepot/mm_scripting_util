@@ -19,7 +19,7 @@ class miner(mm_util):
             path=None,
             loglevel=logging.INFO,
             autodestruct=False,
-            backend="tth_backend.dat"
+            backend="tth.dat"
         ):
         """
         madminer-helper object for quickly running madgraph scripts. 
@@ -78,7 +78,6 @@ class miner(mm_util):
             sample_benchmark,
             seed_file=None, 
             force=True,
-            sample_benchmarks=[('sm', 1.), ('w', 0.)],
             mg_dir=None,
             use_pythia_card=False,
             platform="lxplus7",
@@ -98,7 +97,6 @@ class miner(mm_util):
             if self.STEP < 2:
                 self.run_morphing(
                         force=force,
-                        benchmarks_to_add=sample_benchmarks,
                         morphing_trials=morphing_trials
                     )
                 self.STEP = 2
@@ -193,9 +191,13 @@ class miner(mm_util):
     def run_morphing(
             self,
             morphing_trials=2500,
-            force=False,
-            benchmarks_to_add=[('sm', 1.), ('w', 0.)]
+            force=False
         ):
+
+        if not self._check_valid_backend():
+            self.log.warning("Canceling morphing run.")            
+            return 1
+
         
         # check directory for existing morphing information 
         self._check_directory(
@@ -204,26 +206,27 @@ class miner(mm_util):
                 pattern="madminer_example.h5"
             )
 
-        # add tth CP cos(theta) parameterization 
-        self.madminer_object.add_parameter(
-                lha_block='frblock',
-                lha_id=2,
-                parameter_name='ca',
-                morphing_max_power=2,   
-                parameter_range=(0.,1.)
-            )
-
-        for benchmark in benchmarks_to_add: 
-            self.madminer_object.add_benchmark(
-                    {'ca': benchmark[1]},
-                    benchmark[0]
+        # add parameterizations to madminer
+        for parameter in self.params['parameters']:
+            self.madminer_object.add_parameter(
+                    lha_block=self.params['parameters'][parameter]['lha_block'],
+                    lha_id=self.params['parameters'][parameter]['lha_id'],
+                    parameter_name=self.params['parameters'][parameter]['name'],
+                    morphing_max_power=self.params['parameters'][parameter]['morphing_max_power'],   
+                    parameter_range=self.params['parameters'][parameter]['parameter_range']
                 )
 
-        # setup morphing
+        for parameter in self.params['parameters']:
+            for benchmark in self.params['parameters'][parameter]['parameter_benchmarks']:
+                self.madminer_object.add_benchmark(
+                    {parameter:benchmark[0]},benchmark[1]
+                )
+
+        self.max_power = max([self.params['parameters'][param]['morphing_max_power'] for param in self.params['parameters']])
         self.madminer_object.set_morphing(
                 include_existing_benchmarks=True, 
-                max_overall_power=2,
-                n_trials=morphing_trials
+                max_overall_power=self.max_power,
+                n_trials=2500
             )
 
         # save data

@@ -3,7 +3,8 @@ import mm_scripting_util as mm
 def test_check_valid_cards_function(): 
     t = mm.core.miner(
         name="valid_cards",
-        loglevel=10
+        loglevel=10,
+        autodestruct=True
     )
     t.setup_cards(n_samples=123098)
     assert(t._check_valid_cards(2))
@@ -12,7 +13,8 @@ def test_cards_simple():
     t = mm.core.miner(
         name="card_test",
         path=None, 
-        loglevel=10
+        loglevel=10,
+        autodestruct=True
     )
     t.setup_cards(
         n_samples=1000000, force=False
@@ -24,7 +26,8 @@ def test_cards_collision():
     t = mm.core.miner(
         name="card_test",
         path=None, 
-        loglevel=10
+        loglevel=10,
+        autodestruct=True
     )
     t.setup_cards(
         n_samples=1000000, force=False
@@ -35,7 +38,8 @@ def test_cards_collision():
     j = mm.core.miner(
         name="card_test",
         path=None,
-        loglevel=10
+        loglevel=10,
+        autodestruct=True
     )
 
     excepted = False
@@ -63,7 +67,8 @@ def test_cards_remove():
         t = mm.core.miner(
             name="multiple_test",
             path=None,
-            loglevel=10
+            loglevel=10,
+            autodestruct=True
         )
         t.setup_cards(
             n_samples=400000, force=True
@@ -72,7 +77,8 @@ def test_cards_remove():
     t = mm.core.miner(
         name="multiple_test",
         path=None,
-        loglevel=10
+        loglevel=10,
+        autodestruct=True
     )
     t.destroy_sample()
     
@@ -80,7 +86,8 @@ def test_cards_remove():
         tp = mm.core.miner(
             name="multiple_test",
             path=None,
-            loglevel=10
+            loglevel=10,
+            autodestruct=True
         )
         tp.setup_cards(
             n_samples=400000, force=False
@@ -91,7 +98,8 @@ def test_cards_remove():
 def test_cards_not_base_100k():
     t = mm.core.miner(
         name="421232k_events",
-        loglevel=10
+        loglevel=10,
+        autodestruct=True
     )
     t.setup_cards(n_samples=421232)
     assert(t._dir_size(t.dir + "/cards") == 5 + 6)
