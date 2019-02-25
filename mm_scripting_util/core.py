@@ -22,7 +22,7 @@ class miner(mm_util):
             backend="tth_backend.dat"
         ):
         """
-        physics minerhelper object. 
+        madminer-helper object for quickly running madgraph scripts. 
         parameters:
             name:
                 string, the name of the main object directory
@@ -133,6 +133,10 @@ class miner(mm_util):
         if not self._check_valid_init():
             os.mkdir(self.dir)
 
+        if not self._check_valid_backend():
+            self.log.warning("Canceling card setup.")            
+            return 1
+
         sample_sizes = self._equal_sample_sizes(
             n_samples,
             sample_limit=100000
@@ -234,7 +238,8 @@ class miner(mm_util):
         # validate init
         if not (self._check_valid_init() and 
                 self._check_valid_cards(len(sample_sizes)) and
-                self._check_valid_morphing()):
+                self._check_valid_morphing() and 
+                self._check_valid_backend()):
             self.log.warning("Canceling mg5 script setup.")
             return 1
 

@@ -32,7 +32,7 @@ class mm_base_util:
         ):
         if os.path.exists(self.dir):
             return True
-        self.log.warning("Init not successful; directory " + self.dir + "does not exist.")
+        self.log.error("Init not successful; directory " + self.dir + "does not exist.")
         return False
             
     def _dir_size(
@@ -177,16 +177,19 @@ class mm_base_util:
             return None
         return ret
 
-
 class mm_backend_util(
         mm_base_util
     ):
 
+    __CONTAINS_BACKEND_UTIL = True
+
     def __init__(
-            self
+            self,
+            required_params=["model", "madgraph_generation_command", "backend_name"]
         ):
         self.params = {}
-        self.required_params = ["model", "madgraph_generation_command", "backend_name"]
+        # default required: model type, madgraph generation command, and backend name
+        self.required_params = required_params
 
     def _load_backend(
             self,
@@ -195,29 +198,36 @@ class mm_backend_util(
 
         self.backend_name = self._search_for_paths(pathname=backend)    
         if self.backend_name is None:
-            raise FileNotFoundError
+            self.log.warning("No backend found, and none loaded.")
+            return 1
 
         # process backend file
         with open(self.backend_name) as f:
             self.log.info("Loading backend file at {}".format(self.backend_name))
             for l in f:
                 line = l.lstrip().rstrip("\n")
-                if line[0] != "#":
+                if len(line) > 0 and line[0] != "#":
                     line = line.split("=")
                     assert(len(line) == 2)
                     self.params[line[0]] = line[1]
 
         # verify required backend parameters in backend file
+        if self._check_valid_backend():
+            self.log.info("Loaded {} parameteres for backend with name {}".format(len(self.params), self.params["backend_name"]))
+            return 0
+        self.log.warning("Backend found, but parameters were not fully loaded.")        
+        # baaad guy error code 
+        return 1
+
+    def _check_valid_backend(
+            self,
+        ):
         for param in self.required_params:
             if param not in self.params:
-                self.log.error("provided backend file does not include the required key '{}'".format(param))
-                self.log.error("please update backend file '{}'".format(self.backend_name))
-                raise LookupError("'{}' NOT FOUND".format(param))
-
-        self.log.info("Loaded {} paramteres for backend with name {}".format(len(self.params), self.backend_name))
-
-        # good guy error code 
-        return 0
+                self.log.error("Provided backend file does not include the required key '{}'".format(param))
+                self.log.error("Please update backend file '{}'".format(self.backend_name))
+                return False
+        return True
 
 class mm_simulate_util(
         mm_base_util
@@ -249,11 +259,11 @@ class mm_simulate_util(
             matching_pattern="card"
         )
         if cards < 0: 
-            self.log.warning("No valid cards directory in " + self.dir)
+            self.log.error("No valid cards directory in " + self.dir)
             return False
         if cards != num_cards + 6: 
-            self.log.warning("Incorrect number of cards in directory " + self.dir)
-            self.log.warning("expected {}, got {}".format(num_cards + 6, cards))
+            self.log.error("Incorrect number of cards in directory " + self.dir)
+            self.log.error("expected {}, got {}".format(num_cards + 6, cards))
             return False
         return True
 
@@ -264,8 +274,8 @@ class mm_simulate_util(
                 pathname=self.dir + "/data",
                 matching_pattern="madminer_example.h5"
             ) != 1:
-            self.log.warning("More or less than one 'madminer_example.h5' card in directory")
-            self.log.warning("'" + self.dir + "/data'.")
+            self.log.error("More or less than one 'madminer_example.h5' card in directory")
+            self.log.error("'" + self.dir + "/data'.")
             return False
         return True        
 
@@ -282,10 +292,10 @@ class mm_simulate_util(
             sample_limit=100000
         ))
         if size < 0:
-            self.log.warning("mg_processes/signal/madminer/scripts directory does not exist here.")
+            self.log.error("mg_processes/signal/madminer/scripts directory does not exist here.")
             return False
         if size != expected:
-            self.log.warning("Found {}/{} expected mg5 scripts. Incorrect mg5 setup.".format(size, expected))
+            self.log.error("Found {}/{} expected mg5 scripts. Incorrect mg5 setup.".format(size, expected))
             return False
         return True
 
@@ -302,11 +312,11 @@ class mm_simulate_util(
             matching_pattern="run_"
         )
         if size < 0:
-            self.log.warning("mg_processes/signal/Events directory does not exist!")
-            self.log.warning("mg5 run not completed (or detected)")
+            self.log.error("mg_processes/signal/Events directory does not exist!")
+            self.log.error("mg5 run not completed (or detected)")
             return False
         if size != expected: 
-            self.log.warning("Found {}/{} expected mg5 data files. Incorrect mg5 setup.".format(size, expected))
+            self.log.error("Found {}/{} expected mg5 data files. Incorrect mg5 setup.".format(size, expected))
             return False
         return True
         

@@ -1,5 +1,11 @@
-    # standard backend file. 
-  # works for tth_CP process.
-backend_name=ttH_CP
+# standard backend file. 
+# works for tth_CP process.
+
+# backend name: an identifier, required
+backend_name=tth_CP
+
+# backend model: theory model, required
 model=HC_UFO
-madgraph_generation_comman=g g > x0 t t~, x0 > a a, t > l+ vl b, t~ > l- vl~ b~
+
+# backend generation command: scattering stuff for madgraph, required
+madgraph_generation_command=g g > x0 t t~, x0 > a a, t > l+ vl b, t~ > l- vl~ b~
