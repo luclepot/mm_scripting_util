@@ -185,11 +185,13 @@ class mm_backend_util(
 
     def __init__(
             self,
-            required_params=["model", "madgraph_generation_command", "backend_name"]
+            required_params=["model", "madgraph_generation_command", "backend_name", "parameters"],
+            required_experimental_params=["lha_block", "lha_id", "morphing_max_power", "parameter_range"]
         ):
         self.params = {}
         # default required: model type, madgraph generation command, and backend name
         self.required_params = required_params
+        self.required_experimental_params = required_experimental_params
 
     def _load_backend(
             self,
@@ -204,30 +206,81 @@ class mm_backend_util(
         # process backend file
         with open(self.backend_name) as f:
             self.log.info("Loading backend file at {}".format(self.backend_name))
+            parameters = []
             for l in f:
                 line = l.lstrip().rstrip("\n")
                 if len(line) > 0 and line[0] != "#":
-                    line = line.split("=")
-                    assert(len(line) == 2)
-                    self.params[line[0]] = line[1]
+                    # parameter read-in case
+                    if "parameter " in line: 
+                        parameters.append(self._get_parameter_dict(line))
+                    else: 
+                        line = line.split("=")
+                        assert(len(line) == 2)
+                        self.params[line[0]] = line[1]
+            self.params["parameters"] = [p for p in parameters if p is not None]          
 
         # verify required backend parameters in backend file
         if self._check_valid_backend():
-            self.log.info("Loaded {} parameteres for backend with name {}".format(len(self.params), self.params["backend_name"]))
+            self.log.info("Loaded {} parameters for backend with name {}".format(len(self.params), self.params["backend_name"]))
             return 0
         self.log.warning("Backend found, but parameters were not fully loaded.")        
         # baaad guy error code 
         return 1
 
     def _check_valid_backend(
-            self,
+            self
         ):
+        valid_flag = True
         for param in self.required_params:
             if param not in self.params:
                 self.log.error("Provided backend file does not include the required key '{}'".format(param))
-                self.log.error("Please update backend file '{}'".format(self.backend_name))
-                return False
+                valid_flag = False
+        if not len(self.params["parameters"]) > 0:
+            self.log.error("Zero parameters provided in backend file. Please specify.")
+            valid_flag = False
+        for exp_param in self.params["parameters"]:
+            for req_exp_param in self.required_experimental_params:
+                if req_exp_param not in exp_param:
+                    self.log.error("Required experimental parameter '{}' not in parameter '{}'".format(req_exp_param, exp_param))
+                    valid_flag = False
+        if not valid_flag: 
+            self.log.error("Please update backend file '{}'".format(self.backend_name))
+            return False
         return True
+
+    def _get_parameter_dict(
+            self, 
+            line
+        ):
+        og = line
+        line = line.split(": ")
+        name = line[0]
+        line = line[1]
+        try:
+            linedict = {}
+            line = [value.lstrip().rstrip() for value in line.split(", ")]
+            for value in line:
+                value = value.split("=")
+                # convert to an int
+                if value[0] in ["lha_id", "morphing_max_power"]:
+                    value[1] = int(value[1])
+                    # convert to a tuple
+                elif value[0] in ["parameter_range"]:
+                    value[1] = tuple([float(v) for v in value[1].lstrip("(").rstrip(")").split(",")])
+                elif value[0] not in self.required_experimental_params:
+                    self.log.error("invalid parameter argument '{}'.".format(value[0]))
+                    return None
+                linedict[value[0]] = value[1]
+            assert(len(linedict) == 4)
+            linedict["name"] = name
+            return linedict
+        
+        except Exception as e:
+            self.log.error("incorrect parameter formatting for parameter {}".format(name))
+            self.log.error("'{}' not formatted quite right".format(og))
+            self.log.error("Full exception:")
+            self.log.error(e)
+            return None
 
 class mm_simulate_util(
         mm_base_util

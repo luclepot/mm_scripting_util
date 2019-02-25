@@ -9,3 +9,12 @@ model=HC_UFO
 
 # backend generation command: scattering stuff for madgraph, required
 madgraph_generation_command=g g > x0 t t~, x0 > a a, t > l+ vl b, t~ > l- vl~ b~
+
+# theory parameters are specified with 'parameter <name>'. 
+# required args for theory parameters are:
+# - lha_block : string
+# - lha_id : int 
+# - morphing_max_power : int
+# - parameter_range : tuple
+parameter ca: lha_block=frblock, lha_id=2, morphing_max_power=2, parameter_range=(0.,1.)
+parameter dummy_parameter: lha_block=yeet, lha_id=noice, morphing_max_power=1

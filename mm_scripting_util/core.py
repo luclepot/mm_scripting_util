@@ -172,6 +172,15 @@ class miner(mm_util):
                             "{} = iseed   ! (0=assigned automatically=default))\n".format(seeds[i])],
                 outfile=self.dir + "/cards/run_card{}.dat".format(i + 1)
             )
+        
+        self._replace_lines(
+            infile=self.dir + "/cards/proc_card.dat",
+            line_numbers=[1,2,3],
+            line_strings=[
+                "import model {}\n".format(self.params['model']),
+                self.params['madgraph_generation_command'] + '\n',
+                ""]
+        )
 
         self.log.debug("Setup {} cards in dir {}".format(
             len(sample_sizes), self.dir + "/cards")
@@ -200,7 +209,7 @@ class miner(mm_util):
                 lha_block='frblock',
                 lha_id=2,
                 parameter_name='ca',
-                morphing_max_power=2,
+                morphing_max_power=2,   
                 parameter_range=(0.,1.)
             )
 
