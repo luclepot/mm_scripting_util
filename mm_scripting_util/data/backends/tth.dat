@@ -1,0 +1,5 @@
+    # standard backend file. 
+  # works for tth_CP process.
+backend_name=ttH_CP
+model=HC_UFO
+madgraph_generation_comman=g g > x0 t t~, x0 > a a, t > l+ vl b, t~ > l- vl~ b~
