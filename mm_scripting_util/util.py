@@ -6,7 +6,7 @@ import platform
 import getpass
 import traceback
 
-class tth_base_util:
+class mm_base_util:
 
     """
     base functions and variables used in most other functions. 
@@ -139,8 +139,88 @@ class tth_base_util:
                     matching_pattern=pattern
                     )
 
-class tth_simulate_util(
-        tth_base_util
+    def _search_for_paths(
+            self,
+            pathname   
+        ):
+        # search first for exact path
+        if os.path.exists(pathname):
+            ret = pathname 
+
+        # then, search for local pathnames (raw and /data/)
+        elif os.path.exists(self.dir + pathname):
+            ret = self.dir + pathname
+        elif os.path.exists(self.dir + "/data/" + pathname):
+            ret = self.dir + "/data/" + pathname
+
+        # check for terminal cwd paths
+        elif os.path.exists(os.getcwd() + "/" + pathname):
+            ret = os.getcwd() + "/" + pathname
+        
+        # last, check default file database (data/cards/, data/backends/, data/, and raw)
+        elif os.path.exists(self.module_path + "/data/backends/" + pathname):
+            ret = self.module_path + "/data/backends/" + pathname
+        elif os.path.exists(self.module_path + "/data/" + pathname):
+            ret = self.module_path + "/data/" + pathname
+        elif os.path.exists(self.module_path + "/data/cards/" + pathname):
+            self.module_path + "/data/cards/" + pathname
+        elif os.path.exists(self.module_path + "/" + pathname):
+            ret = self.module_path + "/" + pathname
+        
+        # otherwise this doesn't exist
+        else: 
+            self.log.error("Could not find pathname.")
+            self.log.error("Checked paths:")
+            self.log.error(pathname)
+            self.log.error(self.dir + "/data/" + pathname)
+            self.log.error(os.getcwd() + "/" + pathname)
+            return None
+        return ret
+
+
+class mm_backend_util(
+        mm_base_util
+    ):
+
+    def __init__(
+            self
+        ):
+        self.params = {}
+        self.required_params = ["model", "madgraph_generation_command", "backend_name"]
+
+    def _load_backend(
+            self,
+            backend
+        ):
+
+        self.backend_name = self._search_for_paths(pathname=backend)    
+        if self.backend_name is None:
+            raise FileNotFoundError
+
+        # process backend file
+        with open(self.backend_name) as f:
+            self.log.info("Loading backend file at {}".format(self.backend_name))
+            for l in f:
+                line = l.lstrip().rstrip("\n")
+                if line[0] != "#":
+                    line = line.split("=")
+                    assert(len(line) == 2)
+                    self.params[line[0]] = line[1]
+
+        # verify required backend parameters in backend file
+        for param in self.required_params:
+            if param not in self.params:
+                self.log.error("provided backend file does not include the required key '{}'".format(param))
+                self.log.error("please update backend file '{}'".format(self.backend_name))
+                raise LookupError("'{}' NOT FOUND".format(param))
+
+        self.log.info("Loaded {} paramteres for backend with name {}".format(len(self.params), self.backend_name))
+
+        # good guy error code 
+        return 0
+
+class mm_simulate_util(
+        mm_base_util
     ):
     """
     Container class for simulation-related util functions.
@@ -242,8 +322,8 @@ class tth_simulate_util(
         
         return sample_sizes
 
-class tth_train_util(
-        tth_base_util
+class mm_train_util(
+        mm_base_util
     ):
 
     __CONTAINS_TRAINING_UTIL = True
@@ -255,10 +335,11 @@ class tth_train_util(
     """
     pass
 
-class tth_util(
-        tth_simulate_util,
-        tth_train_util,
-        tth_base_util
+class mm_util(
+        mm_backend_util,
+        mm_simulate_util,
+        mm_train_util,
+        mm_base_util
     ):
     """
     Wrapper class for all tth utility related classes. 

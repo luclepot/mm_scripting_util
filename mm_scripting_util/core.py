@@ -11,14 +11,15 @@ madminer, in the context of the ttH CP process.
 
 """
 
-class miner(tth_util): 
+class miner(mm_util): 
 
     def __init__(
             self,
             name="temp",
             path=None,
             loglevel=logging.INFO,
-            autodestruct=True
+            autodestruct=False,
+            backend="tth_backend.dat"
         ):
         """
         physics minerhelper object. 
@@ -35,9 +36,15 @@ class miner(tth_util):
             path = os.getcwd()
         
         # initialize helper classes
-        super(miner, self).__init__(
+        
+        mm_base_util.__init__(
+                self,
                 name,
                 path
+            )
+
+        mm_backend_util.__init__(
+                self
             )
             
         self.autodestruct = autodestruct
@@ -60,6 +67,8 @@ class miner(tth_util):
         self.log.debug("- new miner object path at " + self.dir)
 
         self.madminer_object = madminer.core.MadMiner()
+
+        self._load_backend(backend)
 
         self.STEP = 0
 
@@ -339,7 +348,7 @@ class miner(tth_util):
             level=logging.WARNING
         )
 
-        logging.getLogger("tth").setLevel(loglevel)
+        logging.getLogger("mm_scripting_util").setLevel(loglevel)
         
         return loglevel 
 
