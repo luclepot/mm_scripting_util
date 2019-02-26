@@ -176,7 +176,6 @@ class mm_base_util:
         return ret
         # otherwise this doesn't exist
 
-
 class mm_backend_util(
         mm_base_util
     ):
@@ -428,7 +427,21 @@ class mm_train_util(
     Seperation from other functions is just for cleanlines
     while writing. 
     """
-    pass
+    
+    def _check_valid_training_data(
+            self
+        ):
+
+        size = self._dir_size(
+            pathname=self.dir + '/mg_processes/signal/Events', 
+            matching_pattern="run_"
+        )
+        if size < 0:
+            self.log.error("mg_processes/signal/Events directory does not exist!")
+            self.log.error("Training data cannot be parsed (or detected)")
+            return False
+        return True
+
 
 class mm_util(
         mm_backend_util,

@@ -46,10 +46,15 @@ parser.add_argument('-up', '--use-pythia',
                     default=False,
                     help="boolean for using pythia card in simulation")
 
+# add training related arguments
+parser.add_argument('-t', '--train', 
+                    action='store_true', dest='train',
+                    default=False,
+                    help="boolean, flags whether or not to train the given data")
 
 args = parser.parse_args(sys.argv)
 
-script_miner = miner(
+miner_object = miner(
     name=args.name,
     loglevel=args.loglevel,
     backend=args.backend,
@@ -58,12 +63,18 @@ script_miner = miner(
 
 try:
     if args.generate:
-        script_miner.simulate_data(
+        miner_object.simulate_data(
             samples=args.samples,
             sample_benchmark=args.sample_benchmark,
             force=args.force,
             use_pythia_card=args.use_pythia_card
         )
+except:
+    traceback.format_exc()
+
+try:
+    if args.train:
+        pass
 except:
     traceback.format_exc()
 
