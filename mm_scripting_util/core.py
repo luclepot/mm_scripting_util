@@ -75,7 +75,7 @@ class miner(mm_util):
     def simulate_data(
             self,
             samples,
-            sample_benchmark,
+            sample_benchmarks,
             seed_file=None, 
             force=True,
             mg_dir=None,
@@ -103,7 +103,7 @@ class miner(mm_util):
             if self.STEP < 3:        
                 self.setup_mg5_scripts(
                         samples=samples,
-                        sample_benchmark=sample_benchmark,
+                        sample_benchmarks=sample_benchmarks,
                         force=force,
                         mg_dir=mg_dir,
                         platform=platform,
@@ -211,16 +211,20 @@ class miner(mm_util):
             self.madminer_object.add_parameter(
                     lha_block=self.params['parameters'][parameter]['lha_block'],
                     lha_id=self.params['parameters'][parameter]['lha_id'],
-                    parameter_name=self.params['parameters'][parameter]['name'],
+                    parameter_name=parameter,
                     morphing_max_power=self.params['parameters'][parameter]['morphing_max_power'],   
                     parameter_range=self.params['parameters'][parameter]['parameter_range']
                 )
 
-        for parameter in self.params['parameters']:
-            for benchmark in self.params['parameters'][parameter]['parameter_benchmarks']:
-                self.madminer_object.add_benchmark(
-                    {parameter:benchmark[0]},benchmark[1]
-                )
+        for benchmark in self.params['benchmarks']:
+            self.madminer_object.add_benchmark(
+                self.params["benchmarks"][benchmark], benchmark
+            )
+
+            # for benchmark in self.params['parameters'][parameter]['parameter_benchmarks']:
+            #     self.madminer_object.add_benchmark(
+            #         {parameter:benchmark[0]},benchmark[1]
+            #     )
 
         self.max_power = max([self.params['parameters'][param]['morphing_max_power'] for param in self.params['parameters']])
         self.madminer_object.set_morphing(
@@ -238,7 +242,7 @@ class miner(mm_util):
     def setup_mg5_scripts(
             self,
             samples,
-            sample_benchmark,
+            sample_benchmarks,
             force=False,
             mg_dir=None,
             platform="lxplus7",
@@ -251,7 +255,7 @@ class miner(mm_util):
         if not (self._check_valid_init() and 
                 self._check_valid_cards(len(sample_sizes)) and
                 self._check_valid_morphing() and 
-                self._check_valid_backend(benchmark_to_check=sample_benchmark)):
+                self._check_valid_backend()):
             self.log.warning("Canceling mg5 script setup.")
             return 1
 
@@ -277,9 +281,10 @@ class miner(mm_util):
         # init mg_dir
         if mg_dir is not None:
             if not os.path.exists(mg_dir):
-                self.log.warning("MGDIR variable '{}' invalid")
+                self.log.warning("MGDIR variable '{}' invalid".format(mg_dir))
                 self.log.warning("Aborting mg5 script setup routine.")
                 return 1
+        
         elif(getpass.getuser() == 'pvischia'):
             mg_dir = '/home/ucl/cp3/pvischia/smeft_ml/MG5_aMC_v2_6_2'
         elif(getpass.getuser() == 'alheld'):
@@ -297,7 +302,7 @@ class miner(mm_util):
             pythia_card = None
 
         self.madminer_object.run_multiple(
-            sample_benchmarks=[sample_benchmark],
+            sample_benchmarks=sample_benchmarks,
             mg_directory=mg_dir,
             mg_process_directory=self.dir + '/mg_processes/signal',
             proc_card_file=self.dir + '/cards/proc_card.dat',

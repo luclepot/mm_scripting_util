@@ -185,7 +185,7 @@ class mm_backend_util(
 
     def __init__(
             self,
-            required_params=["model", "madgraph_generation_command", "backend_name", "parameters"],
+            required_params=["model", "madgraph_generation_command", "backend_name", "parameters", "benchmarks"],
             required_experimental_params=["lha_block", "lha_id", "morphing_max_power", "parameter_range"]
         ):
         self.params = {}
@@ -206,19 +206,26 @@ class mm_backend_util(
         # process backend file
         with open(self.backend_name) as f:
             self.log.info("Loading backend file at {}".format(self.backend_name))
-            parameters = []
+            parameters = {}
+            benchmarks = {}
             for l in f:
                 line = l.lstrip().rstrip("\n")
                 if len(line) > 0 and line[0] != "#":
                     # parameter read-in case
                     if "parameter " in line: 
-                        parameters.append(self._get_parameter_dict(line))
+                        name, linedict = self._get_parameter_dict(line)
+                        parameters[name] = linedict
+                    elif "benchmark " in line: 
+                        line = line.split(": ")
+                        name = line[0].lstrip("benchmark ")
+                        tags = dict([tuple((elt.split("=")[0], float(elt.split("=")[1]))) for elt in line[1].rstrip().lstrip().split(", ")])
+                        benchmarks[name] = tags
                     else: 
                         line = line.split(": ")
                         assert(len(line) == 2)
                         self.params[line[0]] = line[1]
-            self.params["parameters"] = dict([(p["name"],p) for p in parameters if p is not None])
-
+            self.params["parameters"] = dict([(p,parameters[p]) for p in parameters if p is not None])
+            self.params["benchmarks"] = benchmarks
         # verify required backend parameters in backend file
         if self._check_valid_backend():
             self.log.info("Loaded {} parameters for backend with name {}".format(len(self.params), self.params["backend_name"]))
@@ -228,8 +235,7 @@ class mm_backend_util(
         return 1
 
     def _check_valid_backend(
-            self,
-            benchmark_to_check=None
+            self
         ):
         valid_flag = True
         for param in self.required_params:
@@ -244,9 +250,12 @@ class mm_backend_util(
                 if req_exp_param not in self.params["parameters"][exp_param]:
                     self.log.error("Required experimental parameter '{}' not in parameter '{}'".format(req_exp_param, exp_param))
                     valid_flag = False
-        if benchmark_to_check is not None and benchmark_to_check not in self.params["parameters"]:
-            self.log.error("Provided sample benchmark '{}' not found in backend parameters.".format(benchmark_to_check))
-            valid_flag = False
+
+        for benchmark in self.params["benchmarks"]: 
+            for existing_parameter in self.params["parameters"]:
+                if existing_parameter not in self.params["benchmarks"][benchmark]:
+                    self.log.error("Provided sample benchmark '{}' does not contain a value for parameter '{}'.".format(self.params["benchmarks"][benchmark], existing_parameter))
+                    valid_flag = False
 
         if not valid_flag: 
             # self.log.error("Please update backend file '{}'".format(self.backend_name))
@@ -272,21 +281,20 @@ class mm_backend_util(
                     # convert to a tuple
                 elif value[0] in ["parameter_range"]:
                     value[1] = tuple([float(v) for v in value[1].lstrip("(").rstrip(")").split(",")])
-                elif value[0] in ["parameter_benchmarks"]:
-                    value[1] = [tuple((float(tup[0]), str(tup[1].lstrip("'").rstrip("'")))) for tup in [elt.lstrip("[(").rstrip(")]").split(",") for elt in value[1].split("),(")]]
+                # elif value[0] in ["parameter_benchmarks"]:
+                #     value[1] = [tuple((float(tup[0]), str(tup[1].lstrip("'").rstrip("'")))) for tup in [elt.lstrip("[(").rstrip(")]").split(",") for elt in value[1].split("),(")]]
                 elif value[0] not in self.required_experimental_params:
                     self.log.error("invalid parameter argument '{}'.".format(value[0]))
-                    return None
+                    return (None,None)
                 linedict[value[0]] = value[1]
-            linedict["name"] = name
-            return linedict
+            return (name,linedict)
         
         except Exception as e:
             self.log.error("incorrect parameter formatting for parameter {}".format(name))
             self.log.error("'{}' not formatted quite right".format(og))
             self.log.error("Full exception:")
             self.log.error(e)
-            return None
+            return (None,None)
 
 class mm_simulate_util(
         mm_base_util
