@@ -87,8 +87,6 @@ class miner(mm_util):
 
         self._load_backend(backend)
 
-        self.STEP = 0
-
     def simulate_data(
             self,
             samples,
@@ -104,6 +102,11 @@ class miner(mm_util):
         Standard data simulation run. Should go from start to finish with data simulation.
         """
         try:
+            self.STEP = self._get_simulation_step(
+                len(self._equal_sample_sizes(samples, 100000)),
+                samples
+            )
+
             if self.STEP < 1:
                 self.setup_cards(
                         n_samples=samples,

@@ -22,5 +22,6 @@ def test_simulate_step():
     t.setup_cards(10000)
     t.simulate_data(
         samples=10000,
-        sample_benchmark='sm'
+        sample_benchmark='sm',
+        force=False
     )

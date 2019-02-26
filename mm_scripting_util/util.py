@@ -400,6 +400,23 @@ class mm_simulate_util(
         
         return sample_sizes
 
+    def _get_simulation_step(
+            self, 
+            num_cards,
+            samples
+        ):
+        step = 0
+        blist = [
+            self._check_valid_cards(num_cards),
+            self._check_valid_morphing(),
+            self._check_valid_mg5_scripts(samples),
+            self._check_valid_mg5_run(samples)
+                ]
+        while step < len(blist) and blist[step]:
+            step += 1
+
+        return step
+
 class mm_train_util(
         mm_base_util
     ):
