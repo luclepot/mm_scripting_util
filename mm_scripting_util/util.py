@@ -171,11 +171,7 @@ class mm_base_util:
         elif include_module_paths and os.path.exists(self.module_path + "/" + pathname):
             ret = self.module_path + "/" + pathname
         else: 
-            self.log.error("Could not find pathname.")
-            self.log.error("Checked paths:")
-            self.log.error(pathname)
-            self.log.error(self.dir + "/data/" + pathname)
-            self.log.error(os.getcwd() + "/" + pathname)
+            self.log.error("Could not find pathname {}".format(pathname))
             return None
         return ret
         # otherwise this doesn't exist

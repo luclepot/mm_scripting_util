@@ -54,9 +54,6 @@ class miner(mm_util):
                 self
             )
 
-
-
-            
         self.autodestruct = autodestruct
         self.log = logging.getLogger(__name__)
         self.module_path = os.path.dirname(__file__)
@@ -78,15 +75,15 @@ class miner(mm_util):
 
         self.madminer_object = madminer.core.MadMiner()
         
-        custom_card_directory = self._search_for_paths(custom_card_directory, include_module_paths=False)
+        ret = self._search_for_paths(custom_card_directory, include_module_paths=False)
 
-        if custom_card_directory is None: 
-            self.log.error("Selected custom card directory '{}' could not be found.")
+        if ret is None: 
+            self.log.error("Selected custom card directory '{}' could not be found.".format(custom_card_directory))
             self.log.error("Using default card directory instead.")
             self.custom_card_directory = None
         else:
-            self.log.debug("Using custom card directory '{}'".format(custom_card_directory))
-            self.custom_card_directory = custom_card_directory
+            self.log.debug("Using custom card directory '{}'".format(ret))
+            self.custom_card_directory = ret
 
         self._load_backend(backend)
 
