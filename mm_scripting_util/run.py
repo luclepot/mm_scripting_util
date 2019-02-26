@@ -1,26 +1,73 @@
-# from .core import tth_miner
-# import subprocess
-# import sys
-# import os
-# import logging
+from .core import miner
+import subprocess
+import sys
+import os
+import logging
+import argparse
 
-# logging.basicConfig(
-#     format='%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s',
-#     datefmt='%H:%M',
-#     level=logging.INFO
-# )
+parser = argparse.ArgumentParser(description="processing for mm_scripting_util.run.py file")
 
-# true_strings = ["True", "1", "true", "t", "y", "Yes"]
+## add simulation related arguments
+parser.add_argument('-n', '--name',
+                    action='store', dest='name',
+                    default="temp", type=str,
+                    help="master simulation folder name")
+parser.add_argument('-s', '--samples',
+                    action='store', dest='samples', 
+                    default=100000, type=int, 
+                    help="number of data simulation samples")
+parser.add_argument('-g', '--generate',
+                    action='store_true', dest='generate', 
+                    default=False, 
+                    help="boolean for data simulation")
+parser.add_argument('-sb','--sample-benchmark', 
+                    action='store', dest='sample_benchmark', 
+                    default='sm', type=str, 
+                    help="sample benchmark at which to generate data")
+parser.add_argument('-ll','--log-level', 
+                    action='store', dest='loglevel', 
+                    default=20, type=int,
+                    help="loglevel for miner object")
+parser.add_argument('-ccd','--custom-card-directory',
+                    action='store', dest='custom_card_directory', 
+                    default="", type=str,
+                    help="path to custom card directory")
+parser.add_argument('-be','--backend',
+                    action='store', dest='backend',
+                    default="tth.dat", type=str,
+                    help="backend name or path")
+parser.add_argument('-f', '--force',
+                    action='store_true', dest='force',
+                    default=False,
+                    help="boolean for forcing overwrite of prev. data sims")
+parser.add_argument('-up', '--use-pythia', 
+                    action='store_true', dest='use_pythia_card',
+                    default=False,
+                    help="boolean for using pythia card in simulation")
 
-# # Output of all other modules (e.g. matplotlib)
-# for key in logging.Logger.manager.loggerDict:
-#     if "madminer" not in key:
-#         logging.getLogger(key).setLevel(logging.WARNING)
 
-# def main():
+args = parser.parse_args(sys.argv)
+
+script_miner = miner(
+    name=args.name,
+    loglevel=args.loglevel,
+    backend=args.backend,
+    custom_card_directory=args.custom_card_directory
+)
+
+if args.generate:
+    script_miner.simulate_data(
+        samples=args.samples,
+        sample_benchmark=args.sample_benchmark,
+        force=args.force,
+        use_pythia_card=args.use_pythia_card
+    )
+
+# def old():
+#     return 0 
 #     name="temp"
 #     samples=200000
-#     sample_limit=100000
+#     sample_benchmark='sm'
 #     eval_samples=5000
 #     architecture=(10,10,10)
 #     epochs=10
@@ -49,9 +96,12 @@
 #             train_samples=str(sys.argv[i + 1])
 #         elif arg=="--help" or arg=="-h":
 #             help_flag=True
+#         elif arg=="--sample-benchmark" or arg=="-sb":
+#             sample_benchmark = sys.argv[i + i]
+        
             
 #     if help_flag:
-#         print("--- testing utility `run_all.py` ---")
+#         print("--- command line utility `run.py` ---")
 #         print()
 #         print("--name, -n:")
 #         print("    name of sample trial. default temp")
@@ -68,54 +118,3 @@
 #         print("--generate, -g:")
 #         print("    bool, whether to generate new data or to just train")
 #         return [None, None] 
-
-#     proc = subprocess.run(args=["pwd"], encoding='utf-8', stdout=subprocess.PIPE)
-#     path = proc.stdout.split('\n')[0]
-
-#     # if generate_samples in true_strings:
-#     #     t = tth_miner(
-#     #             name=name,
-#     #             path=path
-#     #         )
-        
-#     #     print("tth sampler created") 
-        
-#     #     t.full_sample_generate_data(
-#     #             samples=samples,
-#     #             path=path,
-#     #             name=name,
-#     #             sample_limit=sample_limit
-#     #         )
-
-#     #     print("sample scripts generated")
-        
-#     #     cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh; source {}/{}/mg_processes/signal/madminer/run.sh'".format(path, name)
-#     #     os.system(cmd)
-#     #     print("samples generated")
-        
-#     #     t.full_sample_add_observables(
-#     #             samples=samples,
-#     #             path=path,
-#     #             name=name,
-#     #             sample_limit=sample_limit
-#     #         )
-
-#     #     print("observables added")
-
-#     #     t.plot_madgraph_data(
-#     #             image_save_name=name
-#     #         )
-    
-#     # if train_samples in true_strings:
-#     #     t_train = tth.train_sample_data_here(
-#     #             sample_number=samples,
-#     #             eval_number=eval_samples,
-#     #             nodes=architecture,
-#     #             epochs=epochs,
-#     #             name=name
-#     #         )
-
-#     print("sample data trained")    
-#     return [t_sample, t_train]
-
-# main()
