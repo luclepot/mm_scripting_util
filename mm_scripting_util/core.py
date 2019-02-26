@@ -75,7 +75,7 @@ class miner(mm_util):
     def simulate_data(
             self,
             samples,
-            sample_benchmarks,
+            sample_benchmark,
             seed_file=None, 
             force=True,
             mg_dir=None,
@@ -103,7 +103,7 @@ class miner(mm_util):
             if self.STEP < 3:        
                 self.setup_mg5_scripts(
                         samples=samples,
-                        sample_benchmarks=sample_benchmarks,
+                        sample_benchmark=sample_benchmark,
                         force=force,
                         mg_dir=mg_dir,
                         platform=platform,
@@ -242,7 +242,7 @@ class miner(mm_util):
     def setup_mg5_scripts(
             self,
             samples,
-            sample_benchmarks,
+            sample_benchmark,
             force=False,
             mg_dir=None,
             platform="lxplus7",
@@ -302,7 +302,7 @@ class miner(mm_util):
             pythia_card = None
 
         self.madminer_object.run_multiple(
-            sample_benchmarks=sample_benchmarks,
+            sample_benchmarks=[sample_benchmark],
             mg_directory=mg_dir,
             mg_process_directory=self.dir + '/mg_processes/signal',
             proc_card_file=self.dir + '/cards/proc_card.dat',
