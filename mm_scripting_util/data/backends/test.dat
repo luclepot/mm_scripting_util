@@ -1,5 +1,5 @@
-# standard backend file. 
-# works for tth_CP process.
+# an example backend file. 
+# not actually descriptive of any physical process in particular
 
 # backend name: an identifier, required
 backend_name: tth_CP
@@ -16,12 +16,11 @@ madgraph_generation_command: g g > x0 t t~, x0 > a a, t > l+ vl b, t~ > l- vl~ b
 # - lha_id : int 
 # - morphing_max_power : int
 # - parameter_range : tuple
-#
-# parameters must be declared before benchmarks are declared. 
+# parameters should be taken from a valid 'param_card_template.dat' file. 
 parameter ca: lha_block=frblock, lha_id=2, morphing_max_power=2, parameter_range=(0.,1.) 
 parameter dummy_parameter: lha_block=frblock, lha_id=1, morphing_max_power=2, parameter_range=(-1000.,1000.)
 
 # after declaring parameters, declare benchmarks.
-# benchmark w: ca=0., dummy_parameter=0. <== example for two benchmarks
+# example for two benchmarks, with two parameters each
 benchmark w: ca=0., dummy_parameter=-1000.
 benchmark sm: dummy_parameter=1000., ca=1.

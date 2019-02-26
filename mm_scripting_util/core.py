@@ -19,7 +19,8 @@ class miner(mm_util):
             path=None,
             loglevel=logging.INFO,
             autodestruct=False,
-            backend="tth.dat"
+            backend="tth.dat",
+            custom_card_directory=None
         ):
         """
         madminer-helper object for quickly running madgraph scripts. 
@@ -29,11 +30,19 @@ class miner(mm_util):
             path: 
                 string, path to desired object directory. Will default to current working directory.
             loglevel:
-                loglevel for tth class as a whole. Will default to INFO.
+                int (enum), loglevel for tth class as a whole. Will default to INFO.
+            autodestruct:
+                bool, cleanup switch for object// all files. if true, the whole thing will destroy itself upon deletion. useful for testing.
+            backend:
+                string, path to a backend file. Examples found at "mm_scripting_util/data/backends/". Provides all benchmarks/ simulation information
+            custom_card_directory:
+                string, path to a card directory from which to load template cards, if one desires to switch the current template cards out for new ones.
         """
 
         if path is None:
             path = os.getcwd()
+        
+        self.custom_card_directory = custom_card_directory
         
         # initialize helper classes
         
@@ -153,14 +162,28 @@ class miner(mm_util):
             force=force,
             pattern="card"
         )
-
-        files = os.listdir(self.module_path + "/data/cards")
-
-        for f in files: 
+        if self.custom_card_directory is not None:
+            custom_files = os.listdir(self.custom_card_directory)
+        else:
+            custom_files = []   
+        
+        default_files = [f for f in os.listdir(self.module_path + "/data/cards/") if f not in custom_files]
+        
+        for f in custom_files: 
             shutil.copyfile(
-                src=self.module_path + "/data/cards/" + f, 
+                src=self.custom_card_directory + "/" + f,
                 dst=self.dir + "/cards/" + f
             )
+        if len(custom_files) > 0: 
+            self.log.debug("Copied {} custom card files from directory '{}'".format(len(custom_files), self.custom_card_directory))
+        
+        for f in default_files:
+            shutil.copyfile(
+                src=self.module_path + "/data/cards/" + f,
+                dst=self.dir + "/cards/" + f
+            )
+
+        self.log.debug("Copied {} default card files from directory '{}'".format(len(default_files), self.module_path + "/data/cards/"))
 
         for i in range(len(sample_sizes)):
             self._replace_lines(
