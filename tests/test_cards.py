@@ -1,5 +1,17 @@
 import mm_scripting_util as mm 
 
+def test_custom_cards_logic(): 
+    t = mm.core.miner(
+        name="test_custom_cards",
+        loglevel=10, 
+        autodestruct=True,
+        backend="tth.dat",
+        custom_card_directory="cards"
+    )
+    t.setup_cards(n_samples=111000)
+    assert(t._check_valid_cards(2))
+
+
 def test_check_valid_cards_function(): 
     t = mm.core.miner(
         name="valid_cards",

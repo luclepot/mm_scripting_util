@@ -141,33 +141,35 @@ class mm_base_util:
 
     def _search_for_paths(
             self,
-            pathname   
+            pathname,
+            include_module_paths=True   
         ):
         # search first for exact path
+
+        if pathname is None:
+            return None
+        
         if os.path.exists(pathname):
             ret = pathname 
 
         # then, search for local pathnames (raw and /data/)
-        elif os.path.exists(self.dir + pathname):
+        elif os.path.exists(self.dir + "/" + pathname):
             ret = self.dir + pathname
         elif os.path.exists(self.dir + "/data/" + pathname):
             ret = self.dir + "/data/" + pathname
-
         # check for terminal cwd paths
         elif os.path.exists(os.getcwd() + "/" + pathname):
             ret = os.getcwd() + "/" + pathname
         
         # last, check default file database (data/cards/, data/backends/, data/, and raw)
-        elif os.path.exists(self.module_path + "/data/backends/" + pathname):
+        elif include_module_paths and os.path.exists(self.module_path + "/data/backends/" + pathname):
             ret = self.module_path + "/data/backends/" + pathname
-        elif os.path.exists(self.module_path + "/data/" + pathname):
+        elif include_module_paths and os.path.exists(self.module_path + "/data/" + pathname):
             ret = self.module_path + "/data/" + pathname
-        elif os.path.exists(self.module_path + "/data/cards/" + pathname):
+        elif include_module_paths and os.path.exists(self.module_path + "/data/cards/" + pathname):
             self.module_path + "/data/cards/" + pathname
-        elif os.path.exists(self.module_path + "/" + pathname):
+        elif include_module_paths and os.path.exists(self.module_path + "/" + pathname):
             ret = self.module_path + "/" + pathname
-        
-        # otherwise this doesn't exist
         else: 
             self.log.error("Could not find pathname.")
             self.log.error("Checked paths:")
@@ -176,6 +178,8 @@ class mm_base_util:
             self.log.error(os.getcwd() + "/" + pathname)
             return None
         return ret
+        # otherwise this doesn't exist
+
 
 class mm_backend_util(
         mm_base_util

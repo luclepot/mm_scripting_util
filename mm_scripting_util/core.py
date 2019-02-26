@@ -42,13 +42,6 @@ class miner(mm_util):
         if path is None:
             path = os.getcwd()
         
-        if custom_card_directory is not None and not os.path.exists(custom_card_directory): 
-            self.log.error("Selected custom card directory '{}' does not exist.")
-            self.log.error("Using default card directory instead.")
-            custom_card_directory = None
-        self.custom_card_directory = custom_card_directory
-
-        
         # initialize helper classes
         
         mm_base_util.__init__(
@@ -60,6 +53,9 @@ class miner(mm_util):
         mm_backend_util.__init__(
                 self
             )
+
+
+
             
         self.autodestruct = autodestruct
         self.log = logging.getLogger(__name__)
@@ -81,6 +77,16 @@ class miner(mm_util):
         self.log.debug("- new miner object path at " + self.dir)
 
         self.madminer_object = madminer.core.MadMiner()
+        
+        custom_card_directory = self._search_for_paths(custom_card_directory, include_module_paths=False)
+
+        if custom_card_directory is None: 
+            self.log.error("Selected custom card directory '{}' could not be found.")
+            self.log.error("Using default card directory instead.")
+            self.custom_card_directory = None
+        else:
+            self.log.debug("Using custom card directory '{}'".format(custom_card_directory))
+            self.custom_card_directory = custom_card_directory
 
         self._load_backend(backend)
 
@@ -179,6 +185,7 @@ class miner(mm_util):
                 src=self.custom_card_directory + "/" + f,
                 dst=self.dir + "/cards/" + f
             )
+
         if len(custom_files) > 0: 
             self.log.debug("Copied {} custom card files from directory '{}'".format(len(custom_files), self.custom_card_directory))
         
