@@ -4,6 +4,7 @@ import sys
 import os
 import logging
 import argparse
+import traceback
 
 parser = argparse.ArgumentParser(description="processing for mm_scripting_util.run.py file")
 
@@ -55,13 +56,16 @@ script_miner = miner(
     custom_card_directory=args.custom_card_directory
 )
 
-if args.generate:
-    script_miner.simulate_data(
-        samples=args.samples,
-        sample_benchmark=args.sample_benchmark,
-        force=args.force,
-        use_pythia_card=args.use_pythia_card
-    )
+try:
+    if args.generate:
+        script_miner.simulate_data(
+            samples=args.samples,
+            sample_benchmark=args.sample_benchmark,
+            force=args.force,
+            use_pythia_card=args.use_pythia_card
+        )
+except:
+    traceback.format_exc()
 
 # def old():
 #     return 0 
