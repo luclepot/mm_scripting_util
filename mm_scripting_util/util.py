@@ -228,7 +228,8 @@ class mm_backend_util(
         return 1
 
     def _check_valid_backend(
-            self
+            self,
+            benchmark_to_check=None
         ):
         valid_flag = True
         for param in self.required_params:
@@ -243,8 +244,12 @@ class mm_backend_util(
                 if req_exp_param not in self.params["parameters"][exp_param]:
                     self.log.error("Required experimental parameter '{}' not in parameter '{}'".format(req_exp_param, exp_param))
                     valid_flag = False
+        if benchmark_to_check is not None and benchmark_to_check not in self.params["parameters"]:
+            self.log.error("Provided sample benchmark '{}' not found in backend parameters.".format(benchmark_to_check))
+            valid_flag = False
+
         if not valid_flag: 
-            self.log.error("Please update backend file '{}'".format(self.backend_name))
+            # self.log.error("Please update backend file '{}'".format(self.backend_name))
             return False
         return True
 

@@ -4,7 +4,7 @@ def test_run_basic():
     t = mm.core.miner(
         name="mg5_run_small",
         loglevel=10,
-        autodestruct=True
+        autodestruct=False
     )
     t.setup_cards(
         n_samples=1000,

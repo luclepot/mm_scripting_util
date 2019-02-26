@@ -247,11 +247,11 @@ class miner(mm_util):
 
         sample_sizes = self._equal_sample_sizes(samples, sample_limit=100000)
 
-        # validate init
+        # validate and check that cards, morphing, and backend are correctly installed 
         if not (self._check_valid_init() and 
                 self._check_valid_cards(len(sample_sizes)) and
                 self._check_valid_morphing() and 
-                self._check_valid_backend()):
+                self._check_valid_backend(benchmark_to_check=sample_benchmark)):
             self.log.warning("Canceling mg5 script setup.")
             return 1
 
@@ -324,7 +324,8 @@ class miner(mm_util):
         if not (self._check_valid_init() and 
                 self._check_valid_cards(len(sample_sizes)) and
                 self._check_valid_morphing() and 
-                self._check_valid_mg5_scripts(samples)):
+                self._check_valid_mg5_scripts(samples) and
+                self._check_valid_backend()):
             self.log.warning("Canceling mg5 run.")
             return 1
 
