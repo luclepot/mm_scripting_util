@@ -2,13 +2,13 @@
 # works for tth_CP process.
 
 # backend name: an identifier, required
-backend_name=tth_CP
+backend_name: tth_CP
 
 # backend model: theory model, required
-model=HC_UFO
+model: HC_UFO
 
 # backend generation command: scattering stuff for madgraph, required
-madgraph_generation_command=g g > x0 t t~, x0 > a a, t > l+ vl b, t~ > l- vl~ b~
+madgraph_generation_command: g g > x0 t t~, x0 > a a, t > l+ vl b, t~ > l- vl~ b~
 
 # theory parameters are specified with 'parameter <name>'. 
 # required args for theory parameters are:

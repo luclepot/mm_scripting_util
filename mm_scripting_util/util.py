@@ -214,7 +214,7 @@ class mm_backend_util(
                     if "parameter " in line: 
                         parameters.append(self._get_parameter_dict(line))
                     else: 
-                        line = line.split("=")
+                        line = line.split(": ")
                         assert(len(line) == 2)
                         self.params[line[0]] = line[1]
             self.params["parameters"] = dict([(p["name"],p) for p in parameters if p is not None])
