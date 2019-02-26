@@ -176,7 +176,7 @@ class miner(mm_util):
             line_numbers=[1,2,3],
             line_strings=[
                 "import model {}\n".format(self.params['model']),
-                self.params['madgraph_generation_command'] + '\n',
+                "generate {}\n".format(self.params['madgraph_generation_command']),
                 ""]
         )
 
