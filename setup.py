@@ -23,6 +23,9 @@ REQUIRED = [
     "matplotlib>=2.0.0",
 ]
 
+package_data={'': ['mm_scripting_util/data/*']}
+include_package_data=True
+
 # What packages are optional?
 EXTRAS = {
     # 'fancy feature': ['django'],
@@ -101,6 +104,7 @@ setup(
     python_requires=REQUIRES_PYTHON,
     url=URL,
     packages=find_packages(exclude=('tests',)),
+    package_data=package_data,
     # If your package is a single module, use this instead of 'packages':
     # py_modules=['mypackage'],
 
