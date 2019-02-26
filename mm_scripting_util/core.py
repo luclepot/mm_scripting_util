@@ -143,7 +143,7 @@ class miner(mm_util):
         if seed_file is not None:
             seeds = np.load(seed_file)
         else:
-            seeds = np.random.randint(1, 31000.**2., len(sample_sizes))
+            seeds = np.random.randint(1, 30081.*30081., len(sample_sizes))
 
         # check validity of seed input (matching with sample sizes, at the least)
         assert(len(seeds) >= len(sample_sizes))
