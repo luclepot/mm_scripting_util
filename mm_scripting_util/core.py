@@ -42,7 +42,12 @@ class miner(mm_util):
         if path is None:
             path = os.getcwd()
         
+        if custom_card_directory is not None and not os.path.exists(custom_card_directory): 
+            self.log.error("Selected custom card directory '{}' does not exist.")
+            self.log.error("Using default card directory instead.")
+            custom_card_directory = None
         self.custom_card_directory = custom_card_directory
+
         
         # initialize helper classes
         
