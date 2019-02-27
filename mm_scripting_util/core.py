@@ -485,77 +485,29 @@ class miner(mm_util):
         lhe_processor_object.save(self.dir + "/data/madminer_example_with_data_parton.h5")
         return lhe_processor_object.observations, lhe_processor_object.weights
 
-    def plot_debug(
-            self,
-            samples,
-            sample_benchmark,
-            image_save_name=None
-        ): 
-        
-        self.pret = self.process_mg5_data(samples, sample_benchmark)
-        observations = self.pret[0]
-        weights = self.pret[1]
-        obs = np.asarray([observations[obs] for obs in observations]).T
-        weights = np.asarray([weights[weight] for weight in weights])
-        norm_weights = np.copy(weights) # normalization factors for plots
-
-        # for var in [obs, weights, norm_weights]: 
-        #     if var is None: 
-        #         self.log.warning("required variable {} is None.".format(self._get_var_name(var)))
-        #         self.log.debug("{}: ".format(self._get_var_name(var)))
-        #         self.log.debug(var)
-
-        print("correcting normalizations by total sum of weights per benchmark:")
-
-        for i, weight in enumerate(weights):
-            sum_bench = (weight.sum())
-            norm_weights[i] /= sum_bench
-            print(sum_bench)
-
-        # obs = np.squeeze(obs)
-        # weights = np.squeeze(weights)
-        # norm_weights = np.squeeze(norm_weights)
-                    
-        labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
-        bins=(30,30)
-        ranges = [(-8,8), (0,600)]
-
-        self.plot_data = (obs, weights, norm_weights)
-
-        fig = corner.corner(obs, labels=labels, color='C1',
-                            bins=bins, range=ranges,
-                            weights=norm_weights[1])
-        fig2 = corner.corner(obs, labels=labels, color='C2',
-                             bins=bins, range=ranges,
-                             weights=norm_weights[2], fig=fig)
-        fig3 = corner.corner(obs, labels=labels, color='C0',
-                             bins=bins, range=ranges, 
-                             weights=norm_weights[0], fig=fig)
-
-
-
-        if image_save_name is not None:
-            full_save_name = "{}/madgraph_data_{}_{}s.png".format(
-                self.dir,
-                image_save_name,
-                obs.shape[0]
-            )
-            plt.savefig(full_save_name)
-        else:
-            plt.show()
-
-        # blue: SM, orange: CP-odd, green: mixture
-        return 0
-
     def plot_mg5_data(
             self,
-            image_save_name=None
+            image_save_name=None,
+            bins=(40,40),
+            ranges=[(-8,8),(0,600)],
+            max_index=0
         ):
+
+        np.min([1, 2])
 
         if not self._check_valid_mg5_process():
             self.log.warning("Quitting mg5 data plotting")
             return 1
+        (_, 
+        benchmarks, 
+        _,_,_,
+        observables,
+        _,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
+            filename = self.dir + "/data/madminer_example_with_data_parton.h5"
+        )
 
+        legend_labels = [label for label in benchmarks]
+        labels = [label for label in observables]
         observations = []
         weights = []
 
@@ -572,56 +524,54 @@ class miner(mm_util):
         #         self.log.debug(var)
         #         return 1    
 
-        obs = np.asarray(observations).T
-        weights = np.asarray(weights)
+        obs = np.squeeze(np.asarray(observations))
+        weights = np.squeeze(np.asarray(weights)).T
         norm_weights = np.copy(weights) # normalization factors for plots
-
+        
         # for var in [obs, weights, norm_weights]: 
         #     if var is None: 
         #         self.log.warning("required variable {} is None.".format(self._get_var_name(var)))
         #         self.log.debug("{}: ".format(self._get_var_name(var)))
         #         self.log.debug(var)
 
-        print("correcting normalizations by total sum of weights per benchmark:")
+        self.log.info("correcting normalizations by total sum of weights per benchmark:")
 
         for i, weight in enumerate(weights):
             sum_bench = (weight.sum())
             norm_weights[i] /= sum_bench
-            print(sum_bench)
+            self.log.info("{}: {}".format(i + 1, sum_bench))
+        
+        # labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
 
-        # obs = np.squeeze(obs)
-        # weights = np.squeeze(weights)
-        # norm_weights = np.squeeze(norm_weights)
-                    
-        labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
-        bins=(30,30)
-        ranges = [(-8,8), (0,600)]
+        plt = corner.corner(obs, labels=labels, color='C0', bins=bins, range=ranges, weights=norm_weights[0])
+        plt.label = legend_labels[0] 
 
-        self.plot_data = (obs, weights, norm_weights)
+        for i in range(norm_weights.shape[0] - 1):
+            plt_prime = corner.corner(obs, labels=labels, color='C{}'.format(i + 1), bins=bins, range=ranges, weights=norm_weights[i + 1], fig=plt)
+            plt_prime.label = legend_labels[i + 1]
 
-        fig = corner.corner(obs, labels=labels, color='C1',
-                            bins=bins, range=ranges,
-                            weights=norm_weights[1])
-        fig2 = corner.corner(obs, labels=labels, color='C2',
-                             bins=bins, range=ranges,
-                             weights=norm_weights[2], fig=fig)
-        fig3 = corner.corner(obs, labels=labels, color='C0',
-                             bins=bins, range=ranges, 
-                             weights=norm_weights[0], fig=fig)
-
+        
         full_save_name = "{}/madgraph_data_{}_{}s.png".format(
             self.dir,
             image_save_name,
             obs.shape[0]
         )
 
-        if full_save_name is not None:
+        plt.axes[0].autoscale('y')
+        plt.axes[3].autoscale('y')
+        plt.legend(legend_labels)
+
+        if image_save_name is not None:
             plt.savefig(full_save_name)
-        else:
-            plt.show()
+        plt.show()
 
-
-        # blue: SM, orange: CP-odd, green: mixture
         return 0
 
     # training-related member functions
+
+    def augment_samples(
+            self,
+            samples,
+            training_name
+        ):
+        raise NotImplementedError
