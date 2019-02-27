@@ -530,6 +530,7 @@ class miner(mm_util):
         bins=(30,30)
         ranges = [(-8,8), (0,600)]
 
+        self.plot_data = (obs, weights, norm_weights)
 
         fig = corner.corner(obs, labels=labels, color='C1',
                             bins=bins, range=ranges,
