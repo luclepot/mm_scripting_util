@@ -497,9 +497,9 @@ class miner(mm_util):
         weights = None
 
         with h5py.File(self.dir + "/data/madminer_example_with_data_parton.h5", "r") as f:
-            observations = dict(f["samples/observations"])
-            weights = dict(f["samples/weights"])
-
+            observations = f["samples/observations"]
+            weights = f["samples/weights"]
+            
         self.observations = observations
         self.weights = weights
 
