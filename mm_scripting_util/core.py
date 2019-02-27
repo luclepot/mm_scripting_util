@@ -485,59 +485,60 @@ class miner(mm_util):
             self.log.warning("Quitting mg5 data plotting")
             return 1
 
-        
-        # (   
-        #     parameters,
-        #     benchmarks,
-        #     benchmark_is_nuisance,
-        #     morphing_components,
-        #     morphing_matrix,
-        #     observables,
-        #     n_samples,
-        #     systematics,
-        #     reference_benchmark,
-        #     nuisance_parameters
-        # )
-        self.madret = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(self.dir + "/data/madminer_example_with_data_parton.h5")
+        observations = None
+        weights = None
 
-        # obs = np.asarray([tempminer.observations[obs] for obs in tempminer.observations]).T
-        # weights = np.asarray([tempminer.weights[weight] for weight in tempminer.weights])
-        # norm_weights = np.copy(weights) # normalization factors for plots
+        with h5py.File(self.dir + "/data/madminer_example_with_data_parton.h5", "r") as f:
+            observations = f["samples/observations"]
+            weights = f["samples/weights"]
 
-        # print("correcting normalizations by total sum of weights per benchmark:")
-        # for i, weight in enumerate(tempminer.weights):
-        #     sum_bench = (lhe_processor_object.weights[weight].sum())
-        #     norm_weights[i] /= sum_bench
-        #     print(sum_bench)
+        if None in [observations, weights]:
+            self.log.warning("Observations or weights of sample is None")
+            self.log.debug("observations: ")
+            self.log.debug(observations)
+            self.log.debug("weights: ")
+            self.log.debut(weights)
+            return 1
+
+
+        obs = np.asarray([observations[obs] for obs in observations]).T
+        weights = np.asarray([weights[weight] for weight in weights])
+        norm_weights = np.copy(weights) # normalization factors for plots
+
+        print("correcting normalizations by total sum of weights per benchmark:")
+        for i, weight in enumerate(weights):
+            sum_bench = (weights[weight].sum())
+            norm_weights[i] /= sum_bench
+            print(sum_bench)
                     
-        # labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
-        # bins=(30,30)
-        # ranges = [(-8,8), (0,600)]
+        labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
+        bins=(30,30)
+        ranges = [(-8,8), (0,600)]
 
 
-        # fig = corner.corner(obs, labels=labels, color='C1',
-        #                     bins=bins, range=ranges,
-        #                     weights=norm_weights[1])
-        # fig2 = corner.corner(obs, labels=labels, color='C2',
-        #                      bins=bins, range=ranges,
-        #                      weights=norm_weights[2], fig=fig)
-        # fig3 = corner.corner(obs, labels=labels, color='C0',
-        #                      bins=bins, range=ranges, 
-        #                      weights=norm_weights[0], fig=fig)
+        fig = corner.corner(obs, labels=labels, color='C1',
+                            bins=bins, range=ranges,
+                            weights=norm_weights[1])
+        fig2 = corner.corner(obs, labels=labels, color='C2',
+                             bins=bins, range=ranges,
+                             weights=norm_weights[2], fig=fig)
+        fig3 = corner.corner(obs, labels=labels, color='C0',
+                             bins=bins, range=ranges, 
+                             weights=norm_weights[0], fig=fig)
 
-        # full_save_name = "{}/madgraph_data_{}_{}s.png".format(
-        #     self.dir,
-        #     image_save_name,
-        #     obs.shape[0]
-        # )
+        full_save_name = "{}/madgraph_data_{}_{}s.png".format(
+            self.dir,
+            image_save_name,
+            obs.shape[0]
+        )
 
-        # if full_save_name is not None:
-        #     plt.savefig(full_save_name)
-        # else:
-        #     plt.show()
+        if full_save_name is not None:
+            plt.savefig(full_save_name)
+        else:
+            plt.show()
 
 
-        # # blue: SM, orange: CP-odd, green: mixture
-        # return 0
+        # blue: SM, orange: CP-odd, green: mixture
+        return 0
 
     # training-related member functions

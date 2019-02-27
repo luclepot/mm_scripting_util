@@ -9,7 +9,7 @@ import madminer.core
 import madminer.lhe
 import corner
 import matplotlib.pyplot as plt
-import madminer.utils.interfaces.madminer_hdf5
+import h5py
 
 class mm_base_util:
 
