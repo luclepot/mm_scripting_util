@@ -497,11 +497,11 @@ class miner(mm_util):
         weights = None
 
         with h5py.File(self.dir + "/data/madminer_example_with_data_parton.h5", "r") as f:
-            observations = np.array(f["samples/observations"])
-            weights = np.array(f["samples/weights"])
+            observations = dict(f["samples/observations"])
+            weights = dict(f["samples/weights"])
 
         for var in [observations, weights]:
-            if var is None or type(var) is not np.ndarray:
+            if var is None or type(var) is not dict:
                 self.log.warning("required variable {} is not a numpy array.".format(self._get_var_name(var)))
                 self.log.debug("{}: ".format(self._get_var_name(var)))
                 self.log.debug(var)
