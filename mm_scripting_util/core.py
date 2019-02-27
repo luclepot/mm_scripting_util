@@ -485,47 +485,59 @@ class miner(mm_util):
             self.log.warning("Quitting mg5 data plotting")
             return 1
 
-        lhe_processor_object = madminer.lhe.LHEProcessor(filename=self.dir + "/data/madminer_example_with_data_parton.h5")
-        self.log.debug(lhe_processor_object.observables)
-        self.log.debug(lhe_processor_object.weights)
-        obs = np.asarray([lhe_processor_object.observations[obs] for obs in lhe_processor_object.observations]).T
-        weights = np.asarray([lhe_processor_object.weights[weight] for weight in lhe_processor_object.weights])
-        norm_weights = np.copy(weights) # normalization factors for plots
+        
+        # (   
+        #     parameters,
+        #     benchmarks,
+        #     benchmark_is_nuisance,
+        #     morphing_components,
+        #     morphing_matrix,
+        #     observables,
+        #     n_samples,
+        #     systematics,
+        #     reference_benchmark,
+        #     nuisance_parameters
+        # )
+        self.madret = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(self.dir + "/data/madminer_example_with_data_parton.h5")
 
-        print("correcting normalizations by total sum of weights per benchmark:")
-        for i, weight in enumerate(lhe_processor_object.weights):
-            sum_bench = (lhe_processor_object.weights[weight].sum())
-            norm_weights[i] /= sum_bench
-            print(sum_bench)
+        # obs = np.asarray([tempminer.observations[obs] for obs in tempminer.observations]).T
+        # weights = np.asarray([tempminer.weights[weight] for weight in tempminer.weights])
+        # norm_weights = np.copy(weights) # normalization factors for plots
+
+        # print("correcting normalizations by total sum of weights per benchmark:")
+        # for i, weight in enumerate(tempminer.weights):
+        #     sum_bench = (lhe_processor_object.weights[weight].sum())
+        #     norm_weights[i] /= sum_bench
+        #     print(sum_bench)
                     
-        labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
-        bins=(30,30)
-        ranges = [(-8,8), (0,600)]
+        # labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
+        # bins=(30,30)
+        # ranges = [(-8,8), (0,600)]
 
 
-        fig = corner.corner(obs, labels=labels, color='C1',
-                            bins=bins, range=ranges,
-                            weights=norm_weights[1])
-        fig2 = corner.corner(obs, labels=labels, color='C2',
-                             bins=bins, range=ranges,
-                             weights=norm_weights[2], fig=fig)
-        fig3 = corner.corner(obs, labels=labels, color='C0',
-                             bins=bins, range=ranges, 
-                             weights=norm_weights[0], fig=fig)
+        # fig = corner.corner(obs, labels=labels, color='C1',
+        #                     bins=bins, range=ranges,
+        #                     weights=norm_weights[1])
+        # fig2 = corner.corner(obs, labels=labels, color='C2',
+        #                      bins=bins, range=ranges,
+        #                      weights=norm_weights[2], fig=fig)
+        # fig3 = corner.corner(obs, labels=labels, color='C0',
+        #                      bins=bins, range=ranges, 
+        #                      weights=norm_weights[0], fig=fig)
 
-        full_save_name = "{}/madgraph_data_{}_{}s.png".format(
-            self.dir,
-            image_save_name,
-            obs.shape[0]
-        )
+        # full_save_name = "{}/madgraph_data_{}_{}s.png".format(
+        #     self.dir,
+        #     image_save_name,
+        #     obs.shape[0]
+        # )
 
-        if full_save_name is not None:
-            plt.savefig(full_save_name)
-        else:
-            plt.show()
+        # if full_save_name is not None:
+        #     plt.savefig(full_save_name)
+        # else:
+        #     plt.show()
 
 
-        # blue: SM, orange: CP-odd, green: mixture
-        return 0
+        # # blue: SM, orange: CP-odd, green: mixture
+        # return 0
 
     # training-related member functions
