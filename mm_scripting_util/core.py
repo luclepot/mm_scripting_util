@@ -10,7 +10,7 @@ madminer, in the context of the ttH CP process.
 
 """
 
-class miner(mm_util): 
+class miner(mm_util):   
     
     # general class member functions
 
@@ -486,6 +486,8 @@ class miner(mm_util):
             return 1
 
         lhe_processor_object = madminer.lhe.LHEProcessor(filename=self.dir + "/data/madminer_example_with_data_parton.h5")
+        self.log.debug(lhe_processor_object.observables)
+        self.log.debug(lhe_processor_object.weights)
         obs = np.asarray([lhe_processor_object.observations[obs] for obs in lhe_processor_object.observations]).T
         weights = np.asarray([lhe_processor_object.weights[weight] for weight in lhe_processor_object.weights])
         norm_weights = np.copy(weights) # normalization factors for plots
