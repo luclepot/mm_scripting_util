@@ -12,6 +12,8 @@ madminer, in the context of the ttH CP process.
 
 class miner(mm_util):   
     
+    __MODULE_NAME = "mm_scripting_util"
+
     # general class member functions
 
     def __init__(
@@ -19,6 +21,7 @@ class miner(mm_util):
             name="temp",
             path=None,
             loglevel=logging.INFO,
+            madminer_loglevel=logging.INFO,
             autodestruct=False,
             backend="tth.dat",
             custom_card_directory=None
@@ -60,6 +63,7 @@ class miner(mm_util):
         self.module_path = os.path.dirname(__file__)
 
         self.set_loglevel(loglevel)
+        self.set_loglevel(madminer_loglevel, module="madminer")
 
         self.name = name
         self.dir = "{}/{}".format(self.path, self.name)
@@ -91,7 +95,8 @@ class miner(mm_util):
 
     def set_loglevel(
             self,
-            loglevel
+            loglevel,
+            module=None
         ):     
 
         logging.basicConfig(
@@ -100,7 +105,10 @@ class miner(mm_util):
             level=logging.WARNING
         )
 
-        logging.getLogger("mm_scripting_util").setLevel(loglevel)
+        if module is None:
+            module = self.__MODULE_NAME
+
+        logging.getLogger(module).setLevel(loglevel)
         
         return loglevel 
 
