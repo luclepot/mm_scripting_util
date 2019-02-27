@@ -1,6 +1,5 @@
 
 from .util import *
-import madminer.core
 
 
 """
@@ -12,6 +11,8 @@ madminer, in the context of the ttH CP process.
 """
 
 class miner(mm_util): 
+    
+    # general class member functions
 
     def __init__(
             self,
@@ -74,6 +75,7 @@ class miner(mm_util):
         self.log.debug("- new miner object path at " + self.dir)
 
         self.madminer_object = madminer.core.MadMiner()
+        self.lhe_processor_object = None
         
         ret = self._search_for_paths(custom_card_directory, include_module_paths=False)
 
@@ -86,6 +88,39 @@ class miner(mm_util):
             self.custom_card_directory = ret
 
         self._load_backend(backend)
+
+    def set_loglevel(
+            self,
+            loglevel
+        ):     
+
+        logging.basicConfig(
+            format='%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s',
+            datefmt='%H:%M',
+            level=logging.WARNING
+        )
+
+        logging.getLogger("mm_scripting_util").setLevel(loglevel)
+        
+        return loglevel 
+
+    def destroy_sample(
+            self
+        ):
+        if not self._check_valid_init():
+            return
+        self._remove_files(
+                self.dir,
+                include_folder=True
+            )
+
+    def __del__(
+            self
+        ):
+        if self.autodestruct:
+            self.destroy_sample()
+
+    # simulation-related member functions
 
     def simulate_data(
             self,
@@ -103,7 +138,7 @@ class miner(mm_util):
         """
         try:
             self.STEP = self._get_simulation_step(
-                len(self._equal_sample_sizes(samples, 100000)),
+                self._number_of_cards(samples, 100000),
                 samples
             )
 
@@ -140,6 +175,8 @@ class miner(mm_util):
         except:
             self.log.error(traceback.format_exc())
             self.log.error("ABORTING")
+
+        return 0
 
     def setup_cards(
             self, 
@@ -222,6 +259,8 @@ class miner(mm_util):
         files = os.listdir(self.dir + "/cards")
         for f in files: 
             self.log.debug(" - \"{}\"".format(f))
+        
+        return 0
 
     def run_morphing(
             self,
@@ -395,33 +434,43 @@ class miner(mm_util):
 
         os.system(cmd)
     
-    def set_loglevel(
+    def process_mg5_data(
             self,
-            loglevel
-        ):     
-
-        logging.basicConfig(
-            format='%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s',
-            datefmt='%H:%M',
-            level=logging.WARNING
-        )
-
-        logging.getLogger("mm_scripting_util").setLevel(loglevel)
-        
-        return loglevel 
-
-    def destroy_sample(
-            self
+            samples, 
+            sample_benchmark
         ):
-        if not self._check_valid_init():
-            return
-        self._remove_files(
-                self.dir,
-                include_folder=True
+
+        if not self._check_valid_mg5_run(samples):
+            self.log.warning("Quitting mg5 data processing.")
+            return 1
+        
+        lhe_processor_object = madminer.lhe.LHEProcessor(filename=self.dir + "/data/madminer_example.h5")
+        n_cards = self._number_of_cards(samples, 100000)
+        for i in range(n_cards):
+            lhe_processor_object.add_sample(
+                self.dir + "/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
+                    i + 1
+                ),
+                sampled_from_benchmark=sample_benchmark,
+                is_background=False
+            )
+        observables = { 'delta_ttbar': '(p[2]+p[3]+p[4]).deltaeta(p[5]+p[6]+p[7])', 
+                        'x0_pt': '(p[0]+p[1]).pt'}
+
+        for observable in observables: 
+            lhe_processor_object.add_observable(
+                observable,
+                observables[observable],
+                required=True
             )
 
-    def __del__(
-            self
+        lhe_processor_object.analyse_samples()
+        lhe_processor_object.save(self.dir + "/data/madminer_example_with_data_parton.h5")
+
+    def plot_mg5_data(
+            self,
+            savename=None
         ):
-        if self.autodestruct:
-            self.destroy_sample()
+        return 0
+
+    # training-related member functions

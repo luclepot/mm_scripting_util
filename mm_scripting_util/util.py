@@ -5,6 +5,8 @@ import shutil
 import platform
 import getpass
 import traceback
+import madminer.core
+import madminer.lhe
 
 class mm_base_util:
 
@@ -184,7 +186,7 @@ class mm_backend_util(
 
     def __init__(
             self,
-            required_params=["model", "madgraph_generation_command", "backend_name", "parameters", "benchmarks"],
+            required_params=["model", "madgraph_generation_command", "backend_name", "parameters", "benchmarks", "observables"],
             required_experimental_params=["lha_block", "lha_id", "morphing_max_power", "parameter_range"]
         ):
         self.params = {}
@@ -204,63 +206,54 @@ class mm_backend_util(
 
         # process backend file
         with open(self.backend_name) as f:
-            self.log.info("Loading backend file at {}".format(self.backend_name))
+            
+            self.log.info("Attempting to load backend file at {}".format(self.backend_name))
+
             parameters = {}
             benchmarks = {}
+            observables = {}
+
             for l in f:
+
                 line = l.lstrip().rstrip("\n")
+
+                # if resultant line is not empty, and is not a comment
                 if len(line) > 0 and line[0] != "#":
+
                     # parameter read-in case
                     if "parameter " in line: 
-                        name, linedict = self._get_parameter_dict(line)
-                        parameters[name] = linedict
+                        name, parameter_dict = self._get_parameter_dict(line)
+                        parameters[name] = parameter_dict
+
+                    # benchmark read-in case
                     elif "benchmark " in line: 
-                        line = line.split(": ")
-                        name = line[0].lstrip("benchmark ")
-                        tags = dict([tuple((elt.split("=")[0], float(elt.split("=")[1]))) for elt in line[1].rstrip().lstrip().split(", ")])
-                        benchmarks[name] = tags
+                        name, benchmark_dict = self._get_benchmark_dict(line)
+                        benchmarks[name] = benchmark_dict
+
+                    # observable read-in case
+                    elif "observable " in line: 
+                        name, observable_dict = self._get_obseravble_dict(line)
+                        observables[name] = observable_dict
+
+                    # otherwise, default case (add that string to the dictionary)
                     else: 
                         line = line.split(": ")
-                        assert(len(line) == 2)
-                        self.params[line[0]] = line[1]
+                        self.params[line[0].lstrip().rstrip()] = line[1].lstrip().rstrip()
+
+            # add filled dictionaries in their respective places
             self.params["parameters"] = dict([(p,parameters[p]) for p in parameters if p is not None])
             self.params["benchmarks"] = benchmarks
+            self.params["observables"] = observables
+
         # verify required backend parameters in backend file
+
         if self._check_valid_backend():
             self.log.info("Loaded {} parameters for backend with name {}".format(len(self.params), self.params["backend_name"]))
             return 0
+
         self.log.warning("Backend found, but parameters were not fully loaded.")        
         # baaad guy error code 
         return 1
-
-    def _check_valid_backend(
-            self
-        ):
-
-        valid_flag = True
-        for param in self.required_params:
-            if param not in self.params:
-                self.log.error("Provided backend file does not include the required key '{}'".format(param))
-                valid_flag = False
-        if not len(self.params["parameters"]) > 0:
-            self.log.error("Zero parameters provided in backend file. Please specify.")
-            valid_flag = False
-        for exp_param in self.params["parameters"]:
-            for req_exp_param in self.required_experimental_params:
-                if req_exp_param not in self.params["parameters"][exp_param]:
-                    self.log.error("Required experimental parameter '{}' not in parameter '{}'".format(req_exp_param, exp_param))
-                    valid_flag = False
-
-        for benchmark in self.params["benchmarks"]: 
-            for existing_parameter in self.params["parameters"]:
-                if existing_parameter not in self.params["benchmarks"][benchmark]:
-                    self.log.error("Provided sample benchmark '{}' does not contain a value for parameter '{}'.".format(self.params["benchmarks"][benchmark], existing_parameter))
-                    valid_flag = False
-
-        if not valid_flag: 
-            # self.log.error("Please update backend file '{}'".format(self.backend_name))
-            return False
-        return True
 
     def _get_parameter_dict(
             self, 
@@ -295,6 +288,54 @@ class mm_backend_util(
             self.log.error("Full exception:")
             self.log.error(e)
             return (None,None)
+
+    def _get_benchmark_dict(
+            self,
+            string
+        ): 
+        string = string.split(": ")
+        name = string[0].lstrip("benchmark ")
+        tags = dict([tuple((elt.split("=")[0], float(elt.split("=")[1]))) for elt in string[1].rstrip().lstrip().split(", ")])
+        return name, tags
+
+    def _get_obseravble_dict(
+            self, 
+            string
+        ):
+        string = string.split(": ")
+        name = string[0].lstrip("observable ")
+        return name, string[1]
+
+    def _check_valid_backend(
+            self
+        ):
+
+        valid_flag = True
+
+        for param in self.required_params:
+            if param not in self.params:
+                self.log.error("Provided backend file does not include the required key '{}'".format(param))
+                valid_flag = False
+
+        if not len(self.params["parameters"]) > 0:
+            self.log.error("Zero parameters provided in backend file. Please specify.")
+            valid_flag = False
+        for exp_param in self.params["parameters"]:
+            for req_exp_param in self.required_experimental_params:
+                if req_exp_param not in self.params["parameters"][exp_param]:
+                    self.log.error("Required experimental parameter '{}' not in parameter '{}'".format(req_exp_param, exp_param))
+                    valid_flag = False
+
+        for benchmark in self.params["benchmarks"]: 
+            for existing_parameter in self.params["parameters"]:
+                if existing_parameter not in self.params["benchmarks"][benchmark]:
+                    self.log.error("Provided sample benchmark '{}' does not contain a value for parameter '{}'.".format(self.params["benchmarks"][benchmark], existing_parameter))
+                    valid_flag = False            
+
+        if not valid_flag: 
+            # self.log.error("Please update backend file '{}'".format(self.backend_name))
+            return False
+        return True
 
 class mm_simulate_util(
         mm_base_util
@@ -354,10 +395,10 @@ class mm_simulate_util(
             pathname=self.dir + '/mg_processes/signal/madminer/scripts',
             matching_pattern=".sh",
         )
-        expected = len(self._equal_sample_sizes(
+        expected = self._number_of_cards(
             samples=samples,
             sample_limit=100000
-        ))
+        )
         if size < 0:
             self.log.error("mg_processes/signal/madminer/scripts directory does not exist here.")
             return False
@@ -370,10 +411,10 @@ class mm_simulate_util(
             self,
             samples
         ):
-        expected = len(self._equal_sample_sizes(
+        expected = self._number_of_cards(
             samples=samples, 
             sample_limit=100000
-        ))
+        )
         size = self._dir_size(
             pathname=self.dir + '/mg_processes/signal/Events', 
             matching_pattern="run_"
@@ -398,6 +439,16 @@ class mm_simulate_util(
             sample_sizes += [int(samples % int(sample_limit))]
         
         return sample_sizes
+
+    def _number_of_cards(
+            self,
+            samples, 
+            sample_limit            
+        ):
+        size = int(samples/sample_limit)
+        if int(samples % int(sample_limit)):
+            return size + 1
+        return size
 
     def _get_simulation_step(
             self, 
@@ -441,7 +492,6 @@ class mm_train_util(
             self.log.error("Training data cannot be parsed (or detected)")
             return False
         return True
-
 
 class mm_util(
         mm_backend_util,
