@@ -525,6 +525,10 @@ class miner(mm_util):
             sum_bench = (weight.sum())
             norm_weights[i] /= sum_bench
             print(sum_bench)
+
+        obs = np.squeeze(obs)
+        weights = np.squeeze(weights)
+        norm_weights = np.squeeze(norm_weights)
                     
         labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
         bins=(30,30)
