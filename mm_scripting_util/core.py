@@ -499,12 +499,12 @@ class miner(mm_util):
         with h5py.File(self.dir + "/data/madminer_example_with_data_parton.h5", "r") as f:
             observations = f["samples/observations"]
             weights = f["samples/weights"]
-            
+
         self.observations = observations
         self.weights = weights
 
         for var in [observations, weights]:
-            if var is None or type(var) is not dict:
+            if var is None:
                 self.log.warning("required variable {} is not a numpy array.".format(self._get_var_name(var)))
                 self.log.debug("{}: ".format(self._get_var_name(var)))
                 self.log.debug(var)
