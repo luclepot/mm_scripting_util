@@ -502,12 +502,10 @@ class miner(mm_util):
 
         for var in [observations, weights]:
             if var is None or type(var) is not np.ndarray:
-                self.log.warning("Observations or weights of sample is None")
-                self.log.debug("observations: ")
-                self.log.debug(observations)
-                self.log.debug("weights: ")
-                self.log.debut(weights)
-            return 1
+                self.log.warning("required variable {} is not a numpy array.".format(self._get_var_name(var)))
+                self.log.debug("{}: ".format(self._get_var_name(var)))
+                self.log.debug(var)
+                return 1    
 
 
         obs = np.asarray([observations[obs] for obs in observations]).T

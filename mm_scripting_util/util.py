@@ -10,6 +10,7 @@ import madminer.lhe
 import corner
 import matplotlib.pyplot as plt
 import h5py
+import inspect
 
 class mm_base_util:
 
@@ -180,6 +181,13 @@ class mm_base_util:
             return None
         return ret
         # otherwise this doesn't exist
+
+    def _get_var_name(
+            self, 
+            var
+        ):
+        callers_local_vars = inspect.currentframe().f_back.f_locals.items()
+        return [k for k, v in callers_local_vars if v is var]
 
 class mm_backend_util(
         mm_base_util
@@ -541,3 +549,4 @@ class mm_util(
     From this we will derive our tth_miner class, with first-order functions. 
     """
     pass 
+    
