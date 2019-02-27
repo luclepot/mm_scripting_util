@@ -497,15 +497,16 @@ class miner(mm_util):
         weights = None
 
         with h5py.File(self.dir + "/data/madminer_example_with_data_parton.h5", "r") as f:
-            observations = f["samples/observations"]
-            weights = f["samples/weights"]
+            observations = np.array(f["samples/observations"])
+            weights = np.array(f["samples/weights"])
 
-        if None in [observations, weights]:
-            self.log.warning("Observations or weights of sample is None")
-            self.log.debug("observations: ")
-            self.log.debug(observations)
-            self.log.debug("weights: ")
-            self.log.debut(weights)
+        for var in [observations, weights]:
+            if var is None or type(var) is not np.ndarray:
+                self.log.warning("Observations or weights of sample is None")
+                self.log.debug("observations: ")
+                self.log.debug(observations)
+                self.log.debug("weights: ")
+                self.log.debut(weights)
             return 1
 
 
