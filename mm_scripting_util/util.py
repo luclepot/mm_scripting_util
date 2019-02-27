@@ -7,6 +7,8 @@ import getpass
 import traceback
 import madminer.core
 import madminer.lhe
+import corner
+import matplotlib.pyplot as plt
 
 class mm_base_util:
 
@@ -249,6 +251,22 @@ class mm_backend_util(
 
         if self._check_valid_backend():
             self.log.info("Loaded {} parameters for backend with name {}".format(len(self.params), self.params["backend_name"]))
+            self.log.debug("")
+            self.log.debug("--- Backend parameter specifications ---")
+            self.log.debug("")
+            for required_parameter in self.required_params:
+                self.log.debug(required_parameter + ": ")
+                if type(self.params[required_parameter]) == dict:
+                    for subparam in self.params[required_parameter]:
+                        if type(self.params[required_parameter][subparam]) == dict: 
+                            self.log.debug("  - {}:".format(subparam))
+                            for subsubparam in self.params[required_parameter][subparam]:
+                                self.log.debug("    - {}: {}".format(subsubparam, self.params[required_parameter][subparam][subsubparam]))
+                        else:
+                            self.log.debug("  - {}: {}".format(subparam, self.params[required_parameter][subparam]))
+                else:
+                    self.log.debug("  - {}".format(self.params[required_parameter]))
+            self.log.debug("")
             return 0
 
         self.log.warning("Backend found, but parameters were not fully loaded.")        
@@ -428,6 +446,23 @@ class mm_simulate_util(
             return False
         return True
         
+    def _check_valid_mg5_process(
+            self    
+        ):
+        size = self._dir_size(
+            self.dir + "/data",
+            matching_pattern="madminer_example_with_data_parton.h5"
+        )
+        if size < 0:
+            self.log.error("/data/ directory does not exist")
+            self.log.error("processed mg5 run not completed (or detected)")
+            return False
+        if size == 0:
+            self.log.error("No proper processed mg5 file found.")
+            self.log.error("processed mg5 run not completed (or detected)")
+            return False
+        return True
+
     def _equal_sample_sizes(
             self, 
             samples,

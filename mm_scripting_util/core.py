@@ -149,12 +149,14 @@ class miner(mm_util):
                         force=force
                     )
                 self.STEP = 1
+
             if self.STEP < 2:
                 self.run_morphing(
                         force=force,
                         morphing_trials=morphing_trials
                     )
                 self.STEP = 2
+
             if self.STEP < 3:        
                 self.setup_mg5_scripts(
                         samples=samples,
@@ -165,6 +167,7 @@ class miner(mm_util):
                         use_pythia_card=use_pythia_card,
                     )
                 self.STEP = 3
+
             if self.STEP < 4:        
                 self.run_mg5_script(
                         platform=platform,
@@ -172,6 +175,14 @@ class miner(mm_util):
                         force=force
                     )
                 self.STEP = 4
+
+            if self.STEP < 5:
+                self.process_mg5_data(
+                        samples=samples, 
+                        sample_benchmark=sample_benchmark
+                    )
+                self.STEP = 5
+
         except:
             self.log.error(traceback.format_exc())
             self.log.error("ABORTING")
@@ -454,13 +465,11 @@ class miner(mm_util):
                 sampled_from_benchmark=sample_benchmark,
                 is_background=False
             )
-        observables = { 'delta_ttbar': '(p[2]+p[3]+p[4]).deltaeta(p[5]+p[6]+p[7])', 
-                        'x0_pt': '(p[0]+p[1]).pt'}
 
-        for observable in observables: 
+        for observable in self.params['observables']: 
             lhe_processor_object.add_observable(
                 observable,
-                observables[observable],
+                self.params['observables'][observable],
                 required=True
             )
 
@@ -469,8 +478,52 @@ class miner(mm_util):
 
     def plot_mg5_data(
             self,
-            savename=None
+            image_save_name=None
         ):
+
+        if not self._check_valid_mg5_process():
+            self.log.warning("Quitting mg5 data plotting")
+            return 1
+
+        lhe_processor_object = madminer.lhe.LHEProcessor(filename=self.dir + "/data/madminer_example_with_data_parton.h5")
+        obs = np.asarray([lhe_processor_object.observations[obs] for obs in lhe_processor_object.observations]).T
+        weights = np.asarray([lhe_processor_object.weights[weight] for weight in lhe_processor_object.weights])
+        norm_weights = np.copy(weights) # normalization factors for plots
+
+        print("correcting normalizations by total sum of weights per benchmark:")
+        for i, weight in enumerate(lhe_processor_object.weights):
+            sum_bench = (lhe_processor_object.weights[weight].sum())
+            norm_weights[i] /= sum_bench
+            print(sum_bench)
+                    
+        labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
+        bins=(30,30)
+        ranges = [(-8,8), (0,600)]
+
+
+        fig = corner.corner(obs, labels=labels, color='C1',
+                            bins=bins, range=ranges,
+                            weights=norm_weights[1])
+        fig2 = corner.corner(obs, labels=labels, color='C2',
+                             bins=bins, range=ranges,
+                             weights=norm_weights[2], fig=fig)
+        fig3 = corner.corner(obs, labels=labels, color='C0',
+                             bins=bins, range=ranges, 
+                             weights=norm_weights[0], fig=fig)
+
+        full_save_name = "{}/madgraph_data_{}_{}s.png".format(
+            self.dir,
+            image_save_name,
+            obs.shape[0]
+        )
+
+        if full_save_name is not None:
+            plt.savefig(full_save_name)
+        else:
+            plt.show()
+
+
+        # blue: SM, orange: CP-odd, green: mixture
         return 0
 
     # training-related member functions
