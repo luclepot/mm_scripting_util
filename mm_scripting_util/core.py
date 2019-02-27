@@ -500,6 +500,9 @@ class miner(mm_util):
             observations = dict(f["samples/observations"])
             weights = dict(f["samples/weights"])
 
+        self.observations = observations
+        self.weights = weights
+
         for var in [observations, weights]:
             if var is None or type(var) is not dict:
                 self.log.warning("required variable {} is not a numpy array.".format(self._get_var_name(var)))
