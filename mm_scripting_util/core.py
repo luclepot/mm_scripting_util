@@ -493,12 +493,14 @@ class miner(mm_util):
             self.log.warning("Quitting mg5 data plotting")
             return 1
 
-        observations = None
-        weights = None
+        import madminer.plotting
+        madminer.plotting.plot_distributions(filename=self.dir + "/data/madminer_example_with_data_parton.h5")
+        # observations = None
+        # weights = None
 
-        self.ret = madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
-            filename=self.dir + "/data/madminer_example_with_data_parton.h5"
-        ) 
+        # (self.observations, self.weights) = madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
+        #     filename=self.dir + "/data/madminer_example_with_data_parton.h5"
+        # ) 
        
         return
         # for var in [observations, weights]:
