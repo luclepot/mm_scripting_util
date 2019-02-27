@@ -520,8 +520,9 @@ class miner(mm_util):
         #         self.log.debug(var)
 
         print("correcting normalizations by total sum of weights per benchmark:")
+
         for i, weight in enumerate(weights):
-            sum_bench = (weights[weight].sum())
+            sum_bench = (weight.sum())
             norm_weights[i] /= sum_bench
             print(sum_bench)
                     
