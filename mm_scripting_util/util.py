@@ -7,9 +7,9 @@ import getpass
 import traceback
 import madminer.core
 import madminer.lhe
+import madminer.utils.interfaces.madminer_hdf5
 import corner
 import matplotlib.pyplot as plt
-import h5py
 import inspect
 
 class mm_base_util:
@@ -549,4 +549,3 @@ class mm_util(
     From this we will derive our tth_miner class, with first-order functions. 
     """
     pass 
-    
