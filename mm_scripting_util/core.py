@@ -509,7 +509,7 @@ class miner(mm_util):
         #         self.log.debug(var)
         #         return 1    
 
-        obs = np.asarray([obs for obs in observations]).T
+        obs = np.asarray([obs for obs in observations])
         weights = np.asarray([weight for weight in weights])
         norm_weights = np.copy(weights) # normalization factors for plots
 
