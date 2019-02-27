@@ -493,27 +493,28 @@ class miner(mm_util):
             self.log.warning("Quitting mg5 data plotting")
             return 1
 
-        observations = None
+        obs = None
         weights = None
+        norm_weights = None
 
         with h5py.File(self.dir + "/data/madminer_example_with_data_parton.h5", "r") as f:
             observations = f["samples/observations"]
             weights = f["samples/weights"]
+            for var in [observations, weights]:
+                if var is None:
+                    self.log.warning("required variable {} is not a numpy array.".format(self._get_var_name(var)))
+                    self.log.debug("{}: ".format(self._get_var_name(var)))
+                    self.log.debug(var)
+                    return 1    
+            obs = np.asarray([observations[obs] for obs in observations]).T
+            weights = np.asarray([weights[weight] for weight in weights])
+            norm_weights = np.copy(weights) # normalization factors for plots
 
-        self.observations = observations
-        self.weights = weights
-
-        for var in [observations, weights]:
-            if var is None:
-                self.log.warning("required variable {} is not a numpy array.".format(self._get_var_name(var)))
+        for var in [obs, weights, norm_weights]: 
+            if var is None: 
+                self.log.warning("required variable {} is None.".format(self._get_var_name(var)))
                 self.log.debug("{}: ".format(self._get_var_name(var)))
                 self.log.debug(var)
-                return 1    
-
-
-        obs = np.asarray([observations[obs] for obs in observations]).T
-        weights = np.asarray([weights[weight] for weight in weights])
-        norm_weights = np.copy(weights) # normalization factors for plots
 
         print("correcting normalizations by total sum of weights per benchmark:")
         for i, weight in enumerate(weights):
