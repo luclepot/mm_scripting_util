@@ -7,7 +7,7 @@ def test_valid_init_function():
     assert(t.error_codes.Success == t._check_valid_init())
 
     t.destroy_sample() 
-    assert(t.error_codes.Success != t._check_valid_init())
+    assert(t.error_codes.Success != t._check_valid_init())  
 
 def test_general(): 
     t = mm.core.miner(loglevel=10, autodestruct=True)
