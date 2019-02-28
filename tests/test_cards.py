@@ -9,7 +9,7 @@ def test_custom_cards_logic():
         custom_card_directory="cards"
     )
     t.setup_cards(n_samples=111000)
-    assert(t._check_valid_cards(2))
+    assert(t.error_codes.Success == t._check_valid_cards(2))
 
 
 def test_check_valid_cards_function(): 
@@ -19,7 +19,7 @@ def test_check_valid_cards_function():
         autodestruct=True
     )
     t.setup_cards(n_samples=123098)
-    assert(t._check_valid_cards(2))
+    assert(t.error_codes.Success == t._check_valid_cards(2))
 
 def test_cards_simple():
     t = mm.core.miner(
@@ -80,7 +80,7 @@ def test_cards_remove():
             name="multiple_test",
             path=None,
             loglevel=10,
-            autodestruct=True
+            autodestruct=False
         )
         t.setup_cards(
             n_samples=400000, force=True
@@ -90,7 +90,7 @@ def test_cards_remove():
         name="multiple_test",
         path=None,
         loglevel=10,
-        autodestruct=True
+        autodestruct=False
     )
     t.destroy_sample()
     
@@ -99,7 +99,7 @@ def test_cards_remove():
             name="multiple_test",
             path=None,
             loglevel=10,
-            autodestruct=True
+            autodestruct=False
         )
         tp.setup_cards(
             n_samples=400000, force=False
@@ -115,13 +115,13 @@ def test_cards_not_base_100k():
     )
     t.setup_cards(n_samples=421232)
     assert(t._dir_size(t.dir + "/cards") == 5 + 6)
-    assert(t._check_valid_cards(5))
+    assert(t.error_codes.Success == t._check_valid_cards(5))
 
     t.setup_cards(n_samples=120000, force=True)
     assert(t._dir_size(t.dir + "/cards") == 2 + 6)
-    assert(t._check_valid_cards(2))
+    assert(t.error_codes.Success == t._check_valid_cards(2))
 
     t.setup_cards(n_samples=1000000, force=True)
     assert(t._dir_size(t.dir + "/cards") == 10 + 6)
-    assert(t._check_valid_cards(10))
+    assert(t.error_codes.Success == t._check_valid_cards(10))
     t.destroy_sample()

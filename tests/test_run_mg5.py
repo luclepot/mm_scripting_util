@@ -22,9 +22,7 @@ def test_run_basic():
         platform="lxplus7",
         force=True
     )
-    assert(t._check_valid_mg5_run(
-        samples=1000
-    ))
+    assert(t.error_codes.Success in t._check_valid_mg5_run(samples=1000))
 
 def test_run_test_backend(): 
     t = mm.core.miner(
@@ -48,6 +46,4 @@ def test_run_test_backend():
         platform="lxplus7",
         force=True
     )
-    assert(t._check_valid_mg5_run(
-        samples=1000
-    ))
+    assert(t.error_codes.Success in t._check_valid_mg5_run(samples=1000))

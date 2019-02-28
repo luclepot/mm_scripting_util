@@ -12,8 +12,10 @@ import madminer.utils.interfaces.madminer_hdf5
 import corner
 import matplotlib.pyplot as plt
 import inspect
+import enum 
 
-class mm_base_util:
+
+class mm_base_util():
 
     """
     base functions and variables used in most other functions. 
@@ -22,6 +24,47 @@ class mm_base_util:
     """
     
     __CONTAINS_BASE_UTIL = True
+
+    class error_codes(enum.Enum):
+
+        """
+        Error code enum class utility; 
+        generally helpful for debugging/unit testing. 
+
+        """
+
+
+        # ones: general errors/success
+        
+        Success = 0 
+        
+        Error = 1
+
+        InvalidBackendError = 2
+        NoDirectoryError = 3 
+        InvalidPlatformError = 4
+        InvalidInputError = 5
+        InvalidTypeError = 6
+        InitError = 7
+        CaughtExceptionError = 8
+        # tens: simulation errors
+        
+        NoCardError = 11
+        IncorrectCardNumberError = 12
+        
+        NoMadminerCardError = 13
+        
+        NoScriptError = 14
+        IncorrectScriptNumberError = 15
+        
+        NoDataFileError = 16
+        IncorrectDataFileNumberError = 17
+
+        NoProcessedDataFileError = 18 
+
+        # twenties: training errors
+
+    Success = error_codes.Success
 
     def __init__(
             self,
@@ -38,9 +81,9 @@ class mm_base_util:
             self
         ):
         if os.path.exists(self.dir):
-            return True
+            return self.error_codes.Success
         self.log.error("Init not successful; directory " + self.dir + "does not exist.")
-        return False
+        return self.error_codes.InitError
             
     def _dir_size(
             self, 
@@ -259,7 +302,7 @@ class mm_backend_util(
 
         # verify required backend parameters in backend file
 
-        if self._check_valid_backend():
+        if self._check_valid_backend() == self.error_codes.Success:
             self.log.info("Loaded {} parameters for backend with name {}".format(len(self.params), self.params["backend_name"]))
             self.log.debug("")
             self.log.debug("--- Backend parameter specifications ---")
@@ -277,11 +320,11 @@ class mm_backend_util(
                 else:
                     self.log.debug("  - {}".format(self.params[required_parameter]))
             self.log.debug("")
-            return 0
+            return self.error_codes.Success
 
         self.log.warning("Backend found, but parameters were not fully loaded.")        
         # baaad guy error code 
-        return 1
+        return self.error_codes.InvalidBackendError
 
     def _get_parameter_dict(
             self, 
@@ -348,6 +391,7 @@ class mm_backend_util(
         if not len(self.params["parameters"]) > 0:
             self.log.error("Zero parameters provided in backend file. Please specify.")
             valid_flag = False
+
         for exp_param in self.params["parameters"]:
             for req_exp_param in self.required_experimental_params:
                 if req_exp_param not in self.params["parameters"][exp_param]:
@@ -362,8 +406,9 @@ class mm_backend_util(
 
         if not valid_flag: 
             # self.log.error("Please update backend file '{}'".format(self.backend_name))
-            return False
-        return True
+            self.log.error("INVALID BACKEND: SEE ERROR LOGS ABOVE")
+            return self.error_codes.InvalidBackendError
+        return self.error_codes.Success
 
 class mm_simulate_util(
         mm_base_util
@@ -396,12 +441,12 @@ class mm_simulate_util(
         )
         if cards < 0: 
             self.log.error("No valid cards directory in " + self.dir)
-            return False
+            return self.error_codes.NoCardError
         if cards != num_cards + 6: 
             self.log.error("Incorrect number of cards in directory " + self.dir)
             self.log.error("expected {}, got {}".format(num_cards + 6, cards))
-            return False
-        return True
+            return self.error_codes.IncorrectCardNumberError
+        return self.error_codes.Success
 
     def _check_valid_morphing(
             self
@@ -412,8 +457,8 @@ class mm_simulate_util(
             ) != 1:
             self.log.error("More or less than one 'madminer_<name>.h5' card in directory")
             self.log.error("'" + self.dir + "/data'.")
-            return False
-        return True        
+            return self.error_codes.NoMadminerCardError
+        return self.error_codes.Success        
 
     def _check_valid_mg5_scripts(
             self,
@@ -429,11 +474,11 @@ class mm_simulate_util(
         )
         if size < 0:
             self.log.error("mg_processes/signal/madminer/scripts directory does not exist here.")
-            return False
+            return self.error_codes.NoScriptError
         if size != expected:
             self.log.error("Found {}/{} expected mg5 scripts. Incorrect mg5 setup.".format(size, expected))
-            return False
-        return True
+            return self.error_codes.IncorrectScriptNumberError
+        return self.error_codes.Success
 
     def _check_valid_mg5_run(
             self,
@@ -450,11 +495,11 @@ class mm_simulate_util(
         if size < 0:
             self.log.error("mg_processes/signal/Events directory does not exist!")
             self.log.error("mg5 run not completed (or detected)")
-            return False
+            return self.error_codes.NoDataFileError
         if size != expected: 
             self.log.error("Found {}/{} expected mg5 data files. Incorrect mg5 setup.".format(size, expected))
-            return False
-        return True
+            return self.error_codes.IncorrectDataFileNumberError
+        return self.error_codes.Success
         
     def _check_valid_mg5_process(
             self    
@@ -466,12 +511,12 @@ class mm_simulate_util(
         if size < 0:
             self.log.error("/data/ directory does not exist")
             self.log.error("processed mg5 run not completed (or detected)")
-            return False
+            return self.error_codes.NoDirectoryError
         if size == 0:
             self.log.error("No proper processed mg5 file found.")
             self.log.error("processed mg5 run not completed (or detected)")
-            return False
-        return True
+            return self.error_codes.NoProcessedDataFileError
+        return self.error_codes.Success
 
     def _equal_sample_sizes(
             self, 
@@ -505,7 +550,8 @@ class mm_simulate_util(
             self._check_valid_cards(num_cards),
             self._check_valid_morphing(),
             self._check_valid_mg5_scripts(samples),
-            self._check_valid_mg5_run(samples)
+            self._check_valid_mg5_run(samples),
+            self._check_valid_mg5_process()
                 ]
         while step < len(blist) and blist[step]:
             step += 1
@@ -535,8 +581,11 @@ class mm_train_util(
         if size < 0:
             self.log.error("mg_processes/signal/Events directory does not exist!")
             self.log.error("Training data cannot be parsed (or detected)")
-            return False
-        return True
+            return self.error_codes.NoDirectoryError
+        elif size == 0:
+            self.log.error("No training data to parse.")
+            return self.error_codes.NoDataFileError
+        return self.error_codes.Success
 
 class mm_util(
         mm_backend_util,

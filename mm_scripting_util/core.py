@@ -81,15 +81,19 @@ class miner(mm_util):
         self.madminer_object = madminer.core.MadMiner()
         self.lhe_processor_object = None
         
-        ret = self._search_for_paths(custom_card_directory, include_module_paths=False)
-
-        if ret is None: 
-            self.log.error("Selected custom card directory '{}' could not be found.".format(custom_card_directory))
-            self.log.error("Using default card directory instead.")
+        self.log.debug("Loading custom card directory... ")
+        if custom_card_directory is not None:
+            ret = self._search_for_paths(custom_card_directory, include_module_paths=False)
+            if ret is None: 
+                self.log.error("Selected custom card directory '{}' could not be found.".format(custom_card_directory))
+                self.log.error("Using default card directory instead.")
+                self.custom_card_directory = None
+            else:
+                self.log.debug("Using custom card directory '{}'".format(ret))
+                self.custom_card_directory = ret
+        else: 
             self.custom_card_directory = None
-        else:
-            self.log.debug("Using custom card directory '{}'".format(ret))
-            self.custom_card_directory = ret
+            self.log.debug("No custom card directory provided.")
 
         self._load_backend(backend)
 
@@ -115,12 +119,21 @@ class miner(mm_util):
     def destroy_sample(
             self
         ):
-        if not self._check_valid_init():
-            return
+
+        rets = [
+            self._check_valid_init()
+            ]
+        failed = [ret for ret in rets if ret != self.error_codes.Success]
+
+        if len(failed) > 0:
+            return failed
+
         self._remove_files(
                 self.dir,
                 include_folder=True
             )
+
+        return [self.error_codes.Success]
 
     def __del__(
             self
@@ -151,22 +164,26 @@ class miner(mm_util):
             )
 
             if self.STEP < 1:
-                self.setup_cards(
+                ret = self.setup_cards(
                         n_samples=samples,
                         seed_file=seed_file,
                         force=force
                     )
+                if len(ret) > 0:
+                    return ret
                 self.STEP = 1
 
             if self.STEP < 2:
-                self.run_morphing(
+                ret = self.run_morphing(
                         force=force,
                         morphing_trials=morphing_trials
                     )
+                if len(ret) > 0:
+                    return ret
                 self.STEP = 2
 
             if self.STEP < 3:        
-                self.setup_mg5_scripts(
+                ret = self.setup_mg5_scripts(
                         samples=samples,
                         sample_benchmark=sample_benchmark,
                         force=force,
@@ -174,28 +191,35 @@ class miner(mm_util):
                         platform=platform,
                         use_pythia_card=use_pythia_card,
                     )
+                if len(ret) > 0:
+                    return ret
                 self.STEP = 3
 
             if self.STEP < 4:        
-                self.run_mg5_script(
+                ret = self.run_mg5_script(
                         platform=platform,
                         samples=samples,
                         force=force
                     )
+                if len(ret) > 0:
+                    return ret
                 self.STEP = 4
 
             if self.STEP < 5:
-                self.process_mg5_data(
+                ret = self.process_mg5_data(
                         samples=samples, 
                         sample_benchmark=sample_benchmark
                     )
+                if len(ret) > 0:
+                    return ret
                 self.STEP = 5
 
         except:
             self.log.error(traceback.format_exc())
             self.log.error("ABORTING")
+            return [self.error_codes.CaughtExceptionError]
 
-        return 0
+        return [self.error_codes.Success]
 
     def setup_cards(
             self, 
@@ -203,13 +227,15 @@ class miner(mm_util):
             seed_file=None,
             force=False
         ):
-        
-        if not self._check_valid_init():
-            os.mkdir(self.dir)
 
-        if not self._check_valid_backend():
+        rets = [ 
+                self._check_valid_init(), 
+                self._check_valid_backend()
+                ] 
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
+        if len(failed) > 0:
             self.log.warning("Canceling card setup.")            
-            return 1
+            return failed
 
         sample_sizes = self._equal_sample_sizes(
             n_samples,
@@ -279,7 +305,7 @@ class miner(mm_util):
         for f in files: 
             self.log.debug(" - \"{}\"".format(f))
         
-        return 0
+        return [self.error_codes.Success]
 
     def run_morphing(
             self,
@@ -287,10 +313,13 @@ class miner(mm_util):
             force=False
         ):
 
-        if not self._check_valid_backend():
+        rets = [ 
+                self._check_valid_backend()
+                ] 
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
+        if len(failed) > 0:
             self.log.warning("Canceling morphing run.")            
-            return 1
-
+            return failed
         
         # check directory for existing morphing information 
         self._check_directory(
@@ -330,7 +359,7 @@ class miner(mm_util):
         self.madminer_object.save(self.dir + "/data/madminer_{}.h5".format(self.name))
         self.log.debug("successfully ran morphing.")
 
-        return 0
+        return [self.error_codes.Success]
 
     def setup_mg5_scripts(
             self,
@@ -344,13 +373,16 @@ class miner(mm_util):
 
         sample_sizes = self._equal_sample_sizes(samples, sample_limit=100000)
 
-        # validate and check that cards, morphing, and backend are correctly installed 
-        if not (self._check_valid_init() and 
-                self._check_valid_cards(len(sample_sizes)) and
-                self._check_valid_morphing() and 
-                self._check_valid_backend()):
-            self.log.warning("Canceling mg5 script setup.")
-            return 1
+        rets = [ 
+                self._check_valid_init(),
+                self._check_valid_cards(len(sample_sizes)),
+                self._check_valid_morphing(),
+                self._check_valid_backend()
+                ] 
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
+        if len(failed) > 0:
+            self.log.warning("Canceling mg5 script setup.")            
+            return failed
 
         self._check_directory(
             local_pathname="mg_processes/signal/madminer/scripts",
@@ -366,17 +398,17 @@ class miner(mm_util):
         elif platform=="pheno": 
             initial_command = 'module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6'
         else:
-            self.log.warning("Platform not recognized. Canceling mg5 script setup.")
-            self.log.warning("(note: use name 'pheno' for the default belgian server)")
-            self.log.warning("((I didn't know the proper name, sorry))")
-            return 1
+            self.log.error("Platform not recognized. Canceling mg5 script setup.")
+            self.log.error("(note: use name 'pheno' for the default belgian server)")
+            self.log.error("((I didn't know the proper name, sorry))")
+            failed.append(self.error_codes.InvalidPlatformError)
 
         # init mg_dir
         if mg_dir is not None:
             if not os.path.exists(mg_dir):
                 self.log.warning("MGDIR variable '{}' invalid".format(mg_dir))
                 self.log.warning("Aborting mg5 script setup routine.")
-                return 1
+                failed.append(self.error_codes.NoDirectoryError)
         
         elif(getpass.getuser() == 'pvischia'):
             mg_dir = '/home/ucl/cp3/pvischia/smeft_ml/MG5_aMC_v2_6_2'
@@ -386,7 +418,11 @@ class miner(mm_util):
             mg_dir = '/afs/cern.ch/work/l/llepotti/private/MG5_aMC_v2_6_5'
         else:
             self.log.warning("No mg_dir provided and username not recognized. Aborting.")
-            return 1
+            failed.append(self.error_codes.NoDirectoryError)
+
+        if len(failed) > 0:
+            return failed
+
         self.log.debug("mg_dir set to '{}'".format(mg_dir))
         # setup pythia card 
         if use_pythia_card:
@@ -408,7 +444,7 @@ class miner(mm_util):
         )
 
         self.log.debug("Successfully setup mg5 scripts. Ready for execution")
-        return 0
+        return [self.error_codes.Success]
 
     def run_mg5_script(
             self,
@@ -419,13 +455,18 @@ class miner(mm_util):
        
         sample_sizes = self._equal_sample_sizes(samples=samples, sample_limit=100000)
 
-        if not (self._check_valid_init() and 
-                self._check_valid_cards(len(sample_sizes)) and
-                self._check_valid_morphing() and 
-                self._check_valid_mg5_scripts(samples) and
-                self._check_valid_backend()):
-            self.log.warning("Canceling mg5 run.")
-            return 1
+        rets = [ 
+                self._check_valid_init(), 
+                self._check_valid_cards(len(sample_sizes)),
+                self._check_valid_morphing(),
+                self._check_valid_mg5_scripts(samples),
+                self._check_valid_backend()
+                ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
+
+        if len(failed) > 0:
+            self.log.warning("Canceling mg5 script run.")            
+            return failed
 
         self._check_directory(
             local_pathname="mg_processes/signal/Events",
@@ -443,7 +484,10 @@ class miner(mm_util):
             self.log.warning("Platform not recognized. Canceling mg5 script setup.")
             self.log.warning("(note: use name 'pheno' for the default belgian server)")
             self.log.warning("((I didn't know the proper name, sorry))")
-            return 1
+            failed.append(self.error_codes.InvalidPlatformError)
+
+        if len(failed) > 0: 
+            return failed
 
         self.log.info("")
         self.log.info("Running mg5 scripts.")
@@ -452,6 +496,8 @@ class miner(mm_util):
         self.log.info("")
 
         os.system(cmd)
+
+        return [self.error_codes.Success]
     
     def process_mg5_data(
             self,
@@ -459,10 +505,15 @@ class miner(mm_util):
             sample_benchmark
         ):
 
-        if not self._check_valid_mg5_run(samples):
-            self.log.warning("Quitting mg5 data processing.")
-            return 1
-        
+        rets = [ 
+                self._check_valid_mg5_run(samples)
+                ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
+
+        if len(failed) > 0:
+            self.log.warning("Canceling mg5 data processing routine.")            
+            return failed
+
         lhe_processor_object = madminer.lhe.LHEProcessor(filename=self.dir + "/data/madminer_{}.h5".format(self.name))
         n_cards = self._number_of_cards(samples, 100000)
         for i in range(n_cards):
@@ -483,7 +534,7 @@ class miner(mm_util):
 
         lhe_processor_object.analyse_samples()
         lhe_processor_object.save(self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name))
-        return lhe_processor_object.observations, lhe_processor_object.weights
+        return [self.error_codes.Success]
 
     def plot_mg5_data(
             self,
@@ -493,11 +544,15 @@ class miner(mm_util):
             max_index=0
         ):
 
-        np.min([1, 2])
+        rets = [ 
+            self._check_valid_mg5_process()
+            ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
 
-        if not self._check_valid_mg5_process():
-            self.log.warning("Quitting mg5 data plotting")
-            return 1
+        if len(failed) > 0:
+            self.log.warning("Canceling mg5 data plotting.")            
+            return failed
+
         (_, 
         benchmarks, 
         _,_,_,
@@ -517,22 +572,9 @@ class miner(mm_util):
             observations.append(o)
             weights.append(w)
 
-        # for var in [observations, weights]:
-        #     if var is None:
-        #         self.log.warning("required variable {} is not a numpy array.".format(self._get_var_name(var)))
-        #         self.log.debug("{}: ".format(self._get_var_name(var)))
-        #         self.log.debug(var)
-        #         return 1    
-
         obs = np.squeeze(np.asarray(observations))
         weights = np.squeeze(np.asarray(weights)).T
         norm_weights = np.copy(weights) # normalization factors for plots
-        
-        # for var in [obs, weights, norm_weights]: 
-        #     if var is None: 
-        #         self.log.warning("required variable {} is None.".format(self._get_var_name(var)))
-        #         self.log.debug("{}: ".format(self._get_var_name(var)))
-        #         self.log.debug(var)
 
         self.log.info("correcting normalizations by total sum of weights per benchmark:")
 
@@ -550,7 +592,7 @@ class miner(mm_util):
             plt_prime = corner.corner(obs, labels=labels, color='C{}'.format(i + 1), bins=bins, range=ranges, weights=norm_weights[i + 1], fig=plt)
             plt_prime.label = legend_labels[i + 1]
 
-        
+    
         full_save_name = "{}/madgraph_data_{}_{}s.png".format(
             self.dir,
             image_save_name,
@@ -565,21 +607,35 @@ class miner(mm_util):
             plt.savefig(full_save_name)
         plt.show()
 
-        return 0
+        return [self.error_codes.Success]
 
     # training-related member functions
 
     def train_data(
             self,
-            samples, 
-            training_name
+            augmented_samples, 
+            training_name,
+            augmentation_benchmark,
+            n_theta_samples=2500
         ):
+
+        self.augment_samples(
+                training_name=training_name,
+                n_or_frac_augmented_samples=int(augmented_samples),
+                augmentation_benchmark=augmentation_benchmark,
+                n_theta_samples=n_theta_samples
+            )
+
         raise NotImplementedError
+
+        return [self.error_codes.Success]
 
     def augment_samples(
             self,
             training_name,
             n_or_frac_augmented_samples,
+            augmentation_benchmark,
+            n_theta_samples=2500
         ):
         """
         Augments sample data and saves to a new sample with name <training_name>.
@@ -591,14 +647,87 @@ class miner(mm_util):
             n_or_frac_augmented_samples, required:
                 if type(int), number of samples to draw from simulated madminer data with the sample augmenter
                 if type(float), fraction of the simulated samples to draw with the sample augmenter.  
-        
+            augmentation_benchmark, required: 
+                string, benchmark to feed to trainer
+
         returns:
             int, error code. 0 is obviously good. 
 
         """
+        # check for processed data
+        
+        rets = [ 
+            self._check_valid_mg5_process()
+            ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
+
+        if len(failed) > 0:
+            self.log.warning("Canceling sample augmentation.")            
+            return failed
+
+        # train the ratio
         sample_augmenter = madminer.sampling.SampleAugmenter(
             filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
-        # sample_augmenter.extract_samples_train_ratio(
 
-        # )
+        if augmentation_benchmark not in sample_augmenter.benchmarks:
+            self.log.error("Provided augmentation_benchmark not in given benchmarks!")
+            self.log.warning("Please choose from the below existing benchmarks:")
+            if sample_augmenter.n_benchmarks < 1:
+                self.log.warning(" - None")
+            for benchmark in sample_augmenter.benchmarks:
+                self.log.info(" - '{}'".format(benchmark))
+            failed.append(self.error_codes.InvalidInputError)
+
+        samples = 0
+
+        # if int, this is a direct number
+        if type(n_or_frac_augmented_samples) == int: 
+            samples = n_or_frac_augmented_samples
+        # otherwise, this number represents a fractional quantity
+        elif type(n_or_frac_augmented_samples) == float:
+            samples = int(n_or_frac_augmented_samples*float(sample_augmenter.n_samples))
+        # otherwise we quit
+        else:
+            self.log.error("Incorrect input ")
+            failed.append(self.error_codes.InvalidTypeError )
+
+        if samples > 10000000:
+            self.log.warning("Training on {} samples is ridiculous.. reconsider".format(samples))
+            self.log.warning("quitting sample augmentation")
+            failed.append(self.error_codes.Error)
+
+        if len(failed) > 0:
+            return failed
+
+        # parameter ranges
+        priors = [('flat',) + self.params['parameters'][parameter]['parameter_range'] for parameter in self.params['parameters']]
+
+        # train the ratio
+        sample_augmenter.extract_samples_train_ratio(
+            theta0=madminer.sampling.random_morphing_thetas(n_thetas=n_theta_samples, priors=priors),
+            theta1=madminer.sampling.constant_benchmark_theta(augmentation_benchmark),
+            n_samples=samples,
+            folder=self.dir + "/data/samples",
+            filename=training_name + "_train"
+        )
+
+        for benchmark in sample_augmenter.benchmarks:
+            sample_augmenter.extract_samples_test(
+                theta=madminer.sampling.constant_benchmark_theta(benchmark),
+                n_samples=samples,
+                folder=self.dir + "/data/samples",
+                filename='{}_augmented_samples_{}'.format(training_name, benchmark)                 
+            )
+
+        return [self.error_codes.Success]
+
+    def plot_augmented_data(
+            self,
+            image_save_name=None,
+            bins=(40,40),
+            ranges=[(-8,8),(0,600)],
+            max_index=0
+        ):
+        return [self.error_codes.Success]
+

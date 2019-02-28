@@ -7,10 +7,11 @@ def test_simulate_basic():
         autodestruct=True,
         backend="tth.dat"
     )
-    t.simulate_data(
+    ret = t.simulate_data(
         samples=10000,
         sample_benchmark='w'
     )
+    assert(t.error_codes.Success in ret)
 
 def test_simulate_step():
     t = mm.core.miner(
@@ -20,9 +21,10 @@ def test_simulate_step():
         backend="tth.dat"
     )
     t.setup_cards(10000)
-    
-    t.simulate_data(
+    assert(t._get_simulation_step(t._number_of_cards(10000, 100000), 10000) == 1)
+    ret = t.simulate_data(
         samples=10000,
-        sample_benchmark='sm',
+        sample_benchmark='bullshit',
         force=False
     )
+    assert(t.error_codes.CaughtExceptionError in ret)

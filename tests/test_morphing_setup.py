@@ -10,7 +10,7 @@ def test_valid_morphing_function():
         morphing_trials=1000,
         force=False
     )
-    assert(t._check_valid_morphing())
+    assert(t.error_codes.Success == t._check_valid_morphing())
 
 def test_simple_collision():
     t = mm.core.miner(

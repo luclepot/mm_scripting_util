@@ -4,14 +4,14 @@ import os
 def test_valid_init_function(): 
     t = mm.core.miner(loglevel=10,
         autodestruct=True)
-    assert(t._check_valid_init())
+    assert(t.error_codes.Success == t._check_valid_init())
 
     t.destroy_sample() 
-    assert(not t._check_valid_init())
+    assert(t.error_codes.Success != t._check_valid_init())
 
 def test_general(): 
     t = mm.core.miner(loglevel=10, autodestruct=True)
-    assert(t._check_valid_init())
+    assert(t.error_codes.Success == t._check_valid_init())
     tdir = t.dir 
     assert(os.path.exists(tdir))    
     t.destroy_sample() 
