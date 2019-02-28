@@ -15,7 +15,7 @@ def test_simulate_basic():
 
 def test_simulate_step():
     t = mm.core.miner(
-        name="simulate_basic",
+        name="hoot_hoot",
         loglevel=10,
         autodestruct=True,
         backend="tth.dat"
