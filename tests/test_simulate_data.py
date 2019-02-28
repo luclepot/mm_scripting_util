@@ -27,5 +27,6 @@ def test_simulate_step():
         sample_benchmark='bullshit',
         force=False
     )
+    ret = t.setup_cards(10000)
     t.log.info(ret)
     assert(t.error_codes.CaughtExceptionError in ret)
