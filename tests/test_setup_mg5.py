@@ -18,11 +18,12 @@ def test_check_mg5_path_function():
     ret = t.setup_mg5_scripts(
         10000, sample_benchmark='sm', mg_dir=None
     )
-    assert(len(ret) == 0)
+    assert(t.error_codes.Success in ret)
     assert(t.error_codes.Success == t._check_valid_mg5_scripts(10000))
 
 def test_bad_mg5path():
     t = mm.core.miner(
+        name="temp_mon",
         loglevel=10,
         autodestruct=True
     )
@@ -52,7 +53,7 @@ def test_setup_mg5_clash():
         assert(len(ret) != 0)
         return
 
-    assert(len(ret) == 0)
+    assert(t.error_codes.Success in ret)
     excepted=False
     try:
         t.setup_mg5_scripts(
