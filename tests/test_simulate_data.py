@@ -20,6 +20,7 @@ def test_simulate_step():
         backend="tth.dat"
     )
     t.setup_cards(10000)
+    
     t.simulate_data(
         samples=10000,
         sample_benchmark='sm',

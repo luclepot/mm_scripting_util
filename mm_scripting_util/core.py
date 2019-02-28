@@ -569,13 +569,36 @@ class miner(mm_util):
 
     # training-related member functions
 
-    def augment_samples(
+    def train_data(
             self,
-            samples,
+            samples, 
             training_name
         ):
-        """
-        Augments sample data and saves to a new sample with name 
-        """
-
         raise NotImplementedError
+
+    def augment_samples(
+            self,
+            training_name,
+            n_or_frac_augmented_samples,
+        ):
+        """
+        Augments sample data and saves to a new sample with name <training_name>.
+        This allows for multiple different training sets to be saved on a single sample set.
+
+        parameters:
+            training_name, required:
+                string, name of the training data objects to modify
+            n_or_frac_augmented_samples, required:
+                if type(int), number of samples to draw from simulated madminer data with the sample augmenter
+                if type(float), fraction of the simulated samples to draw with the sample augmenter.  
+        
+        returns:
+            int, error code. 0 is obviously good. 
+
+        """
+        sample_augmenter = madminer.sampling.SampleAugmenter(
+            filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        )
+        # sample_augmenter.extract_samples_train_ratio(
+
+        # )

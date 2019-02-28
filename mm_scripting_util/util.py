@@ -7,6 +7,7 @@ import getpass
 import traceback
 import madminer.core
 import madminer.lhe
+import madminer.sampling
 import madminer.utils.interfaces.madminer_hdf5
 import corner
 import matplotlib.pyplot as plt
