@@ -296,7 +296,7 @@ class miner(mm_util):
         self._check_directory(
                 local_pathname="data",
                 force=force,
-                pattern="madminer_example.h5"
+                pattern="madminer_{}.h5".format(self.name)
             )
 
         # add parameterizations to madminer
@@ -327,7 +327,7 @@ class miner(mm_util):
             )
 
         # save data
-        self.madminer_object.save(self.dir + '/data/madminer_example.h5')
+        self.madminer_object.save(self.dir + "/data/madminer_{}.h5".format(self.name))
         self.log.debug("successfully ran morphing.")
 
         return 0
@@ -358,7 +358,7 @@ class miner(mm_util):
             mkdir_if_not_existing=False
         )
 
-        self.madminer_object.load(self.dir + '/data/madminer_example.h5') 
+        self.madminer_object.load(self.dir + "/data/madminer_{}.h5".format(self.name)) 
 
         # check platform and change initial_command as necessary
         if platform=="lxplus7": 
@@ -463,7 +463,7 @@ class miner(mm_util):
             self.log.warning("Quitting mg5 data processing.")
             return 1
         
-        lhe_processor_object = madminer.lhe.LHEProcessor(filename=self.dir + "/data/madminer_example.h5")
+        lhe_processor_object = madminer.lhe.LHEProcessor(filename=self.dir + "/data/madminer_{}.h5".format(self.name))
         n_cards = self._number_of_cards(samples, 100000)
         for i in range(n_cards):
             lhe_processor_object.add_sample(
@@ -482,7 +482,7 @@ class miner(mm_util):
             )
 
         lhe_processor_object.analyse_samples()
-        lhe_processor_object.save(self.dir + "/data/madminer_example_with_data_parton.h5")
+        lhe_processor_object.save(self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name))
         return lhe_processor_object.observations, lhe_processor_object.weights
 
     def plot_mg5_data(
@@ -503,7 +503,7 @@ class miner(mm_util):
         _,_,_,
         observables,
         _,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
-            filename = self.dir + "/data/madminer_example_with_data_parton.h5"
+            filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
 
         legend_labels = [label for label in benchmarks]
@@ -512,7 +512,7 @@ class miner(mm_util):
         weights = []
 
         for o, w in madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
-            filename=self.dir + "/data/madminer_example_with_data_parton.h5"
+            filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         ):
             observations.append(o)
             weights.append(w)
@@ -574,4 +574,8 @@ class miner(mm_util):
             samples,
             training_name
         ):
+        """
+        Augments sample data and saves to a new sample with name 
+        """
+
         raise NotImplementedError

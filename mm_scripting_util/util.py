@@ -407,9 +407,9 @@ class mm_simulate_util(
         ):
         if self._dir_size(
                 pathname=self.dir + "/data",
-                matching_pattern="madminer_example.h5"
+                matching_pattern="madminer_{}.h5".format(self.name)
             ) != 1:
-            self.log.error("More or less than one 'madminer_example.h5' card in directory")
+            self.log.error("More or less than one 'madminer_<name>.h5' card in directory")
             self.log.error("'" + self.dir + "/data'.")
             return False
         return True        
@@ -460,7 +460,7 @@ class mm_simulate_util(
         ):
         size = self._dir_size(
             self.dir + "/data",
-            matching_pattern="madminer_example_with_data_parton.h5"
+            matching_pattern="madminer_{}_with_data_parton.h5".format(self.name)
         )
         if size < 0:
             self.log.error("/data/ directory does not exist")
