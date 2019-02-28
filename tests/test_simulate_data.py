@@ -27,5 +27,5 @@ def test_simulate_step():
         sample_benchmark='bullshit',
         force=False
     )
-    self.log.info(ret)
+    t.log.info(ret)
     assert(t.error_codes.CaughtExceptionError in ret)
