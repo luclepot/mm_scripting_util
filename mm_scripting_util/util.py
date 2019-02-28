@@ -553,7 +553,7 @@ class mm_simulate_util(
             self._check_valid_mg5_run(samples),
             self._check_valid_mg5_process()
                 ]
-        while step < len(blist) and blist[step]:
+        while step < len(blist) and blist[step] == self.error_codes.Success:
             step += 1
 
         return step
