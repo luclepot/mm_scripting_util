@@ -540,8 +540,7 @@ class miner(mm_util):
             self,
             image_save_name=None,
             bins=(40,40),
-            ranges=[(-8,8),(0,600)],
-            max_index=0
+            ranges=[(-8,8),(0,600)]
         ):
 
         rets = [ 
@@ -757,9 +756,9 @@ class miner(mm_util):
 
         legend_labels = [label for label in benchmarks]
         labels = [label for label in observables]
-
+        # alternate labels?? here they be
         # labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
-        self.benchmarks = benchmarks
+
         plt = corner.corner(x_arrays[legend_labels[0]], labels=labels, color='C0', bins=bins, range=ranges)
         plt.label = legend_labels[0] 
 
@@ -783,3 +782,90 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
     
+    def get_histogram_error(
+            self,
+            training_name,
+            display_plots=False,
+            image_save_name=None,
+            bins=(40,40),
+            ranges=[(-8,8),(0,600)],
+            dens=False
+        ):
+
+        # normal error checking
+        rets = [ 
+            self._check_valid_augmented_data(training_name=training_name),
+            self._check_valid_mg5_process()
+            ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
+
+        if len(failed) > 0:
+            self.log.warning("Canceling augmented sampling plots.")            
+            return failed
+
+        # search key for augmented samples
+        search_key = "x_{}_augmented_samples_".format(training_name)
+        x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]        
+        x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/" + f)) for f in x_files])
+        x_size = max([x_arrays[obs].shape[0] for obs in x_arrays])
+
+        # grab benchmarks and observables from files
+        (_, 
+        benchmarks, 
+        _,_,_,
+        observables,
+        _,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
+            filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        )
+
+        # create lists of each variable
+        benchmark_list = [benchmark for benchmark in benchmarks]
+        observable_list = [observable for observable in observables]
+
+        mg5_observations = []
+        mg5_weights = []
+
+        for o, w in madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
+            filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        ):
+            mg5_observations.append(o)
+            mg5_weights.append(w)
+
+        mg5_obs = np.squeeze(np.asarray(mg5_observations))
+        mg5_weights = np.squeeze(np.asarray(mg5_weights)).T
+        mg5_norm_weights = np.copy(mg5_weights) # normalization factors for plots
+
+        self.log.info("correcting normalizations by total sum of weights per benchmark:")
+
+        for i, weight in enumerate(mg5_weights):
+            sum_bench = (weight.sum())
+            mg5_norm_weights[i] /= sum_bench
+            # self.log.info("{}: {}".format(i + 1, sum_bench))
+
+        scale_factor = [1., 1.]
+        if not dens:
+            scale_factor[0] = 10.**(-5.)
+
+        x_list_augmented = np.asarray([
+                [np.asarray(np.histogram(
+                    x_arrays[benchmark][:,i],
+                    bins=bins[i],
+                    range=ranges[i],
+                    density=dens
+                ))*scale_factor for benchmark in benchmark_list]
+                for i in range(len(observable_list)) 
+            ])
+
+        x_list_mg5 = np.asarray([
+                [np.histogram(
+                    mg5_obs[:,i], 
+                    range=ranges[i],
+                    bins=bins[i],
+                    weights=weight,
+                    density=dens
+                ) for weight in mg5_norm_weights] 
+                for i in range(len(mg5_obs[0]))
+            ])
+
+
+        return [self.error_codes.Success], x_list_augmented, x_list_mg5
