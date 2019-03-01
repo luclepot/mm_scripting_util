@@ -45,7 +45,7 @@ parser.add_argument('-up', '--use-pythia',
                     action='store_true', dest='use_pythia_card',
                     default=False,
                     help="boolean for using pythia card in simulation")
-
+parser.add_argument('-m')
 # add training related arguments
 parser.add_argument('-t', '--train', 
                     action='store_true', dest='train',
