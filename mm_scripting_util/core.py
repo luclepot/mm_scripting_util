@@ -626,8 +626,6 @@ class miner(mm_util):
                 n_theta_samples=n_theta_samples
             )
 
-        raise NotImplementedError
-
         return [self.error_codes.Success]
 
     def augment_samples(
@@ -724,10 +722,64 @@ class miner(mm_util):
 
     def plot_augmented_data(
             self,
+            training_name,
             image_save_name=None,
             bins=(40,40),
             ranges=[(-8,8),(0,600)],
             max_index=0
         ):
-        return [self.error_codes.Success]
+        rets = [ 
+            self._check_valid_augmented_data(training_name=training_name),
+            self._check_valid_mg5_process()
+            ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
 
+        if len(failed) > 0:
+            self.log.warning("Canceling augmented sampling plots.")            
+            return failed
+
+        search_key = "x_{}_augmented_samples_".format(training_name)
+
+        x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]
+        
+        x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/" + f)) for f in x_files])
+        
+        x_size = max([x_arrays[obs].shape[0] for obs in x_arrays])
+
+        # grab benchmarks and observables from files
+        (_, 
+        benchmarks, 
+        _,_,_,
+        observables,
+        _,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
+            filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        )
+
+        legend_labels = [label for label in benchmarks]
+        labels = [label for label in observables]
+
+        # labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
+        self.benchmarks = benchmarks
+        plt = corner.corner(x_arrays[legend_labels[0]], labels=labels, color='C0', bins=bins, range=ranges)
+        plt.label = legend_labels[0] 
+
+        for i,benchmark in enumerate(legend_labels[1:]):
+            plt_prime = corner.corner(x_arrays[benchmark], labels=labels, color='C{}'.format(i + 1), bins=bins, range=ranges, fig=plt)
+            plt_prime.label = legend_labels[i + 1]
+
+        full_save_name = "{}/augmented_data_{}_{}s.png".format(
+            self.dir,
+            image_save_name,
+            x_size
+        )
+
+        plt.axes[0].autoscale('y')
+        plt.axes[3].autoscale('y')
+        plt.legend(legend_labels)
+
+        if image_save_name is not None:
+            plt.savefig(full_save_name)
+        plt.show()
+
+        return [self.error_codes.Success]
+    

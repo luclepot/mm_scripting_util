@@ -64,6 +64,9 @@ class mm_base_util():
 
         # twenties: training errors
 
+        NoAugmentedDataFileError = 20
+        IncorrectAugmentedDataFileError = 21
+
     Success = error_codes.Success
 
     def __init__(
@@ -586,6 +589,38 @@ class mm_train_util(
             self.log.error("No training data to parse.")
             return self.error_codes.NoDataFileError
         return self.error_codes.Success
+
+    def _check_valid_augmented_data(
+            self,
+            training_name,
+            expected_benchmarks=None
+        ):
+        size = self._dir_size(
+            pathname=self.dir + '/data/samples',
+            matching_pattern=training_name + "_augmented_samples"
+        )
+
+        if size < 0:
+            self.log.error("data/samples directory does not exist!")
+            self.log.error("Augmented data not parsed (or detected)")
+            return self.error_codes.NoDirectoryError
+        elif size == 0:
+            self.log.error("data/samples directory does not contain any files with the given training_name")
+            self.log.error("Augmented data not parsed (or detected)")
+            return self.error_codes.NoAugmentedDataFileError
+        ret = self.error_codes.Success
+        if expected_benchmarks is not None:
+            if size != expected_benchmarks:
+                self.log.error("data/samples directory contains an incorrect # of files with given training_name ")
+                self.log.error(" - {}/{} expected files".format(size, expected_benchmarks)) 
+                ret = self.error_codes.IncorrectAugmentedDataFileError
+
+        files = [f for f in os.listdir(self.dir + '/data/samples') if (training_name + "_augmented_samples") in f]
+        self.log.debug("Files found:")
+        for f in files: 
+            self.log.debug(f)
+        return ret
+        # return self.error_codes.Success
 
 class mm_util(
         mm_backend_util,
