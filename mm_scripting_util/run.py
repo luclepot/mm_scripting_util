@@ -52,7 +52,7 @@ parser.add_argument('-t', '--train',
                     default=False,
                     help="boolean, flags whether or not to train the given data")
 
-args = parser.parse_args(sys.argv)
+args = parser.parse_args([arg for arg in sys.argv if arg is not "-m"])
 
 miner_object = miner(
     name=args.name,
