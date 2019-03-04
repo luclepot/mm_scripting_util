@@ -790,18 +790,24 @@ class miner(mm_util):
             image_save_name=None,
             bins=(40,40),
             ranges=[(-8,8),(0,600)],
-            dens=False,
+            dens=True,
             alphas=(0.8, 0.4),
             figlen=5
         ):
 
-        err, x_list_augmented, x_list_mg5 = self._get_mg5_and_augmented_arrays(
+        err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
                 training_name, 
                 bins, 
                 ranges, 
                 dens
             )
         
+
+
+        if self.error_codes.Success not in err:
+            self.log.warning("Quitting mg5 vs augmented data plot comparison")
+            return err
+
         (_,benchmarks,_,_,_,_,_,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
             filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
@@ -809,16 +815,12 @@ class miner(mm_util):
         # create lists of each variable
         benchmark_list = [benchmark for benchmark in benchmarks]
 
-        if self.error_codes.Success not in err:
-            self.log.warning("Quitting mg5 vs augmented data plot comparison")
-            return err
-
-        fig, axs = plt.subplots(1, x_list_augmented.shape[0], figsize=(figlen*x_list_augmented.shape[0], figlen))
-        for i in range(x_list_augmented.shape[0]):
+        fig, axs = plt.subplots(1, x_aug[0].shape[0], figsize=(figlen*x_aug[0].shape[0], figlen))
+        for i in range(x_aug[0].shape[0]):
             colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
-            for j in range(x_list_augmented.shape[1]):
-                axs[i].plot(x_list_mg5[i,j,1][:-1], x_list_mg5[i,j,0], colors[j], label="{} mg5".format(benchmark_list[j]), drawstyle="steps", alpha=alphas[0])
-                axs[i].plot(x_list_augmented[i,j,1][:-1], x_list_augmented[i,j,0], colors[j], label="{} augmented".format(benchmark_list[j]), drawstyle="steps", alpha=alphas[1])
+            for j in range(x_aug[0].shape[1]):
+                axs[i].plot(x_mg5[1][i,j,:-1], x_mg5[0][i,j], colors[j], label="{} mg5".format(benchmark_list[j]), drawstyle="steps", alpha=alphas[0])
+                axs[i].plot(x_aug[1][i,j,:-1], x_aug[0][i,j], colors[j], label="{} augmented".format(benchmark_list[j]), drawstyle="steps", alpha=alphas[1])
         handles = []
         labels = []
         for ax in axs: 
@@ -833,9 +835,40 @@ class miner(mm_util):
             full_save_name = "{}/mg5_vs_augmented_data_{}_{}s.png".format(
                 self.dir,
                 image_save_name,
-                x_list_augmented.shape[0]
+                x_aug[0].shape[0]
             )
             plt.savefig(full_save_name)
         plt.show()
 
         return [self.error_codes.Success] 
+
+    def compare_mg5_and_augmented_data(
+            self,
+            training_name,
+            image_save_name=None,
+            bins=(40,40),
+            ranges=[(-8,8),(0,600)],
+            dens=True,
+            alphas=(0.8, 0.4),
+            figlen=5,
+            threshold=2.0
+        ):
+        
+        err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
+                training_name, 
+                bins, 
+                ranges, 
+                dens
+            )
+          
+        if self.error_codes.Success not in err:
+            self.log.warning("Quitting mg5 vs augmented data plot comparison")
+            return err, None, None, None, None
+
+        chis, pvals = scipy.stats.chisquare(x_mg5[0], x_aug[0], axis=2)
+        bins_n = x_mg5[0]*np.diff(x_mg5[1])*x_mg5[2]
+        r = abs(x_mg5[0] - x_aug[0]) / ((1.0 / np.sqrt(bins_n))*x_mg5[0])
+
+        pers = [[ len(elt[np.where(elt >= threshold)]) / len(elt) for elt in relt] for relt in r]
+        
+        return [self.error_codes.Success], chis, pvals, r, pers

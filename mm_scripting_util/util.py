@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 import inspect
 import enum 
 import collections
+import scipy.stats
 
 class mm_base_util():
 
@@ -577,9 +578,9 @@ class mm_train_util(
     def _get_mg5_and_augmented_arrays(
             self,
             training_name,
-            bins=(40,40),            
-            ranges=[(-8,8),(0,600)],
-            dens=False
+            bins,            
+            ranges,
+            dens
         ):  
 
         rets = [ 
@@ -597,6 +598,8 @@ class mm_train_util(
         x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]        
         x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/" + f)) for f in x_files])
         # x_size = max([x_arrays[obs].shape[0] for obs in x_arrays])
+
+        n_aug = max([x_arrays[obs].shape[0] for obs in x_arrays])
 
         # grab benchmarks and observables from files
         (_, 
@@ -624,36 +627,46 @@ class mm_train_util(
         mg5_weights = np.squeeze(np.asarray(mg5_weights)).T
         mg5_norm_weights = np.copy(mg5_weights) # normalization factors for plots
 
+        n_mg5 = mg5_obs.shape[0]
+
         self.log.info("correcting normalizations by total sum of weights per benchmark:")
 
         for i, weight in enumerate(mg5_weights):
             sum_bench = (weight.sum())
             mg5_norm_weights[i] /= sum_bench
-            # self.log.info("{}: {}".format(i + 1, sum_bench))
+            self.log.debug("{}: {}".format(i + 1, sum_bench))
 
-        x_list_augmented = np.asarray([
-                [np.asarray(np.histogram(
+        x_aug = np.asarray([
+            [ 
+                np.histogram(
                     x_arrays[benchmark][:,i],
                     bins=bins[i],
                     range=ranges[i],
-                    weights=(mg5_obs[:,i].size/x_arrays[benchmark][:,i].size)*np.ones(x_arrays[benchmark][:,0].shape)*mg5_norm_weights[0][0],
-                    density=dens
-                )) for benchmark in benchmark_list]
-                for i in range(len(observable_list)) 
-            ])
+                    # weights=(mg5_obs[:,i].size/x_arrays[benchmark][:,i].size)*np.ones(x_arrays[benchmark][:,0].shape)*mg5_norm_weights[0][0],
+                    density=True
+                )    
+                for benchmark in benchmark_list
+            ] for i in range(len(observable_list)) 
+        ])
 
-        x_list_mg5 = np.asarray([
-                [np.histogram(
+        x_mg5 = np.asarray([
+            [ 
+                np.histogram(
                     mg5_obs[:,i], 
                     range=ranges[i],
                     bins=bins[i],
                     weights=weight,
-                    density=dens
-                ) for weight in mg5_norm_weights] 
-                for i in range(len(mg5_obs[0]))
-            ])
+                    density=True
+                )
+                for weight in mg5_norm_weights
+            ]    for i in range(len(mg5_obs[0]))
+        ])
 
-        return [self.error_codes.Success], x_list_augmented, x_list_mg5        
+        aug_values, aug_bins = [np.asarray([[subarr for subarr in arr] for arr in x_aug[:,:,i]]) for i in range(2)]
+        mg5_values, mg5_bins = [np.asarray([[subarr for subarr in arr] for arr in x_mg5[:,:,i]]) for i in range(2)]
+        # xmg5_processed = np.asarray([[subarr for subarr in arr] for arr in x_list_mg5[:,:,0]])
+
+        return [self.error_codes.Success], (aug_values, aug_bins, n_aug), (mg5_values, mg5_bins, n_mg5)
 
     def _check_valid_training_data(
             self
