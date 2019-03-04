@@ -2,16 +2,18 @@
 from .util import *
 
 
-"""
-Main driver container for the class. 
 
-This class should handle all necessary interfacing with
-madminer, in the context of the ttH CP process. 
-
-"""
 
 class miner(mm_util):   
     
+    """
+    Main container for the class. 
+
+    This class should handle all necessary interfacing with
+    madminer
+
+    """
+
     __MODULE_NAME = "mm_scripting_util"
 
     # general class member functions
@@ -782,102 +784,58 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def get_histogram_error(
+    def plot_mg5_vs_augmented_data(
             self,
             training_name,
-            display_plots=False,
             image_save_name=None,
             bins=(40,40),
             ranges=[(-8,8),(0,600)],
-            dens=False
+            dens=False,
+            alphas=(0.8, 0.4),
+            figlen=5
         ):
 
-        # normal error checking
-        rets = [ 
-            self._check_valid_augmented_data(training_name=training_name),
-            self._check_valid_mg5_process()
-            ]
-        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
-
-        if len(failed) > 0:
-            self.log.warning("Canceling augmented sampling plots.")            
-            return failed
-
-        # search key for augmented samples
-        search_key = "x_{}_augmented_samples_".format(training_name)
-        x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]        
-        x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/" + f)) for f in x_files])
-        x_size = max([x_arrays[obs].shape[0] for obs in x_arrays])
-
-        # grab benchmarks and observables from files
-        (_, 
-        benchmarks, 
-        _,_,_,
-        observables,
-        _,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
+        err, x_list_augmented, x_list_mg5 = self._get_mg5_and_augmented_arrays(
+                training_name, 
+                bins, 
+                ranges, 
+                dens
+            )
+        
+        (_,benchmarks,_,_,_,_,_,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
             filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
 
         # create lists of each variable
         benchmark_list = [benchmark for benchmark in benchmarks]
-        observable_list = [observable for observable in observables]
 
-        mg5_observations = []
-        mg5_weights = []
+        if self.error_codes.Success not in err:
+            self.log.warning("Quitting mg5 vs augmented data plot comparison")
+            return err
 
-        for o, w in madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
-            filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
-        ):
-            mg5_observations.append(o)
-            mg5_weights.append(w)
+        fig, axs = plt.subplots(1, x_list_augmented.shape[0], figsize=(figlen*x_list_augmented.shape[0], figlen))
+        for i in range(x_list_augmented.shape[0]):
+            colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
+            for j in range(x_list_augmented.shape[1]):
+                axs[i].plot(x_list_mg5[i,j,1][:-1], x_list_mg5[i,j,0], colors[j], label="{} mg5".format(benchmark_list[j]), drawstyle="steps", alpha=alphas[0])
+                axs[i].plot(x_list_augmented[i,j,1][:-1], x_list_augmented[i,j,0], colors[j], label="{} augmented".format(benchmark_list[j]), drawstyle="steps", alpha=alphas[1])
+        handles = []
+        labels = []
+        for ax in axs: 
+            handles += (ax.get_legend_handles_labels()[0])
+            labels += (ax.get_legend_handles_labels()[1])
+        
+        by_label = collections.OrderedDict(zip(labels, handles))
+        plt.legend(by_label.values(), by_label.keys())
+        fig.tight_layout()
 
-        mg5_obs = np.squeeze(np.asarray(mg5_observations))
-        mg5_weights = np.squeeze(np.asarray(mg5_weights)).T
-        mg5_norm_weights = np.copy(mg5_weights) # normalization factors for plots
+        if image_save_name is not None:
+            full_save_name = "{}/mg5_vs_augmented_data_{}_{}s.png".format(
+                self.dir,
+                image_save_name,
+                x_list_augmented.shape[0]
+            )
+            plt.savefig(full_save_name)
+        plt.show()
 
-        self.log.info("correcting normalizations by total sum of weights per benchmark:")
-
-        for i, weight in enumerate(mg5_weights):
-            sum_bench = (weight.sum())
-            mg5_norm_weights[i] /= sum_bench
-            # self.log.info("{}: {}".format(i + 1, sum_bench))
-
-        x_list_augmented = np.asarray([
-                [np.asarray(np.histogram(
-                    x_arrays[benchmark][:,i],
-                    bins=bins[i],
-                    range=ranges[i],
-                    weights=(mg5_obs[:,i].size/x_arrays[benchmark][:,i].size)*np.ones(x_arrays[benchmark][:,0].shape)*mg5_norm_weights[0][0],
-                    density=dens
-                )) for benchmark in benchmark_list]
-                for i in range(len(observable_list)) 
-            ])
-
-        x_list_mg5 = np.asarray([
-                [np.histogram(
-                    mg5_obs[:,i], 
-                    range=ranges[i],
-                    bins=bins[i],
-                    weights=weight,
-                    density=dens
-                ) for weight in mg5_norm_weights] 
-                for i in range(len(mg5_obs[0]))
-            ])
-
-        figlen = 5
-
-        if display_plots:
-            fig, axs = plt.subplots(1, x_list_augmented.shape[0], figsize=(figlen*x_list_augmented.shape[0], figlen))
-            for i in range(x_list_augmented.shape[0]):
-                colors = ['b', 'r', 'g']
-                for j in range(x_list_augmented.shape[1]):
-                    axs[i].step(x_list_augmented[i,j,1][:-1], x_list_augmented[i,j,0], colors[j], label="augmented_{}".format(j + 1))
-                    axs[i].step(x_list_mg5[i,j,1][:-1], x_list_mg5[i,j,0], colors[j], label="mg5_{}".format(i + 1))
-                axs[i].legend()
-            # fig.set_figheight = figlen
-            # fig.set_figwidth = figlen*3. # *x_list_augmented.shape[0]
-            fig.tight_layout()
-            plt.show()
-
-        return mg5_norm_weights, x_arrays, mg5_obs
-        # return [self.error_codes.Success], x_list_augmented, x_list_mg5, mg5_norm_weights
+        return [self.error_codes.Success] 

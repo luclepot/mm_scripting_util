@@ -13,7 +13,7 @@ import corner
 import matplotlib.pyplot as plt
 import inspect
 import enum 
-
+import collections
 
 class mm_base_util():
 
@@ -424,6 +424,46 @@ class mm_simulate_util(
 
     __CONTAINS_SIMULATION_UTIL = True
 
+    def _equal_sample_sizes(
+            self, 
+            samples,
+            sample_limit
+        ):
+        sample_sizes = [sample_limit for i in range(int(samples/sample_limit))]
+        
+        if int(samples % int(sample_limit)):
+            sample_sizes += [int(samples % int(sample_limit))]
+        
+        return sample_sizes
+
+    def _number_of_cards(
+            self,
+            samples, 
+            sample_limit            
+        ):
+        size = int(samples/sample_limit)
+        if int(samples % int(sample_limit)):
+            return size + 1
+        return size
+
+    def _get_simulation_step(
+            self, 
+            num_cards,
+            samples
+        ):
+        step = 0
+        blist = [
+            self._check_valid_cards(num_cards),
+            self._check_valid_morphing(),
+            self._check_valid_mg5_scripts(samples),
+            self._check_valid_mg5_run(samples),
+            self._check_valid_mg5_process()
+                ]
+        while step < len(blist) and blist[step] == self.error_codes.Success:
+            step += 1
+
+        return step
+
     def _check_valid_cards(
             self,
             num_cards
@@ -521,45 +561,6 @@ class mm_simulate_util(
             return self.error_codes.NoProcessedDataFileError
         return self.error_codes.Success
 
-    def _equal_sample_sizes(
-            self, 
-            samples,
-            sample_limit
-        ):
-        sample_sizes = [sample_limit for i in range(int(samples/sample_limit))]
-        
-        if int(samples % int(sample_limit)):
-            sample_sizes += [int(samples % int(sample_limit))]
-        
-        return sample_sizes
-
-    def _number_of_cards(
-            self,
-            samples, 
-            sample_limit            
-        ):
-        size = int(samples/sample_limit)
-        if int(samples % int(sample_limit)):
-            return size + 1
-        return size
-
-    def _get_simulation_step(
-            self, 
-            num_cards,
-            samples
-        ):
-        step = 0
-        blist = [
-            self._check_valid_cards(num_cards),
-            self._check_valid_morphing(),
-            self._check_valid_mg5_scripts(samples),
-            self._check_valid_mg5_run(samples),
-            self._check_valid_mg5_process()
-                ]
-        while step < len(blist) and blist[step] == self.error_codes.Success:
-            step += 1
-
-        return step
 
 class mm_train_util(
         mm_base_util
@@ -572,7 +573,88 @@ class mm_train_util(
     Seperation from other functions is just for cleanlines
     while writing. 
     """
-    
+
+    def _get_mg5_and_augmented_arrays(
+            self,
+            training_name,
+            bins=(40,40),            
+            ranges=[(-8,8),(0,600)],
+            dens=False
+        ):  
+
+        rets = [ 
+            self._check_valid_augmented_data(training_name=training_name),
+            mm_simulate_util._check_valid_mg5_process(self)
+            ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
+
+        if len(failed) > 0:
+            self.log.warning("Canceling augmented sampling plots.")            
+            return failed, None, None
+
+        # search key for augmented samples
+        search_key = "x_{}_augmented_samples_".format(training_name)
+        x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]        
+        x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/" + f)) for f in x_files])
+        # x_size = max([x_arrays[obs].shape[0] for obs in x_arrays])
+
+        # grab benchmarks and observables from files
+        (_, 
+        benchmarks, 
+        _,_,_,
+        observables,
+        _,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
+            filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        )
+
+        # create lists of each variable
+        benchmark_list = [benchmark for benchmark in benchmarks]
+        observable_list = [observable for observable in observables]
+
+        mg5_observations = []
+        mg5_weights = []
+
+        for o, w in madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
+            filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        ):
+            mg5_observations.append(o)
+            mg5_weights.append(w)
+
+        mg5_obs = np.squeeze(np.asarray(mg5_observations))
+        mg5_weights = np.squeeze(np.asarray(mg5_weights)).T
+        mg5_norm_weights = np.copy(mg5_weights) # normalization factors for plots
+
+        self.log.info("correcting normalizations by total sum of weights per benchmark:")
+
+        for i, weight in enumerate(mg5_weights):
+            sum_bench = (weight.sum())
+            mg5_norm_weights[i] /= sum_bench
+            # self.log.info("{}: {}".format(i + 1, sum_bench))
+
+        x_list_augmented = np.asarray([
+                [np.asarray(np.histogram(
+                    x_arrays[benchmark][:,i],
+                    bins=bins[i],
+                    range=ranges[i],
+                    weights=(mg5_obs[:,i].size/x_arrays[benchmark][:,i].size)*np.ones(x_arrays[benchmark][:,0].shape)*mg5_norm_weights[0][0],
+                    density=dens
+                )) for benchmark in benchmark_list]
+                for i in range(len(observable_list)) 
+            ])
+
+        x_list_mg5 = np.asarray([
+                [np.histogram(
+                    mg5_obs[:,i], 
+                    range=ranges[i],
+                    bins=bins[i],
+                    weights=weight,
+                    density=dens
+                ) for weight in mg5_norm_weights] 
+                for i in range(len(mg5_obs[0]))
+            ])
+
+        return [self.error_codes.Success], x_list_augmented, x_list_mg5        
+
     def _check_valid_training_data(
             self
         ):
