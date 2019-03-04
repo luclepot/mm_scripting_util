@@ -67,7 +67,7 @@ try:
             samples=args.samples,
             sample_benchmark=args.sample_benchmark,
             force=args.force,
-            use_pythia_card=args.use_pythia_card
+            use_pythia_card=args.use_pythia_cards
         )
 except:
     traceback.format_exc()

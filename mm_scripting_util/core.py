@@ -781,7 +781,7 @@ class miner(mm_util):
         plt.show()
 
         return [self.error_codes.Success]
-    
+
     def get_histogram_error(
             self,
             training_name,
@@ -842,17 +842,14 @@ class miner(mm_util):
             mg5_norm_weights[i] /= sum_bench
             # self.log.info("{}: {}".format(i + 1, sum_bench))
 
-        scale_factor = [1., 1.]
-        if not dens:
-            scale_factor[0] = 10.**(-5.)
-
         x_list_augmented = np.asarray([
                 [np.asarray(np.histogram(
                     x_arrays[benchmark][:,i],
                     bins=bins[i],
                     range=ranges[i],
+                    weights=(mg5_obs[:,i].size/x_arrays[benchmark][:,i].size)*np.ones(x_arrays[benchmark][:,0].shape)*mg5_norm_weights[0][0],
                     density=dens
-                ))*scale_factor for benchmark in benchmark_list]
+                )) for benchmark in benchmark_list]
                 for i in range(len(observable_list)) 
             ])
 
@@ -867,5 +864,20 @@ class miner(mm_util):
                 for i in range(len(mg5_obs[0]))
             ])
 
+        figlen = 5
 
-        return [self.error_codes.Success], x_list_augmented, x_list_mg5
+        if display_plots:
+            fig, axs = plt.subplots(1, x_list_augmented.shape[0], figsize=(figlen*x_list_augmented.shape[0], figlen))
+            for i in range(x_list_augmented.shape[0]):
+                colors = ['b', 'r', 'g']
+                for j in range(x_list_augmented.shape[1]):
+                    axs[i].step(x_list_augmented[i,j,1][:-1], x_list_augmented[i,j,0], colors[j], label="augmented_{}".format(j + 1))
+                    axs[i].step(x_list_mg5[i,j,1][:-1], x_list_mg5[i,j,0], colors[j], label="mg5_{}".format(i + 1))
+                axs[i].legend()
+            # fig.set_figheight = figlen
+            # fig.set_figwidth = figlen*3. # *x_list_augmented.shape[0]
+            fig.tight_layout()
+            plt.show()
+
+        return mg5_norm_weights, x_arrays, mg5_obs
+        # return [self.error_codes.Success], x_list_augmented, x_list_mg5, mg5_norm_weights
