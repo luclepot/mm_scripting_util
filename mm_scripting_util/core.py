@@ -538,7 +538,7 @@ class miner(mm_util):
         lhe_processor_object.save(self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name))
         return [self.error_codes.Success]
 
-    def plot_mg5_data(
+    def plot_mg5_data_corner(
             self,
             image_save_name=None,
             bins=(40,40),
@@ -721,7 +721,7 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def plot_augmented_data(
+    def plot_augmented_data_corner(
             self,
             training_name,
             image_save_name=None,
@@ -784,7 +784,7 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def plot_mg5_vs_augmented_data(
+    def compare_mg5_and_augmented_data_plot(
             self,
             training_name,
             image_save_name=None,
@@ -792,7 +792,8 @@ class miner(mm_util):
             ranges=[(-8,8),(0,600)],
             dens=True,
             alphas=(0.8, 0.4),
-            figlen=5
+            figlen=5, 
+            threshold=2.0
         ):
 
         err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
@@ -801,8 +802,14 @@ class miner(mm_util):
                 ranges, 
                 dens
             )
-        
 
+        err2, chis, r, pers = self._compare_mg5_and_augmented_data(
+                training_name,
+                bins, 
+                ranges,
+                dens,
+                threshold
+            )
 
         if self.error_codes.Success not in err:
             self.log.warning("Quitting mg5 vs augmented data plot comparison")
@@ -815,14 +822,29 @@ class miner(mm_util):
         # create lists of each variable
         benchmark_list = [benchmark for benchmark in benchmarks]
 
+        mg5_x = x_mg5[1][:,:,:-1]
+        mg5_y = x_mg5[0][:,:]*np.diff(x_mg5[1][:,:])
+
+        aug_x = x_aug[1][:,:,:-1]
+        aug_y = x_aug[0][:,:]*np.diff(x_aug[1][:,:])
+
+        flag_x = (x_aug[1][:,:,:-1] + np.diff(x_aug[1][:,:])/2.0)
+        flag_y = np.max([aug_y, mg5_y], axis=0)
+
         fig, axs = plt.subplots(1, x_aug[0].shape[0], figsize=(figlen*x_aug[0].shape[0], figlen))
         for i in range(x_aug[0].shape[0]):
             colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
             for j in range(x_aug[0].shape[1]):
-                axs[i].plot(x_mg5[1][i,j,:-1], x_mg5[0][i,j], colors[j], label="{} mg5".format(benchmark_list[j]), drawstyle="steps", alpha=alphas[0])
-                axs[i].plot(x_aug[1][i,j,:-1], x_aug[0][i,j], colors[j], label="{} augmented".format(benchmark_list[j]), drawstyle="steps", alpha=alphas[1])
+                axs[i].plot(mg5_x[i,j], mg5_y[i,j], colors[j], label="{} mg5".format(benchmark_list[j]), drawstyle="steps-post", alpha=alphas[0])
+                axs[i].plot(aug_x[i,j], aug_y[i,j], colors[j], label="{} augmented".format(benchmark_list[j]), drawstyle="steps-post", alpha=alphas[1])
+                axs[i].plot(flag_x[i,j][r[i,j] >= threshold],
+                    np.zeros(flag_x[i,j][r[i,j] >= threshold].shape),
+                    # flag_y[i,j][r[i,j] >= threshold],
+                    linestyle="None", marker="x", color=colors[j])
+                # return r[i,j], flag_x[i,j], flag_y[i,j], aug_y[i,j], mg5_y[i,j]
         handles = []
         labels = []
+        
         for ax in axs: 
             handles += (ax.get_legend_handles_labels()[0])
             labels += (ax.get_legend_handles_labels()[1])
@@ -841,34 +863,3 @@ class miner(mm_util):
         plt.show()
 
         return [self.error_codes.Success] 
-
-    def compare_mg5_and_augmented_data(
-            self,
-            training_name,
-            image_save_name=None,
-            bins=(40,40),
-            ranges=[(-8,8),(0,600)],
-            dens=True,
-            alphas=(0.8, 0.4),
-            figlen=5,
-            threshold=2.0
-        ):
-        
-        err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
-                training_name, 
-                bins, 
-                ranges, 
-                dens
-            )
-          
-        if self.error_codes.Success not in err:
-            self.log.warning("Quitting mg5 vs augmented data plot comparison")
-            return err, None, None, None, None
-
-        chis, pvals = scipy.stats.chisquare(x_mg5[0], x_aug[0], axis=2)
-        bins_n = x_mg5[0]*np.diff(x_mg5[1])*x_mg5[2]
-        r = abs(x_mg5[0] - x_aug[0]) / ((1.0 / np.sqrt(bins_n))*x_mg5[0])
-
-        pers = [[ len(elt[np.where(elt >= threshold)]) / len(elt) for elt in relt] for relt in r]
-        
-        return [self.error_codes.Success], chis, pvals, r, pers

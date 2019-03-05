@@ -16,6 +16,7 @@ import enum
 import collections
 import scipy.stats
 
+
 class mm_base_util():
 
     """
@@ -668,6 +669,34 @@ class mm_train_util(
 
         return [self.error_codes.Success], (aug_values, aug_bins, n_aug), (mg5_values, mg5_bins, n_mg5)
 
+    def _compare_mg5_and_augmented_data(
+            self,
+            training_name,
+            bins=(40,40),
+            ranges=[(-8,8),(0,600)],
+            dens=True,
+            threshold=2.0
+        ):
+        
+        err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
+                training_name, 
+                bins, 
+                ranges, 
+                dens
+            )
+          
+        if self.error_codes.Success not in err:
+            self.log.warning("Quitting mg5 vs augmented data plot comparison")
+            return err, None, None, None, None
+
+        chis, pvals = scipy.stats.chisquare(x_mg5[0], x_aug[0], axis=2)
+        bins_n = x_mg5[0]*np.diff(x_mg5[1])*x_mg5[2]
+        r = abs(x_mg5[0] - x_aug[0]) / ((1.0 / np.sqrt(bins_n))*x_mg5[0])
+
+        pers = [[ len(elt[np.where(elt >= threshold)]) / len(elt) for elt in relt] for relt in r]
+        
+        return [self.error_codes.Success], chis, r, pers
+
     def _check_valid_training_data(
             self
         ):
@@ -717,14 +746,15 @@ class mm_train_util(
         return ret
         # return self.error_codes.Success
 
+
+
 class mm_util(
         mm_backend_util,
         mm_simulate_util,
         mm_train_util,
         mm_base_util
     ):
-    
-
+        
     """
     Wrapper class for all tth utility related classes. 
     Combines simulation, training, and baseline utility classes in one import class. 
