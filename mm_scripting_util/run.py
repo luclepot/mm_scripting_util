@@ -66,7 +66,7 @@ try:
             samples=args.samples,
             sample_benchmark=args.sample_benchmark,
             force=args.force,
-            use_pythia_card=args.use_pythia_cards
+            use_pythia_card=args.use_pythia_card
         )
 except:
     print(traceback.format_exc())
