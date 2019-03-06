@@ -788,6 +788,7 @@ class miner(mm_util):
             self,
             training_name,
             image_save_name=None,
+            mark_outlier_bins=False,
             bins=(40,40),
             ranges=[(-8,8),(0,600)],
             dens=True,
@@ -815,7 +816,11 @@ class miner(mm_util):
             self.log.warning("Quitting mg5 vs augmented data plot comparison")
             return err
 
-        (_,benchmarks,_,_,_,_,_,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
+        (_,
+        benchmarks,
+        _,_,_,
+        observables
+        ,_,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
             filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
 
@@ -834,14 +839,21 @@ class miner(mm_util):
         fig, axs = plt.subplots(1, x_aug[0].shape[0], figsize=(figlen*x_aug[0].shape[0], figlen))
         for i in range(x_aug[0].shape[0]):
             colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
+            height_step = np.max([mg5_y[i], aug_y[i]])/40.0
+            # counts = np.zeros(mg5_x[i,0].shape)
             for j in range(x_aug[0].shape[1]):
                 axs[i].plot(mg5_x[i,j], mg5_y[i,j], colors[j], label="{} mg5".format(benchmark_list[j]), drawstyle="steps-post", alpha=alphas[0])
-                axs[i].plot(aug_x[i,j], aug_y[i,j], colors[j], label="{} augmented".format(benchmark_list[j]), drawstyle="steps-post", alpha=alphas[1])
-                axs[i].plot(flag_x[i,j][r[i,j] >= threshold],
-                    np.zeros(flag_x[i,j][r[i,j] >= threshold].shape),
-                    # flag_y[i,j][r[i,j] >= threshold],
-                    linestyle="None", marker="x", color=colors[j])
-                # return r[i,j], flag_x[i,j], flag_y[i,j], aug_y[i,j], mg5_y[i,j]
+                axs[i].plot(aug_x[i,j], aug_y[i,j], colors[j], label="{} aug".format(benchmark_list[j]), drawstyle="steps-post", alpha=alphas[1])
+                index = r[i,j] >= threshold
+                if mark_outlier_bins:
+                    axs[i].plot(flag_x[i,j][index],
+                       -height_step*(float(j) + 1.0)*np.ones(flag_x[i,j][index].shape),
+                        linestyle="None", marker="x", color=colors[j])
+            
+        for i,observable in enumerate(observables): 
+            axs[i].set_xlabel(observable)
+            axs[i].set_ylabel("Event Fraction")
+
         handles = []
         labels = []
         

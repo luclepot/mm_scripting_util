@@ -563,7 +563,6 @@ class mm_simulate_util(
             return self.error_codes.NoProcessedDataFileError
         return self.error_codes.Success
 
-
 class mm_train_util(
         mm_base_util
     ):
@@ -687,7 +686,7 @@ class mm_train_util(
           
         if self.error_codes.Success not in err:
             self.log.warning("Quitting mg5 vs augmented data plot comparison")
-            return err, None, None, None, None
+            return err, None, None, None
 
         chis, pvals = scipy.stats.chisquare(x_mg5[0], x_aug[0], axis=2)
         bins_n = x_mg5[0]*np.diff(x_mg5[1])*x_mg5[2]
@@ -745,8 +744,6 @@ class mm_train_util(
             self.log.debug(f)
         return ret
         # return self.error_codes.Success
-
-
 
 class mm_util(
         mm_backend_util,
