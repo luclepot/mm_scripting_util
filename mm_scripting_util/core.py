@@ -165,26 +165,43 @@ class miner(mm_util):
                 samples
             )
 
-            if self.STEP < 1:
+            if self.STEP < 1 or force:
+                self.log.debug("")
+                self.log.debug("RUNNING SETUP CARDS, STEP 1")
+                self.log.debug("")
                 ret = self.setup_cards(
                         n_samples=samples,
                         seed_file=seed_file,
                         force=force
                     )
-                if len(ret) > 0:
+                if self.error_codes.Success not in ret:
+                    self.log.warning("Quitting simulation with errors.")
                     return ret
                 self.STEP = 1
+                self.log.debug("")
+                self.log.debug("FINISHED SETUP CARDS, STEP 1")
+                self.log.debug("")
 
-            if self.STEP < 2:
+            if self.STEP < 2 or force:
+                self.log.debug("")
+                self.log.debug("RUNNING MORPHING, STEP 2")
+                self.log.debug("")
                 ret = self.run_morphing(
                         force=force,
                         morphing_trials=morphing_trials
                     )
-                if len(ret) > 0:
+                if self.error_codes.Success not in ret:
+                    self.log.warning("Quitting simulation with errors.")
                     return ret
                 self.STEP = 2
+                self.log.debug("")
+                self.log.debug("FINISHED MORPHING, STEP 2")
+                self.log.debug("")
 
-            if self.STEP < 3:        
+            if self.STEP < 3 or force:   
+                self.log.debug("")
+                self.log.debug("RUNNING SETUP MG5 SCRIPTS, STEP 3")
+                self.log.debug("")
                 ret = self.setup_mg5_scripts(
                         samples=samples,
                         sample_benchmark=sample_benchmark,
@@ -193,28 +210,47 @@ class miner(mm_util):
                         platform=platform,
                         use_pythia_card=use_pythia_card,
                     )
-                if len(ret) > 0:
+                if self.error_codes.Success not in ret:
+                    self.log.warning("Quitting simulation with errors.")
                     return ret
                 self.STEP = 3
+                self.log.debug("")
+                self.log.debug("FINISHED SETUP MG5 SCRIPTS, STEP 3")
+                self.log.debug("")
 
-            if self.STEP < 4:        
+            if self.STEP < 4 or force:        
+                self.log.debug("")
+                self.log.debug("RUNNING MG5 SCRIPTS, STEP 4")
+                self.log.debug("")
                 ret = self.run_mg5_script(
                         platform=platform,
                         samples=samples,
                         force=force
                     )
-                if len(ret) > 0:
+                if self.error_codes.Success not in ret:
+                    self.log.warning("Quitting simulation with errors.")
                     return ret
                 self.STEP = 4
+                self.log.debug("")
+                self.log.debug("FINISHED MG5 SCRIPTS, STEP 4")
+                self.log.debug("")
 
-            if self.STEP < 5:
+            if self.STEP < 5 or force:
+                self.log.debug("")
+                self.log.debug("RUNNING MG5 DATA PROCESS, STEP 5")
+                self.log.debug("")
                 ret = self.process_mg5_data(
                         samples=samples, 
                         sample_benchmark=sample_benchmark
                     )
-                if len(ret) > 0:
+                if self.error_codes.Success not in ret:
+                    self.log.warning("Quitting simulation with errors.")
                     return ret
                 self.STEP = 5
+                self.log.debug("")
+                self.log.debug("FINISHED MG5 DATA PROCESS, STEP 5")
+                self.log.debug("")
+
 
         except:
             self.log.error(traceback.format_exc())
@@ -260,8 +296,8 @@ class miner(mm_util):
         if self.custom_card_directory is not None:
             custom_files = os.listdir(self.custom_card_directory)
         else:
-            custom_files = []   
-        
+            custom_files = []
+
         default_files = [f for f in os.listdir(self.module_path + "/data/cards/") if f not in custom_files]
         
         for f in custom_files: 

@@ -31,7 +31,7 @@ parser.add_argument('-ll','--log-level',
                     help="loglevel for miner object")
 parser.add_argument('-ccd','--custom-card-directory',
                     action='store', dest='custom_card_directory', 
-                    default="", type=str,
+                    default=None, type=str,
                     help="path to custom card directory")
 parser.add_argument('-be','--backend',
                     action='store', dest='backend',
