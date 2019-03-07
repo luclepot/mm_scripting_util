@@ -678,7 +678,7 @@ class miner(mm_util):
             self.TRAINING_STEP = 1
 
         if self.TRAINING_STEP < 2: 
-            ret = self.compare_mg5_and_augmented_data_plot(
+            ret = self.plot_compare_mg5_and_augmented_data(
                     training_name, 
                     image_save_name="temp",
                     bins=bins,
@@ -846,7 +846,7 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def compare_mg5_and_augmented_data_plot(
+    def plot_compare_mg5_and_augmented_data(
             self,
             training_name,
             image_save_name=None,
@@ -953,3 +953,5 @@ class miner(mm_util):
 
 
         return [self.error_codes.Success] 
+
+    
