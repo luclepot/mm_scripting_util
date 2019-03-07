@@ -1,0 +1,7 @@
+executable = NOT_SET.sh
+arguments = ARGS_NOT_SET
+output = output/OUTPUT_NOT_SET.$(ClusterId).$(ProcId).out
+error = error/ERROR_NOT_SET.$(ClusterId).$(ProcId).err
+log = log/LOG_NOT_SET.$(ClusterId).$(ProcId).log
++MaxRuntime = -1
+queue
