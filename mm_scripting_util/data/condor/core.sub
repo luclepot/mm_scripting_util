@@ -1,7 +1,7 @@
-executable = NOT_SET.sh
-arguments = ARGS_NOT_SET
-output = output/OUTPUT_NOT_SET.$(ClusterId).$(ProcId).out
-error = error/ERROR_NOT_SET.$(ClusterId).$(ProcId).err
-log = log/LOG_NOT_SET.$(ClusterId).$(ProcId).log
-+MaxRuntime = -1
+executable = python 
+arguments = -m mm_scripting_util.run $@
+output = output/$MM_NAME.output.$(ClusterId).$(ProcId).out
+error = error/$MM_NAME.error.$(ClusterId).$(ProcId).err
+log = log/$MM_NAME.log.$(ClusterId).$(ProcId).log
++MaxRuntime = $MM_MAX_RUNTIME
 queue

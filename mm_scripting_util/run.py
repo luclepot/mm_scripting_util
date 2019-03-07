@@ -8,32 +8,16 @@ import traceback
 
 parser = argparse.ArgumentParser(description="processing for mm_scripting_util.run.py file")
 
-## add simulation related arguments
+## general arguments
 parser.add_argument('-n', '--name',
                     action='store', dest='name',
                     default="temp", type=str,
                     help="master simulation folder name")
-parser.add_argument('-s', '--samples',
-                    action='store', dest='samples', 
-                    default=100000, type=int, 
-                    help="number of data simulation samples")
-parser.add_argument('-g', '--generate',
-                    action='store_true', dest='generate', 
-                    default=False, 
-                    help="boolean for data simulation")
-parser.add_argument('-sb','--sample-benchmark', 
-                    action='store', dest='sample_benchmark', 
-                    default='sm', type=str, 
-                    help="sample benchmark at which to generate data")
-parser.add_argument('-ll','--log-level', 
+parser.add_argument('-l', '--log-level', 
                     action='store', dest='loglevel', 
                     default=20, type=int,
                     help="loglevel for miner object")
-parser.add_argument('-ccd','--custom-card-directory',
-                    action='store', dest='custom_card_directory', 
-                    default=None, type=str,
-                    help="path to custom card directory")
-parser.add_argument('-be','--backend',
+parser.add_argument('-b', '--backend',
                     action='store', dest='backend',
                     default="tth.dat", type=str,
                     help="backend name or path")
@@ -41,94 +25,79 @@ parser.add_argument('-f', '--force',
                     action='store_true', dest='force',
                     default=False,
                     help="boolean for forcing overwrite of prev. data sims")
-parser.add_argument('-up', '--use-pythia', 
+parser.add_argument('-c', '--condor',
+                    action='store_true', dest='run_condor',
+                    default=False,
+                    help="boolean for running script on condor")
+
+## simulation related arguments
+parser.add_argument('-s', '--sim',
+                    action='store_true', dest='generate', 
+                    default=False, 
+                    help="boolean for data simulation")
+parser.add_argument('-ss','--sim-samples',
+                    action='store', dest='samples', 
+                    default=100000, type=int, 
+                    help="number of data simulation samples")
+parser.add_argument('-sb','--sim-benchmark', 
+                    action='store', dest='sample_benchmark', 
+                    default='sm', type=str, 
+                    help="sample benchmark at which to generate data")
+parser.add_argument('-sd','--sim-card-directory',
+                    action='store', dest='custom_card_directory', 
+                    default=None, type=str,
+                    help="path to custom card directory")
+parser.add_argument('-sp','--sim-use-pythia', 
                     action='store_true', dest='use_pythia_card',
                     default=False,
                     help="boolean for using pythia card in simulation")
-# add training related arguments
+
+## training related arguments
 parser.add_argument('-t', '--train', 
                     action='store_true', dest='train',
                     default=False,
                     help="boolean, flags whether or not to train the given data")
+parser.add_argument('-ts','--train-samples',
+                    action='store', dest='augmented_samples', 
+                    default=100000, type=int, 
+                    help="number of augmented samples to draw, using madminer's sample augmenter")
+parser.add_argument('-tn','--train-name',
+                    action='store', dest='training_name', 
+                    default='temp', type=str, 
+                    help="name for training/augmented samples draw")
+parser.add_argument('-tb','--train-benchmark',
+                    action='store', dest='augmentation_benchmark', 
+                    default='sm', type=str, 
+                    help="sample benchmark at which to train/augment data")
 
+## parse all arguments
 args = parser.parse_args(sys.argv[1:])
 
+## init object
 miner_object = miner(
-    name=args.name,
-    loglevel=args.loglevel,
-    backend=args.backend,
-    custom_card_directory=args.custom_card_directory
-)
+        name=args.name,
+        loglevel=args.loglevel,
+        backend=args.backend,
+        custom_card_directory=args.custom_card_directory
+    )
 
-try:
-    if args.generate:
-        miner_object.simulate_data(
+## if condor flag, write condor script calling another instance of itself (without condor flag)
+if args.run_condor: 
+    miner_object._submit_condor(arg_list=sys.argv)
+
+## if generation flag, run generation function
+if args.generate:
+    miner_object._exec_wrap(miner_object.simulate_data)(
             samples=args.samples,
             sample_benchmark=args.sample_benchmark,
             force=args.force,
             use_pythia_card=args.use_pythia_card
         )
-except:
-    print(traceback.format_exc())
 
-try:
-    if args.train:
-        pass
-except:
-    print(traceback.format_exc())
-
-# def old():
-#     return 0 
-#     name="temp"
-#     samples=200000
-#     sample_benchmark='sm'
-#     eval_samples=5000
-#     architecture=(10,10,10)
-#     epochs=10
-#     generate_samples="False"
-#     train_samples="True"
-#     help_flag=False
-#     t_sample = None
-#     t_train = None
-
-#     for i,arg in enumerate(sys.argv):
-#         if arg=="--name" or arg=='-n':
-#             name=str(sys.argv[i + 1])
-#         elif arg=="--samples" or arg=='-s':
-#             samples=int(sys.argv[i + 1])
-#         elif arg=="--limit" or arg=='-l':
-#             sample_limit=int(sys.argv[i + 1])
-#         elif arg=="--eval" or arg=='-e':
-#             eval_samples=int(sys.argv[i + 1])
-#         elif arg=="--arch" or arg=='-a':
-#             architecture = tuple(int(elt) for elt in sys.argv[i + 1].split(","))
-#         elif arg=="--epochs" or arg=='-ep':
-#             epochs=int(sys.argv[i + 1])
-#         elif arg=="--generate" or arg=='-g':
-#             generate_samples=str(sys.argv[i + 1])
-#         elif arg=="--train" or arg=='-t':
-#             train_samples=str(sys.argv[i + 1])
-#         elif arg=="--help" or arg=="-h":
-#             help_flag=True
-#         elif arg=="--sample-benchmark" or arg=="-sb":
-#             sample_benchmark = sys.argv[i + i]
-        
-            
-#     if help_flag:
-#         print("--- command line utility `run.py` ---")
-#         print()
-#         print("--name, -n:")
-#         print("    name of sample trial. default temp")
-#         print("--samples, -s:")
-#         print("    number of training/simulation samples")
-#         print("--limit, -l:")
-#         print("    max number of samples per madgraph run")
-#         print("--eval, -e:")
-#         print("    number of samples to evaluate network on")
-#         print("--arch, -a:")
-#         print("    node architecture for nerual network")
-#         print("--epochs, -ep:")
-#         print("    epochs for NN training")
-#         print("--generate, -g:")
-#         print("    bool, whether to generate new data or to just train")
-#         return [None, None] 
+## if train flag, run training function
+if args.train:
+    miner_object._exec_wrap(miner_object.train_data)(
+            augmented_samples=args.augmented_samples,
+            training_name=args.training_name, 
+            augmentation_benchmark=args.augmentation_benchmark
+        )

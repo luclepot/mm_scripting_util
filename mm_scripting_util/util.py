@@ -15,6 +15,7 @@ import inspect
 import enum 
 import collections
 import scipy.stats
+import tabulate
 
 
 class mm_base_util():
@@ -90,6 +91,16 @@ class mm_base_util():
         self.log.error("Init not successful; directory " + self.dir + "does not exist.")
         return self.error_codes.InitError
             
+    def _check_ret(
+            self, 
+            ret,
+            ret_warning=None
+        ): 
+        if self.error_codes.Success not in ret:
+            if ret_warning is not None:
+                self.log.warning(ret_warning)
+            return ret
+
     def _dir_size(
             self, 
             pathname,
@@ -231,12 +242,68 @@ class mm_base_util():
         return ret
         # otherwise this doesn't exist
 
+    def _string_find_nth(
+            self,
+            string,
+            substring,
+            n
+        ):
+        parts = string.split(substring, n + 1)
+        if len(parts) <= n + 1:
+            return -1
+        return len(string) - len(parts[-1]) - len(substring)
+
     def _get_var_name(
             self, 
             var
         ):
         callers_local_vars = inspect.currentframe().f_back.f_locals.items()
         return [k for k, v in callers_local_vars if v is var]
+
+    def _tabulate_comparison_information(
+            self,
+            r,
+            pers,
+            observables, 
+            benchmarks,
+            threshold=2.0
+        ):
+
+        strarr = np.round(np.vstack(r), 2).astype(str)
+        index = np.vstack(r) >= threshold
+        strarr[index] = np.asarray(["\033[1;37;41m" + elt + "\033[0;37;40m" for elt in strarr[index]])
+        columns = ["bin #   "] + ['-\n'.join([benchmark[10*i:10*(i + 1)] for i in range(int(len(benchmark)/10) + 1)]) for obs in observables for benchmark in benchmarks]
+        tab_output = tabulate.tabulate(np.vstack([np.vstack([[str(i + 1) for i in range(r.shape[2])], strarr]).T, np.asarray([np.hstack([['failed'], np.asarray(["{:.1%}".format(elt) for elt in np.hstack(pers)])])])]), tablefmt='pipe', headers=columns)
+        
+        header = " "*(self._string_find_nth(tab_output, '|', 1))
+
+        for i,obs in enumerate(observables):
+            header += "| "
+            header += obs
+            header += " "*(self._string_find_nth(tab_output, '|', len(benchmarks)*(i + 1) + 1) - len(header))
+        header += "|"
+        
+        self.log.info("")
+        self.log.info("Printing comparison information for mg5 and augmented histograms...")
+        self.log.info("This shows the ratios between the datasets, flagging values for which")
+        self.log.info("this ratio is greater than the given threshold of {}.".format(threshold))
+        self.log.info("")
+        self.log.info(header)
+        self.log.info('-'*len(header))
+        for line in tab_output.split("\n"):
+            self.log.info(line)
+
+    def _exec_wrap(
+            self, 
+            func
+        ):
+        def wrapper(*args, **kwargs):
+            try:
+                func(*args, **kwargs)
+            except: 
+                self.log.error(traceback.format_exc())
+        
+        return wrapper
 
 class mm_backend_util(
         mm_base_util
@@ -623,8 +690,8 @@ class mm_train_util(
             mg5_observations.append(o)
             mg5_weights.append(w)
 
-        mg5_obs = np.squeeze(np.asarray(mg5_observations))
-        mg5_weights = np.squeeze(np.asarray(mg5_weights)).T
+        mg5_obs = np.vstack(np.squeeze(np.asarray(mg5_observations)))
+        mg5_weights = np.vstack(np.squeeze(np.asarray(mg5_weights)).T)
         mg5_norm_weights = np.copy(mg5_weights) # normalization factors for plots
 
         n_mg5 = mg5_obs.shape[0]
@@ -757,4 +824,43 @@ class mm_util(
     Combines simulation, training, and baseline utility classes in one import class. 
     From this we will derive our tth_miner class, with first-order functions. 
     """
-    pass 
+    
+    def _submit_condor(
+            self,
+            arg_list,
+            conda_path=None,
+            max_runtime=60*60
+        ):
+
+        arg_list = [arg for arg in arg_list if arg is not '-c']
+
+        if conda_path is not None:
+            CONDA_PATH = conda_path
+        elif getpass.getuser() == 'llepotti':
+            CONDA_PATH = "/afs/cern.ch/work/l/llepotti/anaconda3"
+        else:
+
+            self.log.error("No conda_path specified and user not recognized. Aborting.")
+            return self.error_codes.InvalidInputError
+
+        self.log.debug("Running condor submit with the following preferences:")
+        self.log.debug(" - CONDA_PATH: " + conda_path)
+        self.log.debug(" - MM_NAME: " + self.name)
+        self.log.debug(" - MM_MAX_RUNTIME: " + max_runtime)
+        self.log.debug(" - CMD LINE ARGS: " + arg_list)
+
+        variable_string =   "CONDA_PATH=\"{}\"".format(CONDA_PATH) + \
+                            "MM_NAME=\"{}\"".format(self.name) + \
+                            "MM_MAX_RUNTIME=\"{}\"".format(max_runtime) + \
+                            "condor_submit core.sub "
+
+        for arg in arg_list:
+            variable_string += arg + " "
+
+        self.log.debug("Full argument string:")
+        for line in variable_string.split("\n"):
+            self.log.debug(line)
+
+        os.system(variable_string)
+
+        return self.error_codes.Success

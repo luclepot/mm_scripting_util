@@ -656,12 +656,24 @@ class miner(mm_util):
             n_theta_samples=2500
         ):
 
-        self.augment_samples(
+        ret = self.augment_samples(
                 training_name=training_name,
                 n_or_frac_augmented_samples=int(augmented_samples),
                 augmentation_benchmark=augmentation_benchmark,
                 n_theta_samples=n_theta_samples
             )
+        if self.error_codes.Success not in ret: 
+            self.log.warning("Quitting Train Data Function")
+            return ret
+        
+        ret = self.compare_mg5_and_augmented_data_plot(
+                training_name, 
+                image_save_name="temp",
+                mark_outlier_bins=True
+            )
+        if self.error_codes.Success not in ret:
+            self.log.warning("Quitting Train Data Function")
+            return ret
 
         return [self.error_codes.Success]
 
@@ -885,7 +897,7 @@ class miner(mm_util):
                     axs[i].plot(flag_x[i,j][index],
                        -height_step*(float(j) + 1.0)*np.ones(flag_x[i,j][index].shape),
                         linestyle="None", marker="x", color=colors[j])
-            
+    
         for i,observable in enumerate(observables): 
             axs[i].set_xlabel(observable)
             axs[i].set_ylabel("Event Fraction")
@@ -901,6 +913,8 @@ class miner(mm_util):
         plt.legend(by_label.values(), by_label.keys())
         fig.tight_layout()
 
+        self._tabulate_comparison_information(r, pers, observables, benchmarks, threshold)
+
         if image_save_name is not None:
             full_save_name = "{}/mg5_vs_augmented_data_{}_{}s.png".format(
                 self.dir,
@@ -909,5 +923,6 @@ class miner(mm_util):
             )
             plt.savefig(full_save_name)
         plt.show()
+
 
         return [self.error_codes.Success] 
