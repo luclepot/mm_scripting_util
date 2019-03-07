@@ -691,7 +691,7 @@ class mm_train_util(
             mg5_weights.append(w)
 
         mg5_obs = np.vstack(np.squeeze(np.asarray(mg5_observations)))
-        mg5_weights = np.vstack(np.squeeze(np.asarray(mg5_weights)).T)
+        mg5_weights = np.vstack(np.squeeze(np.asarray(mg5_weights))).T
         mg5_norm_weights = np.copy(mg5_weights) # normalization factors for plots
 
         n_mg5 = mg5_obs.shape[0]
