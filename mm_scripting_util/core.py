@@ -885,11 +885,14 @@ class miner(mm_util):
 
         mg5_x = x_mg5[1][:,:,:-1]
         mg5_y = x_mg5[0][:,:]*y_fac
-        y_err = x_mg5[3][:,:]*y_fac
-        y_err_x = 0.5*(x_mg5[1][:,:,1:] + x_mg5[1][:,:,:-1])
+ 
+        mg5_y_err = x_mg5[3][:,:]*y_fac
+        mg5_y_err_x = 0.5*(x_mg5[1][:,:,1:] + x_mg5[1][:,:,:-1])
 
         aug_x = x_aug[1][:,:,:-1]
         aug_y = x_aug[0][:,:]*y_fac
+
+        flag_x = (x_aug[1][:,:,:-1] + np.diff(x_aug[1][:,:])/2.0)
 
         r, pers = self._compare_mg5_and_augmented_data(
                 x_aug, 
@@ -897,9 +900,6 @@ class miner(mm_util):
                 y_fac,
                 threshold
             )
-
-        flag_x = (x_aug[1][:,:,:-1] + np.diff(x_aug[1][:,:])/2.0)
-        flag_y = np.max([aug_y, mg5_y], axis=0)
 
         fig, axs = plt.subplots(1, x_aug[0].shape[0], figsize=(figlen*x_aug[0].shape[0], figlen))
         for i in range(x_aug[0].shape[0]):
@@ -913,7 +913,7 @@ class miner(mm_util):
                 axs[i].plot(aug_x[i,j], aug_y[i,j], colors[j], label="{} aug".format(benchmark_list[j]), drawstyle="steps-post", alpha=alphas[1])
                 
                 # plot errorbars
-                axs[i].errorbar(y_err_x[i,j], mg5_y[i,j], yerr=y_err[i,j], fmt='none', capsize=1.5, elinewidth=1., ecolor='black', alpha=alphas[1])
+                axs[i].errorbar(mg5_y_err_x[i,j], mg5_y[i,j], yerr=mg5_y_err[i,j], fmt='none', capsize=1.5, elinewidth=1., ecolor='black', alpha=alphas[1])
                 
                 # if needed, mark outlier bins with a character
                 if mark_outlier_bins:
