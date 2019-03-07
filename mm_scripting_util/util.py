@@ -642,6 +642,33 @@ class mm_train_util(
     while writing. 
     """
 
+    def _get_raw_mg5_arrays(
+            self
+        ):
+        mg5_observations = []
+        mg5_weights = []
+
+        for o, w in madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
+            filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        ):
+            mg5_observations.append(o)
+            mg5_weights.append(w)
+
+        mg5_obs = np.vstack(np.squeeze(np.asarray(mg5_observations)))
+        mg5_weights = np.vstack(np.squeeze(np.asarray(mg5_weights))).T
+        mg5_norm_weights = np.copy(mg5_weights) # normalization factors for plots
+
+        n_mg5 = mg5_obs.shape[0]
+
+        self.log.info("correcting normalizations by total sum of weights per benchmark:")
+
+        for i, weight in enumerate(mg5_weights):
+            sum_bench = (weight.sum())
+            mg5_norm_weights[i] /= sum_bench
+            self.log.debug("{}: {}".format(i + 1, sum_bench))
+        
+        return mg5_obs, mg5_weights, mg5_norm_weights, n_mg5
+
     def _get_mg5_and_augmented_arrays(
             self,
             training_name,
@@ -681,27 +708,7 @@ class mm_train_util(
         benchmark_list = [benchmark for benchmark in benchmarks]
         observable_list = [observable for observable in observables]
 
-        mg5_observations = []
-        mg5_weights = []
-
-        for o, w in madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
-            filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
-        ):
-            mg5_observations.append(o)
-            mg5_weights.append(w)
-
-        mg5_obs = np.vstack(np.squeeze(np.asarray(mg5_observations)))
-        mg5_weights = np.vstack(np.squeeze(np.asarray(mg5_weights))).T
-        mg5_norm_weights = np.copy(mg5_weights) # normalization factors for plots
-
-        n_mg5 = mg5_obs.shape[0]
-
-        self.log.info("correcting normalizations by total sum of weights per benchmark:")
-
-        for i, weight in enumerate(mg5_weights):
-            sum_bench = (weight.sum())
-            mg5_norm_weights[i] /= sum_bench
-            self.log.debug("{}: {}".format(i + 1, sum_bench))
+        mg5_obs, mg5_weights, mg5_norm_weights, n_mg5 = self._get_raw_mg5_arrays()
 
         x_aug = np.asarray([
             [ 
@@ -710,7 +717,7 @@ class mm_train_util(
                     bins=bins[i],
                     range=ranges[i],
                     # weights=(mg5_obs[:,i].size/x_arrays[benchmark][:,i].size)*np.ones(x_arrays[benchmark][:,0].shape)*mg5_norm_weights[0][0],
-                    density=True
+                    density=dens
                 )    
                 for benchmark in benchmark_list
             ] for i in range(len(observable_list)) 
@@ -723,45 +730,50 @@ class mm_train_util(
                     range=ranges[i],
                     bins=bins[i],
                     weights=weight,
-                    density=True
+                    density=dens
                 )
                 for weight in mg5_norm_weights
             ]    for i in range(len(mg5_obs[0]))
         ])
-
         aug_values, aug_bins = [np.asarray([[subarr for subarr in arr] for arr in x_aug[:,:,i]]) for i in range(2)]
         mg5_values, mg5_bins = [np.asarray([[subarr for subarr in arr] for arr in x_mg5[:,:,i]]) for i in range(2)]
+
+        digitized = np.asarray([np.digitize(mg5_obs[:,i],np.histogram(mg5_obs[:,i], bins=bins[i] ,range=ranges[i])[1]) for i in range(len(bins)) ]) - 1
+        mg5_err = np.asarray([ [ [ np.sqrt(np.sum(weight[digitized[bn] == b]*weight[digitized[bn] == b])) for b in range(bin_n)] for weight in mg5_norm_weights] for bn,bin_n in enumerate(bins)])
+        scale_facs = 1./np.asarray(
+                [
+                    [
+                        np.max(
+                            np.histogram(
+                                mg5_obs[:,i],
+                                weights=weight,
+                                bins=bins[i],
+                                range=ranges[i],
+                                density=False
+                            )[0]
+                        ) / np.max(mg5_values[i,j]) for j, weight in enumerate(mg5_norm_weights)
+                    ] for i,obs in enumerate(observables)
+                ]
+            )
+        mg5_err_scaled = (np.vstack(mg5_err).T*np.hstack(scale_facs)).T.reshape(mg5_err.shape)
+        
         # xmg5_processed = np.asarray([[subarr for subarr in arr] for arr in x_list_mg5[:,:,0]])
 
-        return [self.error_codes.Success], (aug_values, aug_bins, n_aug), (mg5_values, mg5_bins, n_mg5)
+        return [self.error_codes.Success], (aug_values, aug_bins, n_aug), (mg5_values, mg5_bins, n_mg5, mg5_err_scaled)
 
     def _compare_mg5_and_augmented_data(
             self,
-            training_name,
-            bins=(40,40),
-            ranges=[(-8,8),(0,600)],
-            dens=True,
+            x_aug, 
+            x_mg5,
+            y_fac=1.0,
             threshold=2.0
         ):
-        
-        err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
-                training_name, 
-                bins, 
-                ranges, 
-                dens
-            )
-          
-        if self.error_codes.Success not in err:
-            self.log.warning("Quitting mg5 vs augmented data plot comparison")
-            return err, None, None, None
 
-        chis, pvals = scipy.stats.chisquare(x_mg5[0], x_aug[0], axis=2)
-        bins_n = x_mg5[0]*np.diff(x_mg5[1])*x_mg5[2]
-        r = abs(x_mg5[0] - x_aug[0]) / ((1.0 / np.sqrt(bins_n))*x_mg5[0])
+        r = abs(x_mg5[0] - x_aug[0]) / x_mg5[3]
 
         pers = [[ len(elt[np.where(elt >= threshold)]) / len(elt) for elt in relt] for relt in r]
         
-        return [self.error_codes.Success], chis, r, pers
+        return r, pers
 
     def _check_valid_training_data(
             self

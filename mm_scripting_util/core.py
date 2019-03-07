@@ -154,18 +154,22 @@ class miner(mm_util):
             mg_dir=None,
             use_pythia_card=False,
             platform="lxplus7",
-            morphing_trials=2500
+            morphing_trials=2500,
+            override_step=None
         ):
         """
         Standard data simulation run. Should go from start to finish with data simulation.
         """
         try:
-            self.STEP = self._get_simulation_step(
-                self._number_of_cards(samples, 100000),
-                samples
-            )
+            if override_step is not None:
+                self.SIMULATION_STEP = override_step
+            else: 
+                self.SIMULATION_STEP = self._get_simulation_step(
+                        self._number_of_cards(samples, 100000),
+                        samples
+                    )
 
-            if self.STEP < 1 or force:
+            if self.SIMULATION_STEP < 1 or force:
                 self.log.debug("")
                 self.log.debug("RUNNING SETUP CARDS, STEP 1")
                 self.log.debug("")
@@ -177,12 +181,12 @@ class miner(mm_util):
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
-                self.STEP = 1
+                self.SIMULATION_STEP = 1
                 self.log.debug("")
                 self.log.debug("FINISHED SETUP CARDS, STEP 1")
                 self.log.debug("")
 
-            if self.STEP < 2 or force:
+            if self.SIMULATION_STEP < 2 or force:
                 self.log.debug("")
                 self.log.debug("RUNNING MORPHING, STEP 2")
                 self.log.debug("")
@@ -193,12 +197,12 @@ class miner(mm_util):
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
-                self.STEP = 2
+                self.SIMULATION_STEP = 2
                 self.log.debug("")
                 self.log.debug("FINISHED MORPHING, STEP 2")
                 self.log.debug("")
 
-            if self.STEP < 3 or force:   
+            if self.SIMULATION_STEP < 3 or force:   
                 self.log.debug("")
                 self.log.debug("RUNNING SETUP MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
@@ -213,12 +217,12 @@ class miner(mm_util):
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
-                self.STEP = 3
+                self.SIMULATION_STEP = 3
                 self.log.debug("")
                 self.log.debug("FINISHED SETUP MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
 
-            if self.STEP < 4 or force:        
+            if self.SIMULATION_STEP < 4 or force:        
                 self.log.debug("")
                 self.log.debug("RUNNING MG5 SCRIPTS, STEP 4")
                 self.log.debug("")
@@ -230,12 +234,12 @@ class miner(mm_util):
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
-                self.STEP = 4
+                self.SIMULATION_STEP = 4
                 self.log.debug("")
                 self.log.debug("FINISHED MG5 SCRIPTS, STEP 4")
                 self.log.debug("")
 
-            if self.STEP < 5 or force:
+            if self.SIMULATION_STEP < 5 or force:
                 self.log.debug("")
                 self.log.debug("RUNNING MG5 DATA PROCESS, STEP 5")
                 self.log.debug("")
@@ -246,11 +250,10 @@ class miner(mm_util):
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
-                self.STEP = 5
+                self.SIMULATION_STEP = 5
                 self.log.debug("")
                 self.log.debug("FINISHED MG5 DATA PROCESS, STEP 5")
                 self.log.debug("")
-
 
         except:
             self.log.error(traceback.format_exc())
@@ -653,27 +656,38 @@ class miner(mm_util):
             augmented_samples, 
             training_name,
             augmentation_benchmark,
-            n_theta_samples=2500
+            n_theta_samples=2500,
+            bins=(40,40),
+            override_step=None
         ):
-
-        ret = self.augment_samples(
-                training_name=training_name,
-                n_or_frac_augmented_samples=int(augmented_samples),
-                augmentation_benchmark=augmentation_benchmark,
-                n_theta_samples=n_theta_samples
-            )
-        if self.error_codes.Success not in ret: 
-            self.log.warning("Quitting Train Data Function")
-            return ret
+        if override_step is not None: 
+            self.TRAINING_STEP = override_step
+        else: 
+            self.TRAINING_STEP = 0
         
-        ret = self.compare_mg5_and_augmented_data_plot(
-                training_name, 
-                image_save_name="temp",
-                mark_outlier_bins=True
-            )
-        if self.error_codes.Success not in ret:
-            self.log.warning("Quitting Train Data Function")
-            return ret
+        if self.TRAINING_STEP < 1:
+            ret = self.augment_samples(
+                    training_name=training_name,
+                    n_or_frac_augmented_samples=int(augmented_samples),
+                    augmentation_benchmark=augmentation_benchmark,
+                    n_theta_samples=n_theta_samples
+                )
+            if self.error_codes.Success not in ret: 
+                self.log.warning("Quitting Train Data Function")
+                return ret
+            self.TRAINING_STEP = 1
+
+        if self.TRAINING_STEP < 2: 
+            ret = self.compare_mg5_and_augmented_data_plot(
+                    training_name, 
+                    image_save_name="temp",
+                    bins=bins,
+                    mark_outlier_bins=True
+                )
+            if self.error_codes.Success not in ret:
+                self.log.warning("Quitting Train Data Function")
+                return ret
+            self.TRAINING_STEP = 2
 
         return [self.error_codes.Success]
 
@@ -852,14 +866,6 @@ class miner(mm_util):
                 dens
             )
 
-        err2, chis, r, pers = self._compare_mg5_and_augmented_data(
-                training_name,
-                bins, 
-                ranges,
-                dens,
-                threshold
-            )
-
         if self.error_codes.Success not in err:
             self.log.warning("Quitting mg5 vs augmented data plot comparison")
             return err
@@ -875,11 +881,22 @@ class miner(mm_util):
         # create lists of each variable
         benchmark_list = [benchmark for benchmark in benchmarks]
 
+        y_fac = 1.0 #np.diff(x_mg5[1][:,:])
+
         mg5_x = x_mg5[1][:,:,:-1]
-        mg5_y = x_mg5[0][:,:]*np.diff(x_mg5[1][:,:])
+        mg5_y = x_mg5[0][:,:]*y_fac
+        y_err = x_mg5[3][:,:]*y_fac
+        y_err_x = 0.5*(x_mg5[1][:,:,1:] + x_mg5[1][:,:,:-1])
 
         aug_x = x_aug[1][:,:,:-1]
-        aug_y = x_aug[0][:,:]*np.diff(x_aug[1][:,:])
+        aug_y = x_aug[0][:,:]*y_fac
+
+        r, pers = self._compare_mg5_and_augmented_data(
+                x_aug, 
+                x_mg5,
+                y_fac,
+                threshold
+            )
 
         flag_x = (x_aug[1][:,:,:-1] + np.diff(x_aug[1][:,:])/2.0)
         flag_y = np.max([aug_y, mg5_y], axis=0)
@@ -890,17 +907,24 @@ class miner(mm_util):
             height_step = np.max([mg5_y[i], aug_y[i]])/40.0
             # counts = np.zeros(mg5_x[i,0].shape)
             for j in range(x_aug[0].shape[1]):
+
+                # plot augmented and mg5 histograms
                 axs[i].plot(mg5_x[i,j], mg5_y[i,j], colors[j], label="{} mg5".format(benchmark_list[j]), drawstyle="steps-post", alpha=alphas[0])
                 axs[i].plot(aug_x[i,j], aug_y[i,j], colors[j], label="{} aug".format(benchmark_list[j]), drawstyle="steps-post", alpha=alphas[1])
-                index = r[i,j] >= threshold
+                
+                # plot errorbars
+                axs[i].errorbar(y_err_x[i,j], mg5_y[i,j], yerr=y_err[i,j], fmt='none', capsize=1.5, elinewidth=1., ecolor='black', alpha=alphas[1])
+                
+                # if needed, mark outlier bins with a character
                 if mark_outlier_bins:
+                    index = r[i,j] >= threshold
                     axs[i].plot(flag_x[i,j][index],
                        -height_step*(float(j) + 1.0)*np.ones(flag_x[i,j][index].shape),
                         linestyle="None", marker="x", color=colors[j])
     
         for i,observable in enumerate(observables): 
             axs[i].set_xlabel(observable)
-            axs[i].set_ylabel("Event Fraction")
+            axs[i].set_ylabel("Event Fraction") 
 
         handles = []
         labels = []
@@ -912,6 +936,9 @@ class miner(mm_util):
         by_label = collections.OrderedDict(zip(labels, handles))
         plt.legend(by_label.values(), by_label.keys())
         fig.tight_layout()
+
+        self.log.info("MG5 Samples: {}".format(x_mg5[2]))
+        self.log.info("Aug Samples: {}".format(x_aug[2]))
 
         self._tabulate_comparison_information(r, pers, observables, benchmarks, threshold)
 

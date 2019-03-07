@@ -29,6 +29,10 @@ parser.add_argument('-c', '--condor',
                     action='store_true', dest='run_condor',
                     default=False,
                     help="boolean for running script on condor")
+parser.add_argument('-bins','--bins',
+                    action='store', dest='bins',
+                    default=(40,40), type=int, 
+                    help="tuple of bins", nargs='+')
 
 ## simulation related arguments
 parser.add_argument('-s', '--sim',
@@ -51,6 +55,10 @@ parser.add_argument('-sp','--sim-use-pythia',
                     action='store_true', dest='use_pythia_card',
                     default=False,
                     help="boolean for using pythia card in simulation")
+parser.add_argument('-sstep','--sim-step',
+                    action='store', dest='simulation_step', 
+                    default=0, type=int, 
+                    help="simulation step to start at")
 
 ## training related arguments
 parser.add_argument('-t', '--train', 
@@ -69,9 +77,18 @@ parser.add_argument('-tb','--train-benchmark',
                     action='store', dest='augmentation_benchmark', 
                     default='sm', type=str, 
                     help="sample benchmark at which to train/augment data")
+parser.add_argument('-tstep','--train-step',
+                    action='store', dest='training_step', 
+                    default=0, type=int, 
+                    help="training step to start at")
 
 ## parse all arguments
 args = parser.parse_args(sys.argv[1:])
+
+if args.simulation_step == 0:
+    args.simulation_step = None
+if args.training_step == 0:
+    args.training_step = None
 
 ## init object
 miner_object = miner(
@@ -91,7 +108,8 @@ if args.generate:
             samples=args.samples,
             sample_benchmark=args.sample_benchmark,
             force=args.force,
-            use_pythia_card=args.use_pythia_card
+            use_pythia_card=args.use_pythia_card,
+            override_step=args.simulation_step
         )
 
 ## if train flag, run training function
@@ -99,5 +117,7 @@ if args.train:
     miner_object._exec_wrap(miner_object.train_data)(
             augmented_samples=args.augmented_samples,
             training_name=args.training_name, 
-            augmentation_benchmark=args.augmentation_benchmark
+            augmentation_benchmark=args.augmentation_benchmark,
+            override_step=args.training_step,
+            bins=tuple(args.bins)
         )
