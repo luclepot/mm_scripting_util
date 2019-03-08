@@ -843,16 +843,11 @@ class mm_util(
             max_runtime=60*60
         ):
 
-        self.log.debug("Running condor submit with the following preferences:")
-        self.log.debug(" - MM_NAME: " + self.name)
-        self.log.debug(" - MM_MAX_RUNTIME: {}".format(max_runtime))
-        self.log.debug(" - CMD LINE ARGS: {}".format(" ".join(arg_list)))
-
-        variable_string =   "MM_NAME=\"{}\"\n".format(self.name) + \
-                            "MM_MAX_RUNTIME={}\n".format(max_runtime) + \
-                            "MM_RUN_DIR=\"{}\"\n".format(self.dir) + \
-                            "MM_MOD_DIR=\"{}/data/condor\"\n".format(self.module_path) + \
-                            "MM_ARG_STR=\"-m mm_scripting_util.run {}\"\n".format(" ".join(arg_list)) + \
+        variable_string =   "MM_NAME=\"{}\";".format(self.name) + \
+                            "MM_MAX_RUNTIME={};".format(max_runtime) + \
+                            "MM_RUN_DIR=\"{}\";".format(self.dir) + \
+                            "MM_MOD_DIR=\"{}/data/condor\";".format(self.module_path) + \
+                            "MM_ARG_STR=\"-m mm_scripting_util.run {}\";".format(" ".join(arg_list)) + \
                             "condor_submit {}/data/condor/core.sub".format(self.module_path)
 
         self.log.debug("Full argument string:")
