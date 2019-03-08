@@ -848,10 +848,10 @@ class mm_util(
         self.log.debug(" - MM_MAX_RUNTIME: {}".format(max_runtime))
         self.log.debug(" - CMD LINE ARGS: {}".format(" ".join(arg_list)))
 
-        variable_string =   "MM_NAME=\"{}\"".format(self.name) + \
-                            "MM_MAX_RUNTIME=\"{}\"".format(max_runtime) + \
-                            "RUN_DIR=\"{}\"".format(self.dir) + \
-                            "ARG_STR=\"-m mm_scripting_util.run {}\"".format(" ".join(arg_list)) + \
+        variable_string =   "MM_NAME=\"{}\"\n".format(self.name) + \
+                            "MM_MAX_RUNTIME=\"{}\"\n".format(max_runtime) + \
+                            "RUN_DIR=\"{}\"\n".format(self.dir) + \
+                            "ARG_STR=\"-m mm_scripting_util.run {}\"\n".format(" ".join(arg_list)) + \
                             "condor_submit {}/data/condor/core.sub".format(self.module_path)
 
         self.log.debug("Full argument string:")
