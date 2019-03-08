@@ -1,5 +1,6 @@
 import logging 
 import os 
+import sys
 import numpy as np 
 import shutil
 import platform
@@ -840,17 +841,18 @@ class mm_util(
     def _submit_condor(
             self,
             arg_list,
-            max_runtime=60*60
+            max_runtime=30.
         ):
+        
         if not os.path.exists("{}/condor".format(self.dir)):
             os.mkdir("{}/condor".format(self.dir))
 
         # write condor submission file
         with open("{}/condor/core.sub".format(self.dir), 'w+') as f:
             f.write("executable = {}/condor/core.sh\n".format(self.dir))
-            f.write("output = {}/condor/$(ClusterId).$(ProcId).out\n".format(self.dir))
-            f.write("error = {}/condor/$(ClusterId).$(ProcId).err\n".format(self.dir))
-            f.write("log = {}/condor/$(ClusterId).$(ProcId).log\n".format(self.dir))
+            f.write("output = {}/condor/output.$(ClusterId).$(ProcId).out\n".format(self.dir))
+            f.write("error = {}/condor/error.$(ClusterId).$(ProcId).err\n".format(self.dir))
+            f.write("log = {}/condor/log.$(ClusterId).$(ProcId).log\n".format(self.dir))
             f.write("+MaxRuntime = {}\n".format(max_runtime))
             f.write("queue\n")
 
@@ -858,7 +860,8 @@ class mm_util(
         with open("{}/condor/core.sh".format(self.dir), 'w+') as f:
             f.write("#!/bin/bash\n")
             f.write("cd {}\n".format(self.path))
-            f.write("python -m mm_scripting_util.run {}".format(" ".join(arg_list[1:])))
+            f.write("export PATH=\"{}:$PATH\"\n".format(sys.executable[:sys.executable.find("python") - 1]))
+            f.write("python -m mm_scripting_util.run {}".format(" ".join(arg_list)))
 
         # variable_string =   "MM_NAME=\"{}\";".format(self.name) + \
         #                     "MM_MAX_RUNTIME={};".format(max_runtime) + \

@@ -1,7 +1,0 @@
-executable = $(MM_MOD_DIR)/core.sh
-arguments = $MM_RUN_DIR $MM_ARG_STR
-output = $MM_RUN_DIR/output/$MM_NAME.output.$(ClusterId).$(ProcId).out
-error = $MM_RUN_DIR/error/$MM_NAME.error.$(ClusterId).$(ProcId).err
-log = $MM_RUN_DIR/log/$MM_NAME.log.$(ClusterId).$(ProcId).log
-+MaxRuntime = $MM_MAX_RUNTIME
-queue

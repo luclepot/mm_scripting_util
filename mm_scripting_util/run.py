@@ -106,29 +106,36 @@ def __main__():
     if args.run_flashy and args.run_condor:
         raise Exception("can't run on two servers at once! check args")
 
-    ## init object
-    miner_object = miner(
+    ## if condor/flashy flag, write script calling another instance of itself (without given flags of course)
+    if args.run_condor or args.run_flashy:
+        # init object with silent logging
+        miner_object = miner(
             name=args.name,
-            loglevel=args.loglevel,
+            loglevel=logging.ERROR,
             backend=args.backend,
             custom_card_directory=args.custom_card_directory
-        )
+        )   
 
-    ## if condor/flashy flag, write script calling another instance of itself (without given flags of course)
-    if args.run_condor: 
-        miner_object._submit_condor(
-            arg_list=[arg for arg in sys.argv if arg not in ["-rc", "--run-condor"]],
-            max_runtime=args.max_runtime
-        )
-        return 0
+        if args.run_condor:
+            miner_object._submit_condor(
+                    arg_list=[arg for arg in sys.argv[1:] if arg not in ["-rc", "--run-condor"]],
+                    max_runtime=args.max_runtime
+                )
+            return 0
 
-    if args.run_flashy: 
         miner_object._submit_flashy(
-            arg_list=[arg for arg in sys.argv if arg not in ["-rf", "--run-flashy"]],
-            max_runtime=args.max_runtime
-        )
+                arg_list=[arg for arg in sys.argv[1:] if arg not in ["-rf", "--run-flashy"]],
+                max_runtime=args.max_runtime
+            )
         return 0
-
+    
+    ## init object
+    miner_object = miner(
+        name=args.name,
+        loglevel=args.loglevel,
+        backend=args.backend,
+        custom_card_directory=args.custom_card_directory
+    )   
     ## if generation flag, run generation function
     if args.generate:
         miner_object._exec_wrap(miner_object.simulate_data)(
