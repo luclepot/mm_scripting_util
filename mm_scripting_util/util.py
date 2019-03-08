@@ -848,6 +848,7 @@ class mm_util(
                             "MM_RUN_DIR=\"{}\";".format(self.dir) + \
                             "MM_MOD_DIR=\"{}/data/condor\";".format(self.module_path) + \
                             "MM_ARG_STR=\"-m mm_scripting_util.run {}\";".format(" ".join(arg_list)) + \
+                            "echo $MM_NAME; echo $MM_MAX_RUNTIME; echo $MM_RUN_DIR; echo $MM_MOD_DIR; echo $MM_ARG_STR;" + \
                             "condor_submit {}/data/condor/core.sub".format(self.module_path)
 
         self.log.debug("Full argument string:")
