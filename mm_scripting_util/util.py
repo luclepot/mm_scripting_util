@@ -843,13 +843,18 @@ class mm_util(
             arg_list,
             max_runtime=30.
         ):
+        """
+        Doesn't currently work.
+
+        """
 
         if not os.path.exists("{}/condor".format(self.dir)):
             os.mkdir("{}/condor".format(self.dir))
 
         # write condor submission file
         with open("{}/condor/core.sub".format(self.dir), 'w+') as f:
-            f.write("executable = {}/condor/core.sh\n".format(self.dir))
+            f.write("executable = {}\n".format(sys.executable))
+            f.write("arguments = -m mm_scripting_util.run {}\n".format(" ".join(arg_list)))
             f.write("output = {}/condor/output.$(ClusterId).$(ProcId).out\n".format(self.dir))
             f.write("error = {}/condor/error.$(ClusterId).$(ProcId).err\n".format(self.dir))
             f.write("log = {}/condor/log.$(ClusterId).$(ProcId).log\n".format(self.dir))
@@ -857,11 +862,11 @@ class mm_util(
             f.write("queue\n")
 
         # write bash script
-        with open("{}/condor/core.sh".format(self.dir), 'w+') as f:
-            f.write("#!/bin/bash\n")
-            f.write("cd {}\n".format(self.path))
-            f.write("export PATH=\"{}:$PATH\"\n".format(sys.executable[:sys.executable.find("python") - 1]))
-            f.write("python -m mm_scripting_util.run {}".format(" ".join(arg_list)))
+        # with open("{}/condor/core.sh".format(self.dir), 'w+') as f:
+        #     f.write("#!/bin/bash\n")
+        #     f.write("cd {}\n".format(self.path))
+        #     f.write("export PATH=\"{}:$PATH\"\n".format(sys.executable[:sys.executable.find("python") - 1]))
+        #     f.write("python -m mm_scripting_util.run {}".format(" ".join(arg_list)))
 
         # variable_string =   "MM_NAME=\"{}\";".format(self.name) + \
         #                     "MM_MAX_RUNTIME={};".format(max_runtime) + \
@@ -874,7 +879,6 @@ class mm_util(
         os.system("condor_submit {}/condor/core.sub".format(self.dir))
 
         return self.error_codes.Success
-
     
     def _submit_flashy(
             self,
