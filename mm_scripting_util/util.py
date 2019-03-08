@@ -842,23 +842,25 @@ class mm_util(
             arg_list,
             max_runtime=60*60
         ):
-        # with open("{}/{}.sub".format(self.path, self.name), 'w+') as f:
-        #     f.write("executable = python")
-        #     f.write("arguments = -m mm_scripting_util {}".format(" ".join(arg_list)))
-        #     f.write("output = {}/output/{}.output.(Clus))
-        variable_string =   "MM_NAME=\"{}\";".format(self.name) + \
-                            "MM_MAX_RUNTIME={};".format(max_runtime) + \
-                            "MM_RUN_DIR=\"{}\";".format(self.dir) + \
-                            "MM_MOD_DIR=\"{}/data/condor\";".format(self.module_path) + \
-                            "MM_ARG_STR=\"-m mm_scripting_util.run {}\";".format(" ".join(arg_list)) + \
-                            "echo $MM_NAME; echo $MM_MAX_RUNTIME; echo $MM_RUN_DIR; echo $MM_MOD_DIR; echo $MM_ARG_STR;" 
-                            # "condor_submit {}/data/condor/core.sub".format(self.module_path)
 
-        self.log.debug("Full argument string:")
-        for line in variable_string.split("\n"):
-            self.log.debug(line)
+        # write condor submission file
+        with open("{}/{}.sub".format(self.path, self.name), 'w+') as f:
+            f.write("executable = python")
+            f.write("arguments = -m mm_scripting_util {}".format(" ".join(arg_list)))
+            f.write("output = {}/output/{}.output.$(ClusterId).$(ProcId).out".format(self.path, self.name))
+            f.write("error = {}/error/{}.error.$(ClusterId).$(ProcId).err".format(self.path, self.name))
+            f.write("log = {}/log/{}.log.$(ClusterId).$(ProcId).log".format(self.path, self.name))
+            f.write("+MaxRuntime = {}".format(max_runtime))
+            f.write("queue")
+        # variable_string =   "MM_NAME=\"{}\";".format(self.name) + \
+        #                     "MM_MAX_RUNTIME={};".format(max_runtime) + \
+        #                     "MM_RUN_DIR=\"{}\";".format(self.dir) + \
+        #                     "MM_MOD_DIR=\"{}/data/condor\";".format(self.module_path) + \
+        #                     "MM_ARG_STR=\"-m mm_scripting_util.run {}\";".format(" ".join(arg_list)) + \
+        #                     "echo $MM_NAME; echo $MM_MAX_RUNTIME; echo $MM_RUN_DIR; echo $MM_MOD_DIR; echo $MM_ARG_STR;" 
+        #                     # "condor_submit {}/data/condor/core.sub".format(self.module_path)
 
-        os.system(variable_string)
+        os.system("condor_submit {}/{}.sub".format(self.path, self.name))
 
         return self.error_codes.Success
 
