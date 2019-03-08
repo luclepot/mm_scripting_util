@@ -1,9 +1,6 @@
 
 from .util import *
 
-
-
-
 class miner(mm_util):   
     
     """
@@ -645,7 +642,8 @@ class miner(mm_util):
 
         if image_save_name is not None:
             plt.savefig(full_save_name)
-        plt.show()
+        else:
+            plt.show()
 
         return [self.error_codes.Success]
 
@@ -658,8 +656,10 @@ class miner(mm_util):
             augmentation_benchmark,
             n_theta_samples=2500,
             bins=(40,40),
-            override_step=None
+            override_step=None,
+            image_save_name=None
         ):
+
         if override_step is not None: 
             self.TRAINING_STEP = override_step
         else: 
@@ -680,7 +680,7 @@ class miner(mm_util):
         if self.TRAINING_STEP < 2: 
             ret = self.plot_compare_mg5_and_augmented_data(
                     training_name, 
-                    image_save_name="temp",
+                    image_save_name=image_save_name,
                     bins=bins,
                     mark_outlier_bins=True
                 )
@@ -842,7 +842,8 @@ class miner(mm_util):
 
         if image_save_name is not None:
             plt.savefig(full_save_name)
-        plt.show()
+        else: 
+            plt.show()
 
         return [self.error_codes.Success]
 
@@ -949,8 +950,8 @@ class miner(mm_util):
                 x_aug[0].shape[0]
             )
             plt.savefig(full_save_name)
-        plt.show()
-
+        else:
+            plt.show()
 
         return [self.error_codes.Success] 
 

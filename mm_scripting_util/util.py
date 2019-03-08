@@ -841,38 +841,34 @@ class mm_util(
             self,
             arg_list,
             conda_path=None,
-            max_runtime=60*60
+            max_runtime=60*60 # 1 hour
         ):
 
-        arg_list = [arg for arg in arg_list if arg is not '-c']
-
-        if conda_path is not None:
-            CONDA_PATH = conda_path
-        elif getpass.getuser() == 'llepotti':
-            CONDA_PATH = "/afs/cern.ch/work/l/llepotti/anaconda3"
-        else:
-
-            self.log.error("No conda_path specified and user not recognized. Aborting.")
-            return self.error_codes.InvalidInputError
 
         self.log.debug("Running condor submit with the following preferences:")
-        self.log.debug(" - CONDA_PATH: " + conda_path)
         self.log.debug(" - MM_NAME: " + self.name)
         self.log.debug(" - MM_MAX_RUNTIME: " + max_runtime)
         self.log.debug(" - CMD LINE ARGS: " + arg_list)
 
-        variable_string =   "CONDA_PATH=\"{}\"".format(CONDA_PATH) + \
-                            "MM_NAME=\"{}\"".format(self.name) + \
+        variable_string =   "MM_NAME=\"{}\"".format(self.name) + \
                             "MM_MAX_RUNTIME=\"{}\"".format(max_runtime) + \
-                            "condor_submit core.sub "
-
-        for arg in arg_list:
-            variable_string += arg + " "
+                            "RUN_DIR=\"{}\"".format(self.dir) + \
+                            "ARG_STR=\"-m mm_scripting_util.run {}\"".format(" ".join(arg_list)) + \
+                            "condor_submit {}/data/condor/core.sub".format(self.module_path)
 
         self.log.debug("Full argument string:")
         for line in variable_string.split("\n"):
             self.log.debug(line)
 
-        os.system(variable_string)
+        # os.system(variable_string)
+
+        return self.error_codes.Success
+
+    
+    def _submit_flashy(
+            self,
+            arg_list,
+            max_runtime=60*60 # 1 hour
+        ):
 
         return self.error_codes.Success

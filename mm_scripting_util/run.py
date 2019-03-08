@@ -25,10 +25,14 @@ parser.add_argument('-f', '--force',
                     action='store_true', dest='force',
                     default=False,
                     help="boolean for forcing overwrite of prev. data sims")
-parser.add_argument('-c', '--condor',
+parser.add_argument('-rc', '--run-condor',
                     action='store_true', dest='run_condor',
                     default=False,
-                    help="boolean for running script on condor")
+                    help="boolean for running script on condor server batch system")
+parser.add_argument('-rf', '--run-flashy',
+                    action='store_true', dest='run_flashy',
+                    default=False,
+                    help="boolean for running script on flashy server batch system")
 parser.add_argument('-bins','--bins',
                     action='store', dest='bins',
                     default=(40,40), type=int, 
@@ -81,6 +85,10 @@ parser.add_argument('-tstep','--train-step',
                     action='store', dest='training_step', 
                     default=0, type=int, 
                     help="training step to start at")
+parser.add_argument('-ti', '--train-imshow',
+                    action='store_true', dest='train_imshow',
+                    default=False,
+                    help="boolean, flags whether to show or save the resultant plots")
 
 ## parse all arguments
 args = parser.parse_args(sys.argv[1:])
@@ -90,6 +98,9 @@ if args.simulation_step == 0:
 if args.training_step == 0:
     args.training_step = None
 
+if args.run_flashy and args.run_condor:
+    raise Exception("can't run on two servers at once! check args")
+
 ## init object
 miner_object = miner(
         name=args.name,
@@ -98,9 +109,12 @@ miner_object = miner(
         custom_card_directory=args.custom_card_directory
     )
 
-## if condor flag, write condor script calling another instance of itself (without condor flag)
+## if condor/flashy flag, write script calling another instance of itself (without given flags of course)
 if args.run_condor: 
-    miner_object._submit_condor(arg_list=sys.argv)
+    miner_object._submit_condor(arg_list=[arg for arg in sys.argv if arg not in ["-rc", "--run-condor"]])
+
+if args.run_flashy: 
+    miner_object._submit_flashy(arg_list=[arg for arg in sys.argv if arg not in ["-rf", "--run-flashy"]])
 
 ## if generation flag, run generation function
 if args.generate:
@@ -114,10 +128,15 @@ if args.generate:
 
 ## if train flag, run training function
 if args.train:
+    if args.train_imshow:
+        imgsv = None
+    else: 
+        imgsv = "{}_{}".format(args.training_name, args.augmentation_benchmark)
     miner_object._exec_wrap(miner_object.train_data)(
             augmented_samples=args.augmented_samples,
             training_name=args.training_name, 
             augmentation_benchmark=args.augmentation_benchmark,
             override_step=args.training_step,
-            bins=tuple(args.bins)
+            bins=tuple(args.bins),
+            image_save_name=imgsv
         )

@@ -14,8 +14,3 @@
 # # fi
 
 # # unset __conda_setup
-
-conda deactivate
-conda activate atlas
-
-python -m mm_scripting_util.run $@

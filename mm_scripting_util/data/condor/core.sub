@@ -1,7 +1,7 @@
-executable = python 
-arguments = -m mm_scripting_util.run $@
-output = output/$MM_NAME.output.$(ClusterId).$(ProcId).out
-error = error/$MM_NAME.error.$(ClusterId).$(ProcId).err
-log = log/$MM_NAME.log.$(ClusterId).$(ProcId).log
+executable = $RUN_DIR/python
+arguments = $ARG_STR
+output = $RUN_DIR/output/$MM_NAME.output.$(ClusterId).$(ProcId).out
+error = $RUN_DIR/error/$MM_NAME.error.$(ClusterId).$(ProcId).err
+log = $RUN_DIR/log/$MM_NAME.log.$(ClusterId).$(ProcId).log
 +MaxRuntime = $MM_MAX_RUNTIME
 queue
