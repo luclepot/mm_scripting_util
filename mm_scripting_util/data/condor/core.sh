@@ -1,3 +1,3 @@
 #!/bin/bash
-cd $1
-python -m mm_scripting_util eval $2
+cd 
+python -m mm_scripting_util eval 

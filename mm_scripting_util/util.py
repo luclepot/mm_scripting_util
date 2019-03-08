@@ -842,16 +842,24 @@ class mm_util(
             arg_list,
             max_runtime=60*60
         ):
+        if not os.path.exists("{}/condor".format(self.dir)):
+            os.mkdir("{}/condor".format(self.dir))
 
         # write condor submission file
-        with open("{}/{}.sub".format(self.path, self.name), 'w+') as f:
-            f.write("executable = python\n")
-            f.writelines("arguments = -m mm_scripting_util {}\n".format(" ".join(arg_list)))
-            f.write("output = {}/output/{}.output.$(ClusterId).$(ProcId).out\n".format(self.path, self.name))
-            f.write("error = {}/error/{}.error.$(ClusterId).$(ProcId).err\n".format(self.path, self.name))
-            f.write("log = {}/log/{}.log.$(ClusterId).$(ProcId).log\n".format(self.path, self.name))
+        with open("{}/condor/core.sub".format(self.dir), 'w+') as f:
+            f.write("executable = {}/condor/core.sh\n".format(self.dir))
+            f.write("output = {}/condor/$(ClusterId).$(ProcId).out\n".format(self.dir))
+            f.write("error = {}/condor/$(ClusterId).$(ProcId).err\n".format(self.dir))
+            f.write("log = {}/condor/$(ClusterId).$(ProcId).log\n".format(self.dir))
             f.write("+MaxRuntime = {}\n".format(max_runtime))
             f.write("queue\n")
+
+        # write bash script
+        with open("{}/condor/core.sh".format(self.dir), 'w+') as f:
+            f.write("#!/bin/bash\n")
+            f.write("cd {}\n".format(self.path))
+            f.write("python -m mm_scripting_util.run {}".format(" ".join(arg_list[1:])))
+
         # variable_string =   "MM_NAME=\"{}\";".format(self.name) + \
         #                     "MM_MAX_RUNTIME={};".format(max_runtime) + \
         #                     "MM_RUN_DIR=\"{}\";".format(self.dir) + \
@@ -860,7 +868,7 @@ class mm_util(
         #                     "echo $MM_NAME; echo $MM_MAX_RUNTIME; echo $MM_RUN_DIR; echo $MM_MOD_DIR; echo $MM_ARG_STR;" 
         #                     # "condor_submit {}/data/condor/core.sub".format(self.module_path)
 
-        os.system("condor_submit {}/{}.sub".format(self.path, self.name))
+        os.system("condor_submit {}/condor/core.sub".format(self.dir))
 
         return self.error_codes.Success
 
