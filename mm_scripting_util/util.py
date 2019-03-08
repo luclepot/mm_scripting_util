@@ -843,7 +843,7 @@ class mm_util(
             arg_list,
             max_runtime=30.
         ):
-        
+
         if not os.path.exists("{}/condor".format(self.dir)):
             os.mkdir("{}/condor".format(self.dir))
 

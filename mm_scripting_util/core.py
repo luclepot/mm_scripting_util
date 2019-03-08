@@ -432,7 +432,8 @@ class miner(mm_util):
 
         # check platform and change initial_command as necessary
         if platform=="lxplus7": 
-            initial_command = "source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh "
+            initial_command = "source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh; echo \"SOURCED IT\""
+            self.log.debug("Ran lxplus7 initial source cmd.")
         elif platform=="pheno": 
             initial_command = 'module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6'
         else:
