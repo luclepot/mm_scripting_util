@@ -850,8 +850,9 @@ class mm_util(
 
         variable_string =   "MM_NAME=\"{}\"\n".format(self.name) + \
                             "MM_MAX_RUNTIME={}\n".format(max_runtime) + \
-                            "RUN_DIR=\"{}\"\n".format(self.dir) + \
-                            "ARG_STR=\"-m mm_scripting_util.run {}\"\n".format(" ".join(arg_list)) + \
+                            "MM_RUN_DIR=\"{}\"\n".format(self.dir) + \
+                            "MM_MOD_DIR=\"{}/data/condor\"\n".format(self.module_path) + \
+                            "MM_ARG_STR=\"-m mm_scripting_util.run {}\"\n".format(" ".join(arg_list)) + \
                             "condor_submit {}/data/condor/core.sub".format(self.module_path)
 
         self.log.debug("Full argument string:")
