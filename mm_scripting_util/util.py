@@ -846,7 +846,7 @@ class mm_util(
         self.log.debug("Running condor submit with the following preferences:")
         self.log.debug(" - MM_NAME: " + self.name)
         self.log.debug(" - MM_MAX_RUNTIME: {}".format(max_runtime))
-        self.log.debug(" - CMD LINE ARGS: " + arg_list)
+        self.log.debug(" - CMD LINE ARGS: {}".format(" ".join(arg_list)))
 
         variable_string =   "MM_NAME=\"{}\"".format(self.name) + \
                             "MM_MAX_RUNTIME=\"{}\"".format(max_runtime) + \
