@@ -842,7 +842,10 @@ class mm_util(
             arg_list,
             max_runtime=60*60
         ):
-
+        # with open("{}/{}.sub".format(self.path, self.name), 'w+') as f:
+        #     f.write("executable = python")
+        #     f.write("arguments = -m mm_scripting_util {}".format(" ".join(arg_list)))
+        #     f.write("output = {}/output/{}.output.(Clus))
         variable_string =   "MM_NAME=\"{}\";".format(self.name) + \
                             "MM_MAX_RUNTIME={};".format(max_runtime) + \
                             "MM_RUN_DIR=\"{}\";".format(self.dir) + \
