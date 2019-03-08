@@ -844,9 +844,11 @@ class mm_util(
             max_runtime=30.
         ):
         """
-        Doesn't currently work.
+        Doesn't currently work. Need to add python tarballing as per http://chtc.cs.wisc.edu/python-jobs.shtml.
 
         """
+
+        raise NotImplementedError
 
         if not os.path.exists("{}/condor".format(self.dir)):
             os.mkdir("{}/condor".format(self.dir))

@@ -30,10 +30,10 @@ def __main__():
                         action='store', dest='max_runtime',
                         default=60*60, type=int,
                         help="max runtime in seconds of process (for condor/flashy)")
-    parser.add_argument('-rc', '--run-condor',
-                        action='store_true', dest='run_condor',
-                        default=False,
-                        help="boolean for running script on condor server batch system")
+    # parser.add_argument('-rc', '--run-condor',
+    #                     action='store_true', dest='run_condor',
+    #                     default=False,
+    #                     help="boolean for running script on condor server batch system")
     parser.add_argument('-rf', '--run-flashy',
                         action='store_true', dest='run_flashy',
                         default=False,
@@ -103,11 +103,8 @@ def __main__():
     if args.training_step == 0:
         args.training_step = None
 
-    if args.run_flashy and args.run_condor:
-        raise Exception("can't run on two servers at once! check args")
-
     ## if condor/flashy flag, write script calling another instance of itself (without given flags of course)
-    if args.run_condor or args.run_flashy:
+    if args.run_flashy:
         # init object with silent logging
         miner_object = miner(
             name=args.name,
@@ -115,13 +112,6 @@ def __main__():
             backend=args.backend,
             custom_card_directory=args.custom_card_directory
         )   
-
-        if args.run_condor:
-            miner_object._submit_condor(
-                    arg_list=[arg for arg in sys.argv[1:] if arg not in ["-rc", "--run-condor"]],
-                    max_runtime=args.max_runtime
-                )
-            return 0
 
         miner_object._submit_flashy(
                 arg_list=[arg for arg in sys.argv[1:] if arg not in ["-rf", "--run-flashy"]],

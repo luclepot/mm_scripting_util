@@ -141,7 +141,7 @@ class miner(mm_util):
             self.destroy_sample()
 
     # simulation-related member functions
-
+    
     def simulate_data(
             self,
             samples,
@@ -955,5 +955,3 @@ class miner(mm_util):
             plt.show()
 
         return [self.error_codes.Success] 
-
-    
