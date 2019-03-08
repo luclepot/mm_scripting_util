@@ -1,5 +1,5 @@
-executable = python
-arguments = $ARG_STR
+executable = core.sh
+arguments = $RUN_DIR $ARG_STR
 output = $RUN_DIR/output/$MM_NAME.output.$(ClusterId).$(ProcId).out
 error = $RUN_DIR/error/$MM_NAME.error.$(ClusterId).$(ProcId).err
 log = $RUN_DIR/log/$MM_NAME.log.$(ClusterId).$(ProcId).log
