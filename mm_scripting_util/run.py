@@ -119,12 +119,14 @@ if args.run_condor:
         arg_list=[arg for arg in sys.argv if arg not in ["-rc", "--run-condor"]],
         max_runtime=args.max_runtime
     )
+    return 0
 
 if args.run_flashy: 
     miner_object._submit_flashy(
         arg_list=[arg for arg in sys.argv if arg not in ["-rf", "--run-flashy"]],
         max_runtime=args.max_runtime
     )
+    return 0
 
 ## if generation flag, run generation function
 if args.generate:
