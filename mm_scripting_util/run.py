@@ -25,6 +25,10 @@ parser.add_argument('-f', '--force',
                     action='store_true', dest='force',
                     default=False,
                     help="boolean for forcing overwrite of prev. data sims")
+parser.add_argument('-r', '--runtime',
+                    action='store', dest='max_runtime',
+                    default=60*60, type=int,
+                    help="max runtime in seconds of process (for condor/flashy)")
 parser.add_argument('-rc', '--run-condor',
                     action='store_true', dest='run_condor',
                     default=False,
@@ -111,10 +115,16 @@ miner_object = miner(
 
 ## if condor/flashy flag, write script calling another instance of itself (without given flags of course)
 if args.run_condor: 
-    miner_object._submit_condor(arg_list=[arg for arg in sys.argv if arg not in ["-rc", "--run-condor"]])
+    miner_object._submit_condor(
+        arg_list=[arg for arg in sys.argv if arg not in ["-rc", "--run-condor"]],
+        max_runtime=args.max_runtime
+    )
 
 if args.run_flashy: 
-    miner_object._submit_flashy(arg_list=[arg for arg in sys.argv if arg not in ["-rf", "--run-flashy"]])
+    miner_object._submit_flashy(
+        arg_list=[arg for arg in sys.argv if arg not in ["-rf", "--run-flashy"]],
+        max_runtime=args.max_runtime
+    )
 
 ## if generation flag, run generation function
 if args.generate:
