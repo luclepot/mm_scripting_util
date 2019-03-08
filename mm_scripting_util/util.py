@@ -845,13 +845,13 @@ class mm_util(
 
         # write condor submission file
         with open("{}/{}.sub".format(self.path, self.name), 'w+') as f:
-            f.write("executable = python")
-            f.write("arguments = -m mm_scripting_util {}".format(" ".join(arg_list)))
-            f.write("output = {}/output/{}.output.$(ClusterId).$(ProcId).out".format(self.path, self.name))
-            f.write("error = {}/error/{}.error.$(ClusterId).$(ProcId).err".format(self.path, self.name))
-            f.write("log = {}/log/{}.log.$(ClusterId).$(ProcId).log".format(self.path, self.name))
-            f.write("+MaxRuntime = {}".format(max_runtime))
-            f.write("queue")
+            f.write("executable = python\n")
+            f.writelines("arguments = -m mm_scripting_util {}\n".format(" ".join(arg_list)))
+            f.write("output = {}/output/{}.output.$(ClusterId).$(ProcId).out\n".format(self.path, self.name))
+            f.write("error = {}/error/{}.error.$(ClusterId).$(ProcId).err\n".format(self.path, self.name))
+            f.write("log = {}/log/{}.log.$(ClusterId).$(ProcId).log\n".format(self.path, self.name))
+            f.write("+MaxRuntime = {}\n".format(max_runtime))
+            f.write("queue\n")
         # variable_string =   "MM_NAME=\"{}\";".format(self.name) + \
         #                     "MM_MAX_RUNTIME={};".format(max_runtime) + \
         #                     "MM_RUN_DIR=\"{}\";".format(self.dir) + \
