@@ -858,7 +858,7 @@ class mm_util(
         for line in variable_string.split("\n"):
             self.log.debug(line)
 
-        # os.system(variable_string)
+        os.system(variable_string)
 
         return self.error_codes.Success
 
