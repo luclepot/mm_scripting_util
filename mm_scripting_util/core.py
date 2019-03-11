@@ -955,3 +955,52 @@ class miner(mm_util):
             plt.show()
 
         return [self.error_codes.Success] 
+
+    def train_method(
+            self, 
+            training_name,
+            training_method="alices",
+            node_architecture=(100,100,100),
+            n_epochs=30,
+            batch_size=128            
+        ):
+        
+        known_training_methods = ["alices", "alice"]
+
+        rets = self._check_valid_augmented_data(
+                training_name
+            )
+
+        if self.error_codes.Success not in rets:
+            return rets
+        # load madminer H5 file??
+        # self.madminer_object.load()   
+
+        if training_method not in known_training_methods:
+            self.log.error("Unknown raining method {}".format(training_method))
+            self.log.info("Try again with one of:")
+            for method in known_training_methods:
+                self.log.info(" - {}".format(method))
+            self.log.warning("Quitting train_method function.")
+            return self.error_codes.UnknownTrainingModelError
+
+        forge = madminer.ml.MLForge(debug=(self.log.level == 10))
+
+        forge.train(
+            method=training_method,
+            theta0_filename='{}/data/samples/theta0_{}_train.npy'.format(self.dir, training_name),
+            x_filename='{}/data/samples/x_{}_train.npy'.format(self.dir, training_name),
+            y_filename='{}/data/samples/y_{}_train.npy'.format(self.dir, training_name),
+            r_xz_filename='{}/data/samples/r_xz_{}_train.npy'.format(self.dir, training_name),
+            t_xz0_filename='{}/data/samples/t_xz_{}_train.npy'.format(self.dir, training_name),
+            n_hidden=node_architecture,
+            activation='relu',
+            n_epochs=n_epochs,
+            batch_size=batch_size
+        )
+
+        forge.save('{}/models/model_{}_{}'.format(self.dir, training_name, training_method))
+
+        return self.error_codes.Success
+
+        

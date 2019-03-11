@@ -70,8 +70,7 @@ class mm_base_util():
 
         NoAugmentedDataFileError = 20
         IncorrectAugmentedDataFileError = 21
-
-    Success = error_codes.Success
+        UnknownTrainingModelError = 22
 
     def __init__(
             self,
@@ -887,5 +886,5 @@ class mm_util(
             arg_list,
             max_runtime=60*60 # 1 hour
         ):
-
+        raise NotImplementedError   
         return self.error_codes.Success
