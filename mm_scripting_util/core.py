@@ -652,7 +652,8 @@ class miner(mm_util):
 
     def train_data(
             self,
-            augmented_samples, 
+            augmented_samples,
+            sample_name, 
             training_name,
             augmentation_benchmark,
             n_theta_samples=2500,
@@ -668,7 +669,7 @@ class miner(mm_util):
         
         if self.TRAINING_STEP < 1:
             ret = self.augment_samples(
-                    training_name=training_name,
+                    sample_name=sample_name,
                     n_or_frac_augmented_samples=int(augmented_samples),
                     augmentation_benchmark=augmentation_benchmark,
                     n_theta_samples=n_theta_samples
@@ -680,7 +681,7 @@ class miner(mm_util):
 
         if self.TRAINING_STEP < 2: 
             ret = self.plot_compare_mg5_and_augmented_data(
-                    training_name, 
+                    sample_name, 
                     image_save_name=image_save_name,
                     bins=bins,
                     mark_outlier_bins=True
@@ -694,17 +695,17 @@ class miner(mm_util):
 
     def augment_samples(
             self,
-            training_name,
+            sample_name,
             n_or_frac_augmented_samples,
             augmentation_benchmark,
             n_theta_samples=2500
         ):
         """
-        Augments sample data and saves to a new sample with name <training_name>.
+        Augments sample data and saves to a new sample with name <sample_name>.
         This allows for multiple different training sets to be saved on a single sample set.
 
         parameters:
-            training_name, required:
+            sample_name, required:
                 string, name of the training data objects to modify
             n_or_frac_augmented_samples, required:
                 if type(int), number of samples to draw from simulated madminer data with the sample augmenter
@@ -771,7 +772,7 @@ class miner(mm_util):
             theta1=madminer.sampling.constant_benchmark_theta(augmentation_benchmark),
             n_samples=samples,
             folder=self.dir + "/data/samples",
-            filename=training_name + "_train"
+            filename=sample_name + "_train"
         )
 
         for benchmark in sample_augmenter.benchmarks:
@@ -779,21 +780,21 @@ class miner(mm_util):
                 theta=madminer.sampling.constant_benchmark_theta(benchmark),
                 n_samples=samples,
                 folder=self.dir + "/data/samples",
-                filename='{}_augmented_samples_{}'.format(training_name, benchmark)                 
+                filename='{}_augmented_samples_{}'.format(sample_name, benchmark)                 
             )
 
         return [self.error_codes.Success]
 
     def plot_augmented_data_corner(
             self,
-            training_name,
+            sample_name,
             image_save_name=None,
             bins=(40,40),
             ranges=[(-8,8),(0,600)],
             max_index=0
         ):
         rets = [ 
-            self._check_valid_augmented_data(training_name=training_name),
+            self._check_valid_augmented_data(sample_name=sample_name),
             self._check_valid_mg5_process()
             ]
         failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
@@ -802,7 +803,7 @@ class miner(mm_util):
             self.log.warning("Canceling augmented sampling plots.")            
             return failed
 
-        search_key = "x_{}_augmented_samples_".format(training_name)
+        search_key = "x_{}_augmented_samples_".format(sample_name)
 
         x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]
         
@@ -850,7 +851,7 @@ class miner(mm_util):
 
     def plot_compare_mg5_and_augmented_data(
             self,
-            training_name,
+            sample_name,
             image_save_name=None,
             mark_outlier_bins=False,
             bins=(40,40),
@@ -862,7 +863,7 @@ class miner(mm_util):
         ):
 
         err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
-                training_name, 
+                sample_name, 
                 bins, 
                 ranges, 
                 dens
@@ -958,23 +959,25 @@ class miner(mm_util):
 
     def train_method(
             self, 
-            training_name,
+            sample_name,
+            training_name=None,
             training_method="alices",
             node_architecture=(100,100,100),
             n_epochs=30,
-            batch_size=128            
+            batch_size=128,
+            activation_function='relu'            
         ):
         
         known_training_methods = ["alices", "alice"]
 
-        rets = self._check_valid_augmented_data(
-                training_name
-            )
+        rets = [ 
+            self._check_valid_augmented_data(sample_name=sample_name),
+            ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
 
-        if self.error_codes.Success not in rets:
-            return rets
-        # load madminer H5 file??
-        # self.madminer_object.load()   
+        if len(failed) > 0:
+            self.log.warning("Quitting train_method function.")            
+            return failed
 
         if training_method not in known_training_methods:
             self.log.error("Unknown raining method {}".format(training_method))
@@ -984,23 +987,35 @@ class miner(mm_util):
             self.log.warning("Quitting train_method function.")
             return self.error_codes.UnknownTrainingModelError
 
-        forge = madminer.ml.MLForge(debug=(self.log.level == 10))
-
+        # load madminer H5 file??
+        # self.madminer_object.load()   
+        
+        forge = madminer.ml.MLForge()
         forge.train(
-            method=training_method,
-            theta0_filename='{}/data/samples/theta0_{}_train.npy'.format(self.dir, training_name),
-            x_filename='{}/data/samples/x_{}_train.npy'.format(self.dir, training_name),
-            y_filename='{}/data/samples/y_{}_train.npy'.format(self.dir, training_name),
-            r_xz_filename='{}/data/samples/r_xz_{}_train.npy'.format(self.dir, training_name),
-            t_xz0_filename='{}/data/samples/t_xz_{}_train.npy'.format(self.dir, training_name),
-            n_hidden=node_architecture,
-            activation='relu',
-            n_epochs=n_epochs,
-            batch_size=batch_size
-        )
+                method=training_method,
+                theta0_filename='{}/data/samples/theta0_{}_train.npy'.format(self.dir, sample_name),
+                x_filename='{}/data/samples/x_{}_train.npy'.format(self.dir, sample_name),
+                y_filename='{}/data/samples/y_{}_train.npy'.format(self.dir, sample_name),
+                r_xz_filename='{}/data/samples/r_xz_{}_train.npy'.format(self.dir, sample_name),
+                t_xz0_filename='{}/data/samples/t_xz_{}_train.npy'.format(self.dir, sample_name),
+                n_hidden=node_architecture,
+                activation=activation_function,
+                n_epochs=n_epochs,
+                batch_size=batch_size
+            )
 
-        forge.save('{}/models/model_{}_{}'.format(self.dir, training_name, training_method))
+        default_name = "train"
+
+        if training_name is None: 
+            training_name = default_name
+        
+        size = self._dir_size(
+            pathname="{}/models".format(self.dir),
+            matching_pattern=["model_{}".format(training_name), "_settings.json"]
+        )
+        if size > 0:
+            training_name = "{}{}".format(training_name, size)
+
+        forge.save('{}/models/model_{}'.format(self.dir, training_name))
 
         return self.error_codes.Success
-
-        

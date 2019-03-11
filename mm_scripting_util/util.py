@@ -9,6 +9,7 @@ import traceback
 import madminer.core
 import madminer.lhe
 import madminer.sampling
+import madminer.ml
 import madminer.utils.interfaces.madminer_hdf5
 import corner
 import matplotlib.pyplot as plt
@@ -17,6 +18,7 @@ import enum
 import collections
 import scipy.stats
 import tabulate
+import glob
 
 
 class mm_base_util():
@@ -71,6 +73,7 @@ class mm_base_util():
         NoAugmentedDataFileError = 20
         IncorrectAugmentedDataFileError = 21
         UnknownTrainingModelError = 22
+        NoTrainedModelsError = 23
 
     def __init__(
             self,
@@ -86,21 +89,15 @@ class mm_base_util():
     def _check_valid_init(
             self
         ):
+        """
+        Object member function to check for correct initialization
+        """
+
         if os.path.exists(self.dir):
             return self.error_codes.Success
         self.log.error("Init not successful; directory " + self.dir + "does not exist.")
         return self.error_codes.InitError
             
-    def _check_ret(
-            self, 
-            ret,
-            ret_warning=None
-        ): 
-        if self.error_codes.Success not in ret:
-            if ret_warning is not None:
-                self.log.warning(ret_warning)
-            return ret
-
     def _dir_size(
             self, 
             pathname,
@@ -119,9 +116,10 @@ class mm_base_util():
         Returns: 
             int, number of matching files in directory, or -1 if dir does not exist.
         """
-
+        if type(matching_pattern) is not list:
+            matching_pattern = [matching_pattern]
         if os.path.exists(pathname):
-            dir_elts = len([elt for elt in os.listdir(pathname) if matching_pattern in elt])
+            dir_elts = len([elt for elt in os.listdir(pathname) if all([pattern in elt for pattern in matching_pattern])])
             return dir_elts
         return -1 
 
@@ -132,8 +130,26 @@ class mm_base_util():
             line_strings, 
             outfile=None         
         ):
+        """
+        # Description
+        Helper member function for rewriting specific lines in the listed files. used
+        mostly to setup .dat backend files, etc.
+
+        # Parameters
+        infile: string
+            path/filename of input file (file to edit)
+        line_numbers: list of ints
+            ordered list of line numbers to change
+        line_strings: list of strings
+            ordered list of strings to replace, corresponding to the line numbers
+            in the line_numbers list
+        outfile: string
+            path/filename of file to write to (defaults to infile if left blank)
+        """
+
         if outfile is None:
             outfile = infile
+        
         assert(len(line_numbers) == len(line_strings))
         with open(infile, 'r') as file:
             lines = file.readlines()
@@ -151,6 +167,11 @@ class mm_base_util():
             include_folder=False,
             matching_pattern=""
         ):
+        """
+        # description
+        utility function to remove files in a folder/the folder itself
+        """
+
         if os.path.exists(path_to_clear):
             if include_folder and matching_pattern is "": 
                 if platform.system() == "Linux": 
@@ -181,7 +202,20 @@ class mm_base_util():
             pattern="",
             mkdir_if_not_existing=True
         ):
-        
+        """
+        # description
+        utility function for path checking/validation of data.
+
+        # parameters
+        local_pathname: string
+            pathname locally (self.dir/<local_pathname>) to directory to trawl
+        force: bool
+            force delection//instantiation if files already exist
+        pattern: string
+            file naming scheme to match when checking for files within the directory
+        mkdir_if_not_existing: bool
+            mkdir switch, pretty selfexplanatory
+        """
         dirsize = self._dir_size(
             pathname=self.dir + "/" + local_pathname,
             matching_pattern=pattern
@@ -210,6 +244,21 @@ class mm_base_util():
             pathname,
             include_module_paths=True   
         ):
+        """
+        # description
+        helper function which searchs for paths both within the object's internal directory, 
+        and the greater module directory. order is specified by search order, but could be changed
+        in a later update - might be a good idea. 
+
+        # parameters
+        pathname: string
+            name of path to search for. can be a word, path, etc. 
+        include_module_paths: bool 
+            switch for extra searches in module main directory, if files not found locally.
+            default true.  
+
+        """
+
         # search first for exact path
 
         if pathname is None:
@@ -248,6 +297,20 @@ class mm_base_util():
             substring,
             n
         ):
+        """
+        # description
+        helper function, finds position of the nth occurence of a substring in a string
+
+        # parameters
+        string: str 
+            string to search for substrings within
+        substring: str
+            substring to find within param <string>
+        n: int
+            level of occurence of <substring> in <string> to find
+        return: int
+            the index of first letter of the nth occurence of substring in string
+        """
         parts = string.split(substring, n + 1)
         if len(parts) <= n + 1:
             return -1
@@ -257,6 +320,17 @@ class mm_base_util():
             self, 
             var
         ):
+        """
+        # description
+        admittedly suspicious helper function. gets (with varying success)
+        the name of a variable
+
+        # parameters
+        var: Type
+            variable of any type at all
+        return: list[string]
+            list of possible names for this variable, by instantiation.
+        """
         callers_local_vars = inspect.currentframe().f_back.f_locals.items()
         return [k for k, v in callers_local_vars if v is var]
 
@@ -671,14 +745,14 @@ class mm_train_util(
 
     def _get_mg5_and_augmented_arrays(
             self,
-            training_name,
+            sample_name,
             bins,            
             ranges,
             dens
         ):  
 
         rets = [ 
-            self._check_valid_augmented_data(training_name=training_name),
+            self._check_valid_augmented_data(sample_name=sample_name),
             mm_simulate_util._check_valid_mg5_process(self)
             ]
         failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
@@ -688,7 +762,7 @@ class mm_train_util(
             return failed, None, None
 
         # search key for augmented samples
-        search_key = "x_{}_augmented_samples_".format(training_name)
+        search_key = "x_{}_augmented_samples_".format(sample_name)
         x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]        
         x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/" + f)) for f in x_files])
         # x_size = max([x_arrays[obs].shape[0] for obs in x_arrays])
@@ -794,12 +868,12 @@ class mm_train_util(
 
     def _check_valid_augmented_data(
             self,
-            training_name,
+            sample_name,
             expected_benchmarks=None
         ):
         size = self._dir_size(
             pathname=self.dir + '/data/samples',
-            matching_pattern=training_name + "_augmented_samples"
+            matching_pattern=sample_name + "_augmented_samples"
         )
 
         if size < 0:
@@ -807,22 +881,45 @@ class mm_train_util(
             self.log.error("Augmented data not parsed (or detected)")
             return self.error_codes.NoDirectoryError
         elif size == 0:
-            self.log.error("data/samples directory does not contain any files with the given training_name")
+            self.log.error("data/samples directory does not contain any files with the given sample_name")
             self.log.error("Augmented data not parsed (or detected)")
             return self.error_codes.NoAugmentedDataFileError
         ret = self.error_codes.Success
         if expected_benchmarks is not None:
             if size != expected_benchmarks:
-                self.log.error("data/samples directory contains an incorrect # of files with given training_name ")
+                self.log.error("data/samples directory contains an incorrect # of files with given sample_name ")
                 self.log.error(" - {}/{} expected files".format(size, expected_benchmarks)) 
                 ret = self.error_codes.IncorrectAugmentedDataFileError
 
-        files = [f for f in os.listdir(self.dir + '/data/samples') if (training_name + "_augmented_samples") in f]
+        files = [f for f in os.listdir(self.dir + '/data/samples') if (sample_name + "_augmented_samples") in f]
         self.log.debug("Files found:")
         for f in files: 
             self.log.debug(f)
         return ret
         # return self.error_codes.Success
+
+    def _check_vaild_trained_models(
+            self,
+            training_name
+        ):
+        size = self._dir_size(
+            pathname=self.dir + '/models',
+            matching_pattern=[training_name, "_settings.json"]
+        )
+        if size < 0:
+            self.log.error("/models directory does not exist ")
+            self.log.error("No trained models parsed or detected")
+            return self.error_codes.NoDirectoryError
+        elif size == 0:
+            self.log.error("/models does not contain files with training name {}".format(training_name))
+            self.log.error("No trained models parsed or detected")
+            return self.error_codes.NoTrainedModelsError
+        elif size > 1:
+            self.log.warning("Found {} files matching the training name, meaning there are".format(size))
+            self.log.warning("duplicates.")
+
+        return self.error_codes.Success
+
 
 class mm_util(
         mm_backend_util,
