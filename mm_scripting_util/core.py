@@ -771,16 +771,16 @@ class miner(mm_util):
             theta0=madminer.sampling.random_morphing_thetas(n_thetas=n_theta_samples, priors=priors),
             theta1=madminer.sampling.constant_benchmark_theta(augmentation_benchmark),
             n_samples=samples,
-            folder=self.dir + "/data/samples",
-            filename=sample_name + "_train"
+            folder=self.dir + "/data/samples/{}".format(sample_name),
+            filename="train"
         )
 
         for benchmark in sample_augmenter.benchmarks:
             sample_augmenter.extract_samples_test(
                 theta=madminer.sampling.constant_benchmark_theta(benchmark),
                 n_samples=samples,
-                folder=self.dir + "/data/samples",
-                filename='{}_augmented_samples_{}'.format(sample_name, benchmark)                 
+                folder=self.dir + "/data/samples/{}".format(sample_name),
+                filename='augmented_samples_{}'.format(benchmark)
             )
 
         return [self.error_codes.Success]
@@ -803,11 +803,11 @@ class miner(mm_util):
             self.log.warning("Canceling augmented sampling plots.")            
             return failed
 
-        search_key = "x_{}_augmented_samples_".format(sample_name)
+        search_key = "x_augmented_samples_"
 
-        x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]
+        x_files = [f for f in os.listdir(self.dir + "/data/samples/{}".format(sample_name)) if search_key in f]
         
-        x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/" + f)) for f in x_files])
+        x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/{}/".format(sample_name) + f)) for f in x_files])
         
         x_size = max([x_arrays[obs].shape[0] for obs in x_arrays])
 
@@ -832,8 +832,9 @@ class miner(mm_util):
             plt_prime = corner.corner(x_arrays[benchmark], labels=labels, color='C{}'.format(i + 1), bins=bins, range=ranges, fig=plt)
             plt_prime.label = legend_labels[i + 1]
 
-        full_save_name = "{}/augmented_data_{}_{}s.png".format(
+        full_save_name = "{}/data/samples/{}/augmented_data_{}_{}s.png".format(
             self.dir,
+            sample_name,
             image_save_name,
             x_size
         )
@@ -965,7 +966,7 @@ class miner(mm_util):
             node_architecture=(100,100,100),
             n_epochs=30,
             batch_size=128,
-            activation_function='relu'            
+            activation_function='relu'
         ):
         
         known_training_methods = ["alices", "alice"]
@@ -1030,13 +1031,31 @@ class miner(mm_util):
         ):
 
         rets = [ 
-            self._check_vaild_trained_models(training_name=training_name),
+            self._check_valid_trained_models(training_name=training_name),
             ]
 
-        failed = [ ret for ret in rets if ret != self.error_codes.Success ]
+        failed = [ ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
             self.log.warning("Quitting train_method function.")            
             return failed
-       
+        else: 
+            fname = (glob.glob("{}/models/{}_settings.json".format(self.dir, training_name)) + \
+                glob.glob("{}/models/{}_*_settings.json".format(self.dir, training_name)))[0]
+
+        self.log.info("evaluating trained method, with specifications:")
+        self.log.info("  full model name:    {}".format("_".join(fname.split("/")[-1].split("_")[:-1])))
+        self.log.info("  evaluation name:    {}".format(evaluation_name))
+        self.log.info("  evaluation samples: {}".format(evaluation_samples))
+        self.log.info("  theta_gridding:     {}".format(theta_grid_spacing))
+
+        forge = madminer.ml.MLForge()
+
+        theta_grid = np.mgrid[[slice(*tup, theta_grid_spacing*1.0j) for tup in [self.params['parameters'][parameter]['parameter_range'] for parameter in self.params['parameters']]]].T
+        theta_dim = theta_grid.shape[-1]
+        for i in range(theta_dim): 
+            theta_grid = np.vstack(theta_grid)
+
+
+
         return self.error_codes.Success

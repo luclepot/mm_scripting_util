@@ -74,6 +74,7 @@ class mm_base_util():
         IncorrectAugmentedDataFileError = 21
         UnknownTrainingModelError = 22
         NoTrainedModelsError = 23
+        MultipleMatchingFilesError = 24
 
     def __init__(
             self,
@@ -762,9 +763,9 @@ class mm_train_util(
             return failed, None, None
 
         # search key for augmented samples
-        search_key = "x_{}_augmented_samples_".format(sample_name)
-        x_files = [f for f in os.listdir(self.dir + "/data/samples") if search_key in f]        
-        x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/" + f)) for f in x_files])
+        search_key = "x_augmented_samples_"
+        x_files = [f for f in os.listdir(self.dir + "/data/samples/{}".format(sample_name)) if search_key in f]        
+        x_arrays = dict([(f[len(search_key):][:-len(".npy")], np.load(self.dir + "/data/samples/{}/".format(sample_name) + f)) for f in x_files])
         # x_size = max([x_arrays[obs].shape[0] for obs in x_arrays])
 
         n_aug = max([x_arrays[obs].shape[0] for obs in x_arrays])
@@ -872,54 +873,66 @@ class mm_train_util(
             expected_benchmarks=None
         ):
         size = self._dir_size(
-            pathname=self.dir + '/data/samples',
-            matching_pattern=sample_name + "_augmented_samples"
+            pathname=self.dir + '/data/samples/{}'.format(sample_name),
+            matching_pattern="_augmented_samples"
         )
 
         if size < 0:
-            self.log.error("data/samples directory does not exist!")
+            self.log.error("data/samples/{} directory does not exist!".format(sample_name))
             self.log.error("Augmented data not parsed (or detected)")
             return self.error_codes.NoDirectoryError
         elif size == 0:
-            self.log.error("data/samples directory does not contain any files with the given sample_name")
+            self.log.error("data/samples/{} directory does not contain any files with the given sample_name".format(sample_name))
             self.log.error("Augmented data not parsed (or detected)")
             return self.error_codes.NoAugmentedDataFileError
         ret = self.error_codes.Success
         if expected_benchmarks is not None:
             if size != expected_benchmarks:
-                self.log.error("data/samples directory contains an incorrect # of files with given sample_name ")
+                self.log.error("data/samples/{} directory contains an incorrect # of files with given sample_name ".format(sample_name))
                 self.log.error(" - {}/{} expected files".format(size, expected_benchmarks)) 
                 ret = self.error_codes.IncorrectAugmentedDataFileError
 
-        files = [f for f in os.listdir(self.dir + '/data/samples') if (sample_name + "_augmented_samples") in f]
+        files = [f for f in os.listdir(self.dir + '/data/samples/{}'.format(sample_name)) if ("_augmented_samples") in f]
         self.log.debug("Files found:")
         for f in files: 
             self.log.debug(f)
         return ret
         # return self.error_codes.Success
 
-    def _check_vaild_trained_models(
+    def _check_valid_trained_models(
             self,
             training_name=""
         ):
 
-        size = self._dir_size(
-            pathname=self.dir + '/models',
-            matching_pattern=[training_name, "_settings.json"]
-        )
+        
+        # size = self._dir_size(
+        #     pathname=self.dir + '/models',
+        #     matching_pattern=["{}_".format(training_name), "_settings.json"]
+        # )
+
+        # replace old dir_size function in this scenario
+        if not os.path.exists("{}/models".format(self.dir)):
+            size = -1
+        else:
+            size = len(glob.glob("{}/models/{}_settings.json".format(self.dir, training_name))) + \
+                len(glob.glob("{}/models/{}_*_settings.json".format(self.dir, training_name)))
+
         if size < 0:
             self.log.error("/models directory does not exist ")
             self.log.error("No trained models parsed or detected")
             return self.error_codes.NoDirectoryError
+
         elif size == 0:
             self.log.error("/models does not contain files with training name {}".format(training_name))
             self.log.error("No trained models parsed or detected")
             return self.error_codes.NoTrainedModelsError
-        elif size > 1:
-            self.log.warning("Found {} files matching the training name. It is advisable to check for duplicates.".format(size))
-            for fname in glob.glob("{}/models/*{}*_*_settings.json".format(self.dir, training_name)):
-                self.log.debug(fname.rstrip("_settings.json"))
 
+        else:
+            if size > 1:
+                self.log.error("Multiple models with name matching '{}'. Please specify further among the following possibilities:".format(training_name))
+                for fname in glob.glob("{}/models/{}_*_settings.json".format(self.dir, training_name)):
+                    self.log.error(" - {}".format("_".join(fname.split("/")[-1].split("_")[:-1])))
+                return self.error_codes.MultipleMatchingFilesError
         return self.error_codes.Success
 
 class mm_util(
