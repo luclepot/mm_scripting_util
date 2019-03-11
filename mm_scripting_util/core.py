@@ -1011,11 +1011,32 @@ class miner(mm_util):
         
         size = self._dir_size(
             pathname="{}/models".format(self.dir),
-            matching_pattern=["model_{}".format(training_name), "_settings.json"]
+            matching_pattern=["{}".format(training_name), "{}_settings.json".format(training_method)]
         )
+ 
         if size > 0:
             training_name = "{}{}".format(training_name, size)
 
-        forge.save('{}/models/model_{}'.format(self.dir, training_name))
+        forge.save('{}/models/{}_{}'.format(self.dir, training_name, training_method))
 
+        return self.error_codes.Success
+
+    def evaluate_method(
+            self,
+            training_name, 
+            evaluation_name,
+            evaluation_samples,
+            theta_grid_spacing=40
+        ):
+
+        rets = [ 
+            self._check_vaild_trained_models(training_name=training_name),
+            ]
+
+        failed = [ ret for ret in rets if ret != self.error_codes.Success ]
+
+        if len(failed) > 0:
+            self.log.warning("Quitting train_method function.")            
+            return failed
+       
         return self.error_codes.Success

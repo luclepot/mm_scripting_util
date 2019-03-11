@@ -900,8 +900,9 @@ class mm_train_util(
 
     def _check_vaild_trained_models(
             self,
-            training_name
+            training_name=""
         ):
+
         size = self._dir_size(
             pathname=self.dir + '/models',
             matching_pattern=[training_name, "_settings.json"]
@@ -915,11 +916,11 @@ class mm_train_util(
             self.log.error("No trained models parsed or detected")
             return self.error_codes.NoTrainedModelsError
         elif size > 1:
-            self.log.warning("Found {} files matching the training name, meaning there are".format(size))
-            self.log.warning("duplicates.")
+            self.log.warning("Found {} files matching the training name. It is advisable to check for duplicates.".format(size))
+            for fname in glob.glob("{}/models/*{}*_*_settings.json".format(self.dir, training_name)):
+                self.log.debug(fname.rstrip("_settings.json"))
 
         return self.error_codes.Success
-
 
 class mm_util(
         mm_backend_util,
