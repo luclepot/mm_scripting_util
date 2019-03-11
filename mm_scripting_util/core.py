@@ -961,7 +961,7 @@ class miner(mm_util):
     def train_method(
             self, 
             sample_name,
-            training_name=None,
+            training_name="temp",
             training_method="alices",
             node_architecture=(100,100,100),
             n_epochs=30,
@@ -988,37 +988,40 @@ class miner(mm_util):
             self.log.warning("Quitting train_method function.")
             return self.error_codes.UnknownTrainingModelError
 
+        existing_files = glob.glob("{}/models/{}/{}_{}*".format(self.dir, sample_name, training_name, training_method)) 
+        if len(existing_files) > 0:
+            self.log.warning("There are trained models with this name!")
+            for fname in existing_files: 
+                self.log.warning(" - {}".format(fname))
+            self.log.warning("Rerun function with a different name, or delete previously trained models.")
+            return self.error_codes.ExistingModelError
+
         # load madminer H5 file??
         # self.madminer_object.load()   
         
         forge = madminer.ml.MLForge()
         forge.train(
                 method=training_method,
-                theta0_filename='{}/data/samples/theta0_{}_train.npy'.format(self.dir, sample_name),
-                x_filename='{}/data/samples/x_{}_train.npy'.format(self.dir, sample_name),
-                y_filename='{}/data/samples/y_{}_train.npy'.format(self.dir, sample_name),
-                r_xz_filename='{}/data/samples/r_xz_{}_train.npy'.format(self.dir, sample_name),
-                t_xz0_filename='{}/data/samples/t_xz_{}_train.npy'.format(self.dir, sample_name),
+                theta0_filename='{}/data/samples/{}/theta0_train.npy'.format(self.dir, sample_name),
+                x_filename='{}/data/samples/{}/x_train.npy'.format(self.dir, sample_name),
+                y_filename='{}/data/samples/{}/y_train.npy'.format(self.dir, sample_name),
+                r_xz_filename='{}/data/samples/{}/r_xz_train.npy'.format(self.dir, sample_name),
+                t_xz0_filename='{}/data/samples/{}/t_xz_train.npy'.format(self.dir, sample_name),
                 n_hidden=node_architecture,
                 activation=activation_function,
                 n_epochs=n_epochs,
                 batch_size=batch_size
             )
-
-        default_name = "train"
-
-        if training_name is None: 
-            training_name = default_name
-        
-        size = self._dir_size(
-            pathname="{}/models".format(self.dir),
-            matching_pattern=["{}".format(training_name), "{}_settings.json".format(training_method)]
-        )
+            
+        # size = self._dir_size(
+        #     pathname="{}/models/{}".format(self.dir, sample_name),
+        #     matching_pattern=["{}".format(training_name), "{}_settings.json".format(training_method)]
+        # )
  
-        if size > 0:
-            training_name = "{}{}".format(training_name, size)
+        # if size > 0:
+        #     training_name = "{}{}".format(training_name, size)
 
-        forge.save('{}/models/{}_{}'.format(self.dir, training_name, training_method))
+        forge.save('{}/models/{}/{}_{}'.format(self.dir, sample_name, training_name, training_method))
 
         return self.error_codes.Success
 
@@ -1055,7 +1058,5 @@ class miner(mm_util):
         theta_dim = theta_grid.shape[-1]
         for i in range(theta_dim): 
             theta_grid = np.vstack(theta_grid)
-
-
 
         return self.error_codes.Success

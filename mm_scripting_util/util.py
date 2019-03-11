@@ -74,7 +74,8 @@ class mm_base_util():
         IncorrectAugmentedDataFileError = 21
         UnknownTrainingModelError = 22
         NoTrainedModelsError = 23
-        MultipleMatchingFilesError = 24
+        ExistingModelError = 24
+        MultipleMatchingFilesError = 25
 
     def __init__(
             self,
