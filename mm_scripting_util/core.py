@@ -927,8 +927,8 @@ class miner(mm_util):
                         linestyle="None", marker="x", color=colors[j])
     
         for i,observable in enumerate(observables): 
-            axs[i].set_xlabel(observable)
-            axs[i].set_ylabel("Event Fraction") 
+            axs[i].set_xlabel(observable) 
+            axs[i].set_yticklabels([])
 
         handles = []
         labels = []
@@ -953,6 +953,7 @@ class miner(mm_util):
                 x_aug[0].shape[0]
             )
             plt.savefig(full_save_name)
+            plt.clf()
         else:
             plt.show()
 
