@@ -1,13 +1,13 @@
 
 from .util import *
 
-class miner(mm_util):   
+class miner(mm_util):
     
     """
     Main container for the class. 
 
     This class should handle all necessary interfacing with
-    madminer
+    madminer and madgraph. Nice! 
 
     """
 
@@ -133,6 +133,44 @@ class miner(mm_util):
             )
 
         return [self.error_codes.Success]
+    
+    def list_augmented_samples(
+            self,
+            verbose=True
+        ):
+        self.log.info("Augmented samples:")
+        samples = []
+        for i,sample in enumerate(os.listdir("{}/data/samples/".format(self.dir))):
+            samples.append((sample, self._load_config(self._augmentation_config(sample))))
+            self.log.info(" - {}".format(sample))
+            if verbose:
+                for elt in samples[i][1]:
+                    self.log.info("    - {}: {}".format(elt, samples[i][1][elt]))
+
+        return samples
+
+    def list_trained_models(
+            self,
+            verbose=True
+        ):
+
+        model_pairs = [f.split("/")[-2:] for f in glob.glob("{}/models/*/*".format(self.dir))] 
+        models = []
+
+        self.log.info("Trained Models:")
+
+        for i,model in enumerate(model_pairs):
+            models.append((model, self._load_config(self._training_config(*model))))
+            self.log.info(" - {}".format(model[1]))
+            if verbose:
+                for elt in models[i][1]:
+                    self.log.info("    - {}: {}".format(elt, models[i][1][elt]))
+        return models
+
+    def list_evaluations(
+            self
+        ):
+        raise NotImplementedError
 
     def __del__(
             self
@@ -240,10 +278,7 @@ class miner(mm_util):
                 self.log.debug("")
                 self.log.debug("RUNNING MG5 DATA PROCESS, STEP 5")
                 self.log.debug("")
-                ret = self.process_mg5_data(
-                        samples=samples, 
-                        sample_benchmark=sample_benchmark
-                    )
+                ret = self.process_mg5_data()
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
@@ -408,7 +443,7 @@ class miner(mm_util):
             platform="lxplus7",
             use_pythia_card=False
         ):
-
+        
         sample_sizes = self._equal_sample_sizes(samples, sample_limit=100000)
 
         rets = [ 
@@ -417,6 +452,7 @@ class miner(mm_util):
                 self._check_valid_morphing(),
                 self._check_valid_backend()
                 ] 
+
         failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
         if len(failed) > 0:
             self.log.warning("Canceling mg5 script setup.")            
@@ -482,6 +518,10 @@ class miner(mm_util):
             only_prepare_script=True
         )
 
+        self._write_config(
+            { 'samples' : samples, 'sample_benchmark' : sample_benchmark, 'run_bool' : False },
+            self._main_sample_config()
+        )
         self.log.debug("Successfully setup mg5 scripts. Ready for execution")
         return [self.error_codes.Success]
 
@@ -536,22 +576,39 @@ class miner(mm_util):
 
         os.system(cmd)
 
+        self.log.info("")
+        self.log.info("")
+        self.log.info("Finished with data simualtion.")
+        self.log.debug("Writing config dictionary and saving simulated parameters.")
+
+        # rewrite run config file with true run_bool
+        run_dict = self._load_config(self._main_sample_config())
+        run_dict['run_bool'] = True
+
+        self._write_config(
+            run_dict,
+            self._main_sample_config()
+        )
+
         return [self.error_codes.Success]
     
     def process_mg5_data(
-            self,
-            samples, 
-            sample_benchmark
+            self
         ):
 
         rets = [ 
-                self._check_valid_mg5_run(samples)
+                self._check_valid_mg5_run()
                 ]
+
         failed = [ ret for ret in rets if ret != self.error_codes.Success ] 
 
         if len(failed) > 0:
             self.log.warning("Canceling mg5 data processing routine.")            
             return failed
+
+        mg5_run_dict = self._load_config(self._main_sample_config())
+        samples = mg5_run_dict['samples']
+        sample_benchmark = mg5_run_dict['sample_benchmark']
 
         lhe_processor_object = madminer.lhe.LHEProcessor(filename=self.dir + "/data/madminer_{}.h5".format(self.name))
         n_cards = self._number_of_cards(samples, 100000)
@@ -698,7 +755,8 @@ class miner(mm_util):
             sample_name,
             n_or_frac_augmented_samples,
             augmentation_benchmark,
-            n_theta_samples=2500
+            n_theta_samples=100,
+            evaluation_aug_dir=None
         ):
         """
         Augments sample data and saves to a new sample with name <sample_name>.
@@ -718,7 +776,6 @@ class miner(mm_util):
 
         """
         # check for processed data
-        
         rets = [ 
             self._check_valid_mg5_process()
             ]
@@ -755,16 +812,29 @@ class miner(mm_util):
             self.log.error("Incorrect input ")
             failed.append(self.error_codes.InvalidTypeError )
 
-        if samples > 10000000:
+
+        if samples > 100000000:
             self.log.warning("Training on {} samples is ridiculous.. reconsider".format(samples))
             self.log.warning("quitting sample augmentation")
             failed.append(self.error_codes.Error)
+        if n_theta_samples > int(0.10*samples):
+            self.log.warning("Scaling n_theta_samples down for input")
+            self.log.warning("Old: {}".format(n_theta_samples)) 
+            n_theta_samples = int(0.05*samples)
+            self.log.warning("New: {}".format(n_theta_samples))
 
         if len(failed) > 0:
             return failed
 
         # parameter ranges
         priors = [('flat',) + self.params['parameters'][parameter]['parameter_range'] for parameter in self.params['parameters']]
+
+        if evaluation_aug_dir is not None:
+            aug_dir = evaluation_aug_dir
+            config_file = "{}/augmented_sample.mmconfig".format(aug_dir)
+        else: 
+            aug_dir = self.dir + "/data/samples/{}".format(sample_name)
+            config_file = self._augmentation_config(sample_name)
 
         # train the ratio
         sample_augmenter.extract_samples_train_ratio(
@@ -775,13 +845,25 @@ class miner(mm_util):
             filename="train"
         )
 
+        # extract samples at each benchmark
         for benchmark in sample_augmenter.benchmarks:
             sample_augmenter.extract_samples_test(
                 theta=madminer.sampling.constant_benchmark_theta(benchmark),
                 n_samples=samples,
-                folder=self.dir + "/data/samples/{}".format(sample_name),
+                folder=aug_dir,
                 filename='augmented_samples_{}'.format(benchmark)
             )
+
+        # save augmentation config file
+        self._write_config(
+            {
+                "augmentation_benchmark": augmentation_benchmark,
+                "augmentation_samples": samples,
+                "theta_samples": n_theta_samples,
+                "sample_name": sample_name
+            },
+            config_file
+        )
 
         return [self.error_codes.Success]
 
@@ -962,14 +1044,17 @@ class miner(mm_util):
     def train_method(
             self, 
             sample_name,
-            training_name="temp",
+            training_name,
             training_method="alices",
             node_architecture=(100,100,100),
             n_epochs=30,
             batch_size=128,
-            activation_function='relu'
+            activation_function='relu',
+            trainer='adam',
+            initial_learning_rate=0.001,
+            final_learning_rate=0.0001
         ):
-        
+
         known_training_methods = ["alices", "alice"]
 
         rets = [ 
@@ -1011,7 +1096,10 @@ class miner(mm_util):
                 n_hidden=node_architecture,
                 activation=activation_function,
                 n_epochs=n_epochs,
-                batch_size=batch_size
+                batch_size=batch_size,
+                trainer=trainer,
+                initial_lr=initial_learning_rate,
+                final_lr=final_learning_rate
             )
             
         # size = self._dir_size(
@@ -1022,7 +1110,23 @@ class miner(mm_util):
         # if size > 0:
         #     training_name = "{}{}".format(training_name, size)
 
-        forge.save('{}/models/{}/{}_{}'.format(self.dir, sample_name, training_name, training_method))
+        forge.save('{}/models/{}/{}/train'.format(self.dir, sample_name, training_name))
+
+        self._write_config(
+            {
+                'training_method' : training_method, 
+                'training_name' : training_name,
+                'node_architecture' : node_architecture,
+                'n_epochs' : n_epochs,
+                'batch_size' : batch_size,
+                'activation_function' : activation_function,
+                'trainer' : trainer,
+                'initial_learning_rate' : initial_learning_rate,
+                'final_learning_rate' : final_learning_rate,
+                'sample_name' : sample_name
+            },
+            self._training_config(sample_name, training_name)
+        )
 
         return self.error_codes.Success
 
@@ -1031,33 +1135,110 @@ class miner(mm_util):
             training_name, 
             evaluation_name,
             evaluation_samples,
-            theta_grid_spacing=40
+            theta_grid_spacing=40,
+            sample_name="*"
         ):
+        params = locals() 
+        for parameter in params:
+            if parameter is not 'self': 
+                self.log.debug("{}: {}".format(parameter, params[parameter]))
+        # self.log.debug("training name: {}".format(training_name))
+        # self.log.debug("evaluation name: {}".format(evaluation_name))
+        # self.log.debug("evaluation samples: {}".format(evaluation_samples))
+        # self.log.debug("sample name: {}".format(sample_name))
 
         rets = [ 
-            self._check_valid_trained_models(training_name=training_name),
+            self._check_valid_trained_models(training_name=training_name, sample_name=sample_name),
             ]
 
-        failed = [ ret for ret in rets if ret != self.error_codes.Success]
+        failed = [ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
             self.log.warning("Quitting train_method function.")            
             return failed
-        else: 
-            fname = (glob.glob("{}/models/{}_settings.json".format(self.dir, training_name)) + \
-                glob.glob("{}/models/{}_*_settings.json".format(self.dir, training_name)))[0]
+        
+        fname = glob.glob("{}/models/{}/{}/train_settings.json".format(self.dir, sample_name, training_name))[0]
+        
+        model_params = self._load_config(
+            "{}/training_model.mmconfig".format(os.path.dirname(fname))
+            )
+        sample_params = self._load_config(
+            self._augmentation_config(model_params['sample_name'])
+            )
 
-        self.log.info("evaluating trained method, with specifications:")
-        self.log.info("  full model name:    {}".format("_".join(fname.split("/")[-1].split("_")[:-1])))
-        self.log.info("  evaluation name:    {}".format(evaluation_name))
-        self.log.info("  evaluation samples: {}".format(evaluation_samples))
-        self.log.info("  theta_gridding:     {}".format(theta_grid_spacing))
+        for path_to_check in [ 
+            "{}/evaluations/".format(self.dir),
+            "{}/evaluations/{}/".format(self.dir, model_params['sample_name']),
+            "{}/evaluations/{}/{}/".format(self.dir, model_params['sample_name'], model_params['training_name']),
+            ]:
+            if not os.path.exists(path_to_check):
+                os.mkdir(path_to_check)
+                
+        evaluation_dir = "{}/evaluations/{}/{}/{}/".format(self.dir, model_params['sample_name'], model_params['training_name'], evaluation_name)
+        
+        if os.path.exists(evaluation_dir):
+            if len([f for f in os.listdir(evaluation_dir) if "log_r_hat" in f]) > 0:
+                self.log.error("Identically sampled, trained, and named evaluation instance already exists!! Pick another.")
+                self.log.error(" - {}".format(evaluation_dir))
+                return [self.error_codes.ExistingEvaluationError] 
+        else: 
+            os.mkdir(evaluation_dir)
+        
+
+        self.log.info("evaluating trained method '{}'".format(model_params['training_name']))
+        self.log.debug("Model Params: ")
+        for spec in model_params:
+            self.log.debug(" - {}: {}".format(spec, model_params[spec]))
+
+        self.log.debug("")
+        self.log.debug("Aug. Sample Params: ")
+        for spec in sample_params:
+            self.log.debug(" - {}: {}".format(spec, sample_params[spec]))
 
         forge = madminer.ml.MLForge()
+        sample_augmenter = madminer.sampling.SampleAugmenter(
+                filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+            )
+        forge.load("{}/train".format(os.path.dirname(self._training_config(model_params['sample_name'], model_params['training_name']))))
 
         theta_grid = np.mgrid[[slice(*tup, theta_grid_spacing*1.0j) for tup in [self.params['parameters'][parameter]['parameter_range'] for parameter in self.params['parameters']]]].T
         theta_dim = theta_grid.shape[-1]
+
+        augment_switch = True
+
+        if os.path.isfile("{}/augmented_sample.mmconfig".format(evaluation_dir)):
+            old_eval_params = self._load_config("{}/augmented_sample.mmconfig".format(evaluation_dir))
+            if all(
+                [
+                    os.path.isfile("{}/x_augmented_samples_{}.npy".format(evaluation_dir, benchmark)) for benchmark in sample_augmenter.benchmarks
+                ]) and (old_eval_params['augmentation_samples'] == evaluation_samples):
+                augment_switch = False
+        if augment_switch:
+            self.augment_samples(
+                sample_name="{}_eval_augment".format(evaluation_name),
+                n_or_frac_augmented_samples=evaluation_samples,
+                augmentation_benchmark=sample_params['augmentation_benchmark'],
+                n_theta_samples=sample_params['theta_samples'],
+                evaluation_aug_dir=evaluation_dir
+            )
+
+        # stack parameter grid into (N**M X M) size vector (tragic scale factor :--< ) 
         for i in range(theta_dim): 
             theta_grid = np.vstack(theta_grid)
+        
+        np.save("{}/theta_grid.npy".format(evaluation_dir),theta_grid)
+        
+        log_r_hat_dict = {}
+
+        for benchmark in sample_augmenter.benchmarks: 
+            ret = forge.evaluate(
+                theta0_filename="{}/theta_grid.npy".format(evaluation_dir),
+                x='{}/x_augmented_samples_{}.npy'.format(evaluation_dir, benchmark)
+            )
+            log_r_hat_dict[benchmark] = ret[0]
+
+        for benchmark in log_r_hat_dict: 
+            np.save("{}/log_r_hat_{}.npy".format(evaluation_dir, benchmark), log_r_hat_dict[benchmark])
+            self.log.info("log_r_hat info saved for benchmark {}: 'log_r_hat_{}.npy'".format(benchmark, benchmark))
 
         return self.error_codes.Success

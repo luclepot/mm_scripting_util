@@ -39,7 +39,6 @@ class mm_base_util():
 
         """
 
-
         # ones: general errors/success
         
         Success = 0 
@@ -76,6 +75,7 @@ class mm_base_util():
         NoTrainedModelsError = 23
         ExistingModelError = 24
         MultipleMatchingFilesError = 25
+        ExistingEvaluationError = 26 
 
     def __init__(
             self,
@@ -87,7 +87,11 @@ class mm_base_util():
         self.dir = self.path + "/" + self.name
         self.log = logging.getLogger(__name__)
         self.module_path = os.path.dirname(__file__)
-
+        
+        self._main_sample_config = lambda : "{}/main_sample.mmconfig".format(self.dir)
+        self._augmentation_config = lambda aug_sample_name : "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, aug_sample_name)
+        self._training_config = lambda aug_sample_name, training_name : "{}/models/{}/{}/training_model.mmconfig".format(self.dir, aug_sample_name, training_name)
+        
     def _check_valid_init(
             self
         ):
@@ -381,6 +385,24 @@ class mm_base_util():
         
         return wrapper
 
+    def _write_config(
+            self, 
+            dict_to_write,
+            file_to_write
+        ):
+
+        with open(file_to_write, 'w+') as config_file:
+            config_file.write("{}\n".format(dict_to_write))
+
+    def _load_config(
+            self, 
+            file_to_load
+        ):
+        with open(file_to_load, 'r') as config_file:
+            retdict = eval(config_file.readline().strip('\n'))
+        
+        return retdict
+
 class mm_backend_util(
         mm_base_util
     ):
@@ -601,7 +623,7 @@ class mm_simulate_util(
             self._check_valid_cards(num_cards),
             self._check_valid_morphing(),
             self._check_valid_mg5_scripts(samples),
-            self._check_valid_mg5_run(samples),
+            self._check_valid_mg5_run(),
             self._check_valid_mg5_process()
                 ]
         while step < len(blist) and blist[step] == self.error_codes.Success:
@@ -669,9 +691,16 @@ class mm_simulate_util(
         return self.error_codes.Success
 
     def _check_valid_mg5_run(
-            self,
-            samples
+            self
         ):
+
+        try:
+            mg5_run_dict = self._load_config(self._main_sample_config())
+        except FileNotFoundError:
+            return self.error_codes.NoDataFileError 
+
+        samples = mg5_run_dict['samples']
+
         expected = self._number_of_cards(
             samples=samples, 
             sample_limit=100000
@@ -902,38 +931,28 @@ class mm_train_util(
 
     def _check_valid_trained_models(
             self,
-            training_name=""
+            training_name,
+            sample_name="*"
         ):
 
-        
-        # size = self._dir_size(
-        #     pathname=self.dir + '/models',
-        #     matching_pattern=["{}_".format(training_name), "_settings.json"]
-        # )
+        matching_files = glob.glob("{}/models/{}/{}/train_settings.json".format(self.dir, sample_name, training_name))
 
-        # replace old dir_size function in this scenario
-        if not os.path.exists("{}/models".format(self.dir)):
-            size = -1
-        else:
-            size = len(glob.glob("{}/models/{}_settings.json".format(self.dir, training_name))) + \
-                len(glob.glob("{}/models/{}_*_settings.json".format(self.dir, training_name)))
+        size = len(matching_files)
 
-        if size < 0:
-            self.log.error("/models directory does not exist ")
-            self.log.error("No trained models parsed or detected")
-            return self.error_codes.NoDirectoryError
+        self.log.debug("Matching files: ")
+        for f in matching_files: 
+            self.log.debug(" - {}".format(f))
 
-        elif size == 0:
-            self.log.error("/models does not contain files with training name {}".format(training_name))
-            self.log.error("No trained models parsed or detected")
+        if size == 0:
+            self.log.error("no models detected with training name {}".format(training_name))
             return self.error_codes.NoTrainedModelsError
 
-        else:
-            if size > 1:
-                self.log.error("Multiple models with name matching '{}'. Please specify further among the following possibilities:".format(training_name))
-                for fname in glob.glob("{}/models/{}_*_settings.json".format(self.dir, training_name)):
-                    self.log.error(" - {}".format("_".join(fname.split("/")[-1].split("_")[:-1])))
-                return self.error_codes.MultipleMatchingFilesError
+        if size > 1:
+            self.log.error("Multiple models with name matching '{}'. Please specify further among the following possibilities:".format(training_name))
+            for fname in matching_files:
+                self.log.error(" - Model '{}', trained on sample '{}'".format("_".join(fname.split("/")[-1].split("_")[:-1]), "_".join(fname.split("/")[-2].split("_")[2:])))
+            return self.error_codes.MultipleMatchingFilesError
+        
         return self.error_codes.Success
 
 class mm_util(
