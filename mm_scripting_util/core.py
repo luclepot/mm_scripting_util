@@ -1136,6 +1136,7 @@ class miner(mm_util):
             evaluation_name,
             evaluation_samples,
             theta_grid_spacing=40,
+            evaluation_benchmark=None,
             sample_name="*"
         ):
         params = locals() 
@@ -1214,10 +1215,12 @@ class miner(mm_util):
                 ]) and (old_eval_params['augmentation_samples'] == evaluation_samples):
                 augment_switch = False
         if augment_switch:
+            if evaluation_benchmark is None: 
+                evaluation_benchmark = sample_params['augmentation_benchmark']
             self.augment_samples(
                 sample_name="{}_eval_augment".format(evaluation_name),
                 n_or_frac_augmented_samples=evaluation_samples,
-                augmentation_benchmark=sample_params['augmentation_benchmark'],
+                augmentation_benchmark=evaluation_benchmark,
                 n_theta_samples=sample_params['theta_samples'],
                 evaluation_aug_dir=evaluation_dir
             )
