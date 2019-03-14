@@ -76,6 +76,7 @@ class mm_base_util():
         ExistingModelError = 24
         MultipleMatchingFilesError = 25
         ExistingEvaluationError = 26 
+        NoEvaluatedModelError = 27 
 
     def __init__(
             self,
@@ -91,7 +92,8 @@ class mm_base_util():
         self._main_sample_config = lambda : "{}/main_sample.mmconfig".format(self.dir)
         self._augmentation_config = lambda aug_sample_name : "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, aug_sample_name)
         self._training_config = lambda aug_sample_name, training_name : "{}/models/{}/{}/training_model.mmconfig".format(self.dir, aug_sample_name, training_name)
-        
+        self._evaluation_config = lambda training_name, evaluation_name : "{}/evaluations/{}/{}/evaluation.mmconfig".format(self.dir, training_name, evaluation_name)
+
     def _check_valid_init(
             self
         ):
@@ -929,6 +931,13 @@ class mm_train_util(
         return ret
         # return self.error_codes.Success
 
+    def _check_for_matching_augmented_data(
+            self,
+            sample_size, 
+            sample_benchmark  
+        ):
+        conf_dics = [self._load_config(f + "/augmented_sample.mmconfig") for f in glob.glob("{}/*/*".format(self.dir)) + glob.glob("{}/*/*".format(self.dir))]
+
     def _check_valid_trained_models(
             self,
             training_name,
@@ -954,6 +963,38 @@ class mm_train_util(
             return self.error_codes.MultipleMatchingFilesError
         
         return self.error_codes.Success
+
+    def _check_valid_evaluation_data(
+            self,
+            evaluation_name,
+            training_name="*"
+        ):
+        matching = glob.glob("{}/evaluations/{}/{}".format(self.dir, training_name, evaluation_name))
+        size = len(matching)
+
+        if size==0: 
+            self.log.error("no evaluation instances with name {}".format(evaluation_name))
+            return self.error_codes.NoEvaluatedModelError
+        if size > 1:
+            self.log.error("More than one trained model with evaluation name '{}'".format(evaluation_name))
+            self.log.error("Please specify training model along with eval name, from the following:")
+            for i,f in enumerate(matching):
+                self.log.error("model {}:".format(i))
+                self.log.error("   training name: {}".format(f.split('/')))
+                self.log.error("   evaluation name: {}".format(evaluation_name))
+            return self.error_codes.MultipleMatchingFilesError
+
+        return self.error_codes.Success
+
+    def _get_evaluation_path(
+            self, 
+            evaluation_name,
+            training_name="*"
+        ):
+        ret = self._check_valid_evaluation_data(evaluation_name, training_name) 
+        if ret != self.error_codes.Success:
+            return ret, None
+        return self.error_codes.Success, glob.glob("{}/evaluations/{}/{}".format(self.dir, training_name, evaluation_name))[0]
 
 class mm_util(
         mm_backend_util,

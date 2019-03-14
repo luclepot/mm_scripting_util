@@ -2,7 +2,7 @@
 from .util import *
 
 class miner(mm_util):
-    
+    madminer.core
     """
     Main container for the class. 
 
@@ -16,15 +16,15 @@ class miner(mm_util):
     # general class member functions
 
     def __init__(
-            self,
-            name="temp",
-            path=None,
-            loglevel=logging.INFO,
-            madminer_loglevel=logging.INFO,
-            autodestruct=False,
-            backend="tth.dat",
-            custom_card_directory=None
-        ):
+        self,
+        name="temp",
+        path=None,
+        loglevel=logging.INFO,
+        madminer_loglevel=logging.INFO,
+        autodestruct=False,
+        backend="tth.dat",
+        custom_card_directory=None
+    ):
         """
         madminer-helper object for quickly running madgraph scripts. 
         parameters:
@@ -97,10 +97,10 @@ class miner(mm_util):
         self._load_backend(backend)
 
     def set_loglevel(
-            self,
-            loglevel,
-            module=None
-        ):     
+        self,
+        loglevel,
+        module=None
+    ):     
 
         logging.basicConfig(
             format='%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s',
@@ -116,8 +116,8 @@ class miner(mm_util):
         return loglevel 
 
     def destroy_sample(
-            self
-        ):
+        self
+    ):
 
         rets = [
             self._check_valid_init()
@@ -135,9 +135,9 @@ class miner(mm_util):
         return [self.error_codes.Success]
     
     def list_augmented_samples(
-            self,
-            verbose=True
-        ):
+        self,
+        verbose=True
+    ):
         self.log.info("Augmented samples:")
         samples = []
         for i,sample in enumerate(os.listdir("{}/data/samples/".format(self.dir))):
@@ -150,9 +150,9 @@ class miner(mm_util):
         return samples
 
     def list_trained_models(
-            self,
-            verbose=True
-        ):
+        self,
+        verbose=True
+    ):
 
         model_pairs = [f.split("/")[-2:] for f in glob.glob("{}/models/*/*".format(self.dir))] 
         models = []
@@ -168,30 +168,33 @@ class miner(mm_util):
         return models
 
     def list_evaluations(
-            self
-        ):
-        raise NotImplementedError
-
+        self
+    ):
+        evaluation_list = glob.glob("{}/evaluations/*/*".format(self.dir))
+        for evaluation in evaluation_list:
+            self.log.info(evaluation)
+            self.log.info(" - subinfo to be added")
+    
     def __del__(
-            self
-        ):
+        self
+    ):
         if self.autodestruct:
             self.destroy_sample()
 
     # simulation-related member functions
     
     def simulate_data(
-            self,
-            samples,
-            sample_benchmark,
-            seed_file=None, 
-            force=True,
-            mg_dir=None,
-            use_pythia_card=False,
-            platform="lxplus7",
-            morphing_trials=2500,
-            override_step=None
-        ):
+        self,
+        samples,
+        sample_benchmark,
+        seed_file=None, 
+        force=True,
+        mg_dir=None,
+        use_pythia_card=False,
+        platform="lxplus7",
+        morphing_trials=2500,
+        override_step=None
+    ):
         """
         Standard data simulation run. Should go from start to finish with data simulation.
         """
@@ -295,11 +298,11 @@ class miner(mm_util):
         return [self.error_codes.Success]
 
     def setup_cards(
-            self, 
-            n_samples,
-            seed_file=None,
-            force=False
-        ):
+        self, 
+        n_samples,
+        seed_file=None,
+        force=False
+    ):
 
         rets = [ 
                 self._check_valid_init(), 
@@ -381,10 +384,10 @@ class miner(mm_util):
         return [self.error_codes.Success]
 
     def run_morphing(
-            self,
-            morphing_trials=2500,
-            force=False
-        ):
+        self,
+        morphing_trials=2500,
+        force=False
+    ):
 
         rets = [ 
                 self._check_valid_backend()
@@ -435,14 +438,14 @@ class miner(mm_util):
         return [self.error_codes.Success]
 
     def setup_mg5_scripts(
-            self,
-            samples,
-            sample_benchmark,
-            force=False,
-            mg_dir=None,
-            platform="lxplus7",
-            use_pythia_card=False
-        ):
+        self,
+        samples,
+        sample_benchmark,
+        force=False,
+        mg_dir=None,
+        platform="lxplus7",
+        use_pythia_card=False
+    ):
         
         sample_sizes = self._equal_sample_sizes(samples, sample_limit=100000)
 
@@ -526,11 +529,11 @@ class miner(mm_util):
         return [self.error_codes.Success]
 
     def run_mg5_script(
-            self,
-            platform,
-            samples,
-            force=False
-        ):
+        self,
+        platform,
+        samples,
+        force=False
+    ):
        
         sample_sizes = self._equal_sample_sizes(samples=samples, sample_limit=100000)
 
@@ -593,8 +596,8 @@ class miner(mm_util):
         return [self.error_codes.Success]
     
     def process_mg5_data(
-            self
-        ):
+        self
+    ):
 
         rets = [ 
                 self._check_valid_mg5_run()
@@ -633,11 +636,11 @@ class miner(mm_util):
         return [self.error_codes.Success]
 
     def plot_mg5_data_corner(
-            self,
-            image_save_name=None,
-            bins=(40,40),
-            ranges=[(-8,8),(0,600)]
-        ):
+        self,
+        image_save_name=None,
+        bins=(40,40),
+        ranges=[(-8,8),(0,600)]
+    ):
 
         rets = [ 
             self._check_valid_mg5_process()
@@ -708,16 +711,16 @@ class miner(mm_util):
     # training-related member functions
 
     def train_data(
-            self,
-            augmented_samples,
-            sample_name, 
-            training_name,
-            augmentation_benchmark,
-            n_theta_samples=2500,
-            bins=(40,40),
-            override_step=None,
-            image_save_name=None
-        ):
+        self,
+        augmented_samples,
+        sample_name, 
+        training_name,
+        augmentation_benchmark,
+        n_theta_samples=2500,
+        bins=(40,40),
+        override_step=None,
+        image_save_name=None
+    ):
 
         if override_step is not None: 
             self.TRAINING_STEP = override_step
@@ -751,13 +754,13 @@ class miner(mm_util):
         return [self.error_codes.Success]
 
     def augment_samples(
-            self,
-            sample_name,
-            n_or_frac_augmented_samples,
-            augmentation_benchmark,
-            n_theta_samples=100,
-            evaluation_aug_dir=None
-        ):
+        self,
+        sample_name,
+        n_or_frac_augmented_samples,
+        augmentation_benchmark,
+        n_theta_samples=100,
+        evaluation_aug_dir=None
+    ):
         """
         Augments sample data and saves to a new sample with name <sample_name>.
         This allows for multiple different training sets to be saved on a single sample set.
@@ -841,8 +844,8 @@ class miner(mm_util):
             theta0=madminer.sampling.random_morphing_thetas(n_thetas=n_theta_samples, priors=priors),
             theta1=madminer.sampling.constant_benchmark_theta(augmentation_benchmark),
             n_samples=samples,
-            folder=self.dir + "/data/samples/{}".format(sample_name),
-            filename="train"
+            folder=aug_dir,
+            filename="augmented_samples_"
         )
 
         # extract samples at each benchmark
@@ -868,13 +871,13 @@ class miner(mm_util):
         return [self.error_codes.Success]
 
     def plot_augmented_data_corner(
-            self,
-            sample_name,
-            image_save_name=None,
-            bins=(40,40),
-            ranges=[(-8,8),(0,600)],
-            max_index=0
-        ):
+        self,
+        sample_name,
+        image_save_name=None,
+        bins=(40,40),
+        ranges=[(-8,8),(0,600)],
+        max_index=0
+    ):
         rets = [ 
             self._check_valid_augmented_data(sample_name=sample_name),
             self._check_valid_mg5_process()
@@ -933,17 +936,17 @@ class miner(mm_util):
         return [self.error_codes.Success]
 
     def plot_compare_mg5_and_augmented_data(
-            self,
-            sample_name,
-            image_save_name=None,
-            mark_outlier_bins=False,
-            bins=(40,40),
-            ranges=[(-8,8),(0,600)],
-            dens=True,
-            alphas=(0.8, 0.4),
-            figlen=5, 
-            threshold=2.0
-        ):
+        self,
+        sample_name,
+        image_save_name=None,
+        mark_outlier_bins=False,
+        bins=(40,40),
+        ranges=[(-8,8),(0,600)],
+        dens=True,
+        alphas=(0.8, 0.4),
+        figlen=5, 
+        threshold=2.0
+    ):
 
         err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
                 sample_name, 
@@ -1042,18 +1045,18 @@ class miner(mm_util):
         return [self.error_codes.Success] 
 
     def train_method(
-            self, 
-            sample_name,
-            training_name,
-            training_method="alices",
-            node_architecture=(100,100,100),
-            n_epochs=30,
-            batch_size=128,
-            activation_function='relu',
-            trainer='adam',
-            initial_learning_rate=0.001,
-            final_learning_rate=0.0001
-        ):
+        self, 
+        sample_name,
+        training_name,
+        training_method="alices",
+        node_architecture=(100,100,100),
+        n_epochs=30,
+        batch_size=128,
+        activation_function='relu',
+        trainer='adam',
+        initial_learning_rate=0.001,
+        final_learning_rate=0.0001
+    ):
 
         known_training_methods = ["alices", "alice"]
 
@@ -1131,14 +1134,14 @@ class miner(mm_util):
         return self.error_codes.Success
 
     def evaluate_method(
-            self,
-            training_name, 
-            evaluation_name,
-            evaluation_samples,
-            theta_grid_spacing=40,
-            evaluation_benchmark=None,
-            sample_name="*"
-        ):
+        self,
+        training_name, 
+        evaluation_name,
+        evaluation_samples,
+        theta_grid_spacing=40,
+        evaluation_benchmark=None,
+        sample_name="*"
+    ):
         params = locals() 
         for parameter in params:
             if parameter is not 'self': 
@@ -1169,22 +1172,20 @@ class miner(mm_util):
 
         for path_to_check in [ 
             "{}/evaluations/".format(self.dir),
-            "{}/evaluations/{}/".format(self.dir, model_params['sample_name']),
-            "{}/evaluations/{}/{}/".format(self.dir, model_params['sample_name'], model_params['training_name']),
+            "{}/evaluations/{}/".format(self.dir, model_params['training_name']),
             ]:
             if not os.path.exists(path_to_check):
                 os.mkdir(path_to_check)
                 
-        evaluation_dir = "{}/evaluations/{}/{}/{}/".format(self.dir, model_params['sample_name'], model_params['training_name'], evaluation_name)
+        evaluation_dir = "{}/evaluations/{}/{}/".format(self.dir, model_params['training_name'], evaluation_name)
         
         if os.path.exists(evaluation_dir):
             if len([f for f in os.listdir(evaluation_dir) if "log_r_hat" in f]) > 0:
                 self.log.error("Identically sampled, trained, and named evaluation instance already exists!! Pick another.")
                 self.log.error(" - {}".format(evaluation_dir))
                 return [self.error_codes.ExistingEvaluationError] 
-        else: 
+        else:
             os.mkdir(evaluation_dir)
-        
 
         self.log.info("evaluating trained method '{}'".format(model_params['training_name']))
         self.log.debug("Model Params: ")
@@ -1214,6 +1215,7 @@ class miner(mm_util):
                     os.path.isfile("{}/x_augmented_samples_{}.npy".format(evaluation_dir, benchmark)) for benchmark in sample_augmenter.benchmarks
                 ]) and (old_eval_params['augmentation_samples'] == evaluation_samples):
                 augment_switch = False
+        
         if augment_switch:
             if evaluation_benchmark is None: 
                 evaluation_benchmark = sample_params['augmentation_benchmark']
@@ -1243,5 +1245,25 @@ class miner(mm_util):
         for benchmark in log_r_hat_dict: 
             np.save("{}/log_r_hat_{}.npy".format(evaluation_dir, benchmark), log_r_hat_dict[benchmark])
             self.log.info("log_r_hat info saved for benchmark {}: 'log_r_hat_{}.npy'".format(benchmark, benchmark))
+
+        self._write_config(
+            {
+                'evaluation_name': evaluation_name,
+                'training_name': training_name,
+                'evaluation_samples': evaluation_samples,
+                'evaluation_benchmark': evaluation_benchmark
+            },
+            self._evaluation_config(training_name, evaluation_name)
+        )
+
+        return self.error_codes.Success
+
+    def plot_evaluation_results(
+        self,
+        evaluation_name  
+    ):
+        self.log.info("Plotting evaluation results for evaluation instance '{}'".format(evaluation_name))
+        
+        theta = np.load(glob.glob(evaluation_name + "/theta_grid*"))
 
         return self.error_codes.Success
