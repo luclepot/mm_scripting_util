@@ -1288,7 +1288,15 @@ class miner(mm_util):
             return self.error_codes.NoEvaluatedModelError
         elif len(evaluation_tuples) > 1:
             self.log.error("Mutiple matching evaluations found. Please specify")
+            for evaluation_tuple in evaluation_tuples:
+                self.log.error(" - {}".format(evaluation_tuple[1]['evaluation_name']))
+                self.log.error("   AT PATH: {}".format(evaluation_tuple[0]))
+            return self.error_codes.MultipleMatchingFilesError
 
-        theta = np.load( "/theta_grid*"))
+        # else tuple is CLEAN, with len 1
+        evaluation_tuple = evaluation_tuples[0]
+
+
+        theta = np.load("/theta_grid*")
 
         return self.error_codes.Success
