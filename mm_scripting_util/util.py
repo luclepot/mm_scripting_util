@@ -20,8 +20,8 @@ import scipy.stats
 import tabulate
 import glob
 
-
-class mm_base_util():
+class mm_base_util(
+):
 
     """
     base functions and variables used in most other functions. 
@@ -95,8 +95,8 @@ class mm_base_util():
         self._evaluation_config = lambda training_name, evaluation_name : "{}/evaluations/{}/{}/evaluation.mmconfig".format(self.dir, training_name, evaluation_name)
 
     def _check_valid_init(
-            self
-        ):
+        self
+    ):
         """
         Object member function to check for correct initialization
         """
@@ -107,10 +107,10 @@ class mm_base_util():
         return self.error_codes.InitError
             
     def _dir_size(
-            self, 
-            pathname,
-            matching_pattern=""
-        ):
+        self, 
+        pathname,
+        matching_pattern=""
+    ):
         """Description:
             Helper function returning number of files in pathname matching the given pattern.
             Warns if matching pattern is 
@@ -132,12 +132,12 @@ class mm_base_util():
         return -1 
 
     def _replace_lines(
-            self, 
-            infile, 
-            line_numbers, 
-            line_strings, 
-            outfile=None         
-        ):
+        self, 
+        infile, 
+        line_numbers, 
+        line_strings, 
+        outfile=None         
+    ):
         """
         # Description
         Helper member function for rewriting specific lines in the listed files. used
@@ -170,11 +170,11 @@ class mm_base_util():
             file.writelines(lines)
 
     def _remove_files(
-            self, 
-            path_to_clear,
-            include_folder=False,
-            matching_pattern=""
-        ):
+        self, 
+        path_to_clear,
+        include_folder=False,
+        matching_pattern=""
+    ):
         """
         # description
         utility function to remove files in a folder/the folder itself
@@ -204,12 +204,12 @@ class mm_base_util():
                 self.log.info("Removed files from directory {}".format(path_to_clear))
 
     def _check_directory(
-            self,
-            local_pathname,
-            force,
-            pattern="",
-            mkdir_if_not_existing=True
-        ):
+        self,
+        local_pathname,
+        force,
+        pattern="",
+        mkdir_if_not_existing=True
+    ):
         """
         # description
         utility function for path checking/validation of data.
@@ -248,10 +248,10 @@ class mm_base_util():
                     )
 
     def _search_for_paths(
-            self,
-            pathname,
-            include_module_paths=True   
-        ):
+        self,
+        pathname,
+        include_module_paths=True   
+    ):
         """
         # description
         helper function which searchs for paths both within the object's internal directory, 
@@ -300,11 +300,11 @@ class mm_base_util():
         # otherwise this doesn't exist
 
     def _string_find_nth(
-            self,
-            string,
-            substring,
-            n
-        ):
+        self,
+        string,
+        substring,
+        n
+    ):
         """
         # description
         helper function, finds position of the nth occurence of a substring in a string
@@ -325,9 +325,9 @@ class mm_base_util():
         return len(string) - len(parts[-1]) - len(substring)
 
     def _get_var_name(
-            self, 
-            var
-        ):
+        self, 
+        var
+    ):
         """
         # description
         admittedly suspicious helper function. gets (with varying success)
@@ -343,14 +343,13 @@ class mm_base_util():
         return [k for k, v in callers_local_vars if v is var]
 
     def _tabulate_comparison_information(
-            self,
-            r,
-            pers,
-            observables, 
-            benchmarks,
-            threshold=2.0
-        ):
-
+        self,
+        r,
+        pers,
+        observables, 
+        benchmarks,
+        threshold=2.0
+    ):
         strarr = np.round(np.vstack(r), 2).astype(str)
         index = np.vstack(r) >= threshold
         strarr[index] = np.asarray(["\033[1;37;41m" + elt + "\033[0;37;40m" for elt in strarr[index]])
@@ -376,9 +375,9 @@ class mm_base_util():
             self.log.info(line)
 
     def _exec_wrap(
-            self, 
-            func
-        ):
+        self, 
+        func
+    ):
         def wrapper(*args, **kwargs):
             try:
                 func(*args, **kwargs)
@@ -388,43 +387,43 @@ class mm_base_util():
         return wrapper
 
     def _write_config(
-            self, 
-            dict_to_write,
-            file_to_write
-        ):
+        self, 
+        dict_to_write,
+        file_to_write
+    ):
 
         with open(file_to_write, 'w+') as config_file:
             config_file.write("{}\n".format(dict_to_write))
 
     def _load_config(
-            self, 
-            file_to_load
-        ):
+        self, 
+        file_to_load
+    ):
         with open(file_to_load, 'r') as config_file:
             retdict = eval(config_file.readline().strip('\n'))
         
         return retdict
 
 class mm_backend_util(
-        mm_base_util
-    ):
+    mm_base_util
+):
 
     __CONTAINS_BACKEND_UTIL = True
 
     def __init__(
-            self,
-            required_params=["model", "madgraph_generation_command", "backend_name", "parameters", "benchmarks", "observables"],
-            required_experimental_params=["lha_block", "lha_id", "morphing_max_power", "parameter_range"]
-        ):
+        self,
+        required_params=["model", "madgraph_generation_command", "backend_name", "parameters", "benchmarks", "observables"],
+        required_experimental_params=["lha_block", "lha_id", "morphing_max_power", "parameter_range"]
+    ):
         self.params = {}
         # default required: model type, madgraph generation command, and backend name
         self.required_params = required_params
         self.required_experimental_params = required_experimental_params
 
     def _load_backend(
-            self,
-            backend
-        ):
+        self,
+        backend
+    ):
 
         self.backend_name = self._search_for_paths(pathname=backend)    
         if self.backend_name is None:
@@ -499,9 +498,9 @@ class mm_backend_util(
         return self.error_codes.InvalidBackendError
 
     def _get_parameter_dict(
-            self, 
-            line
-        ):
+        self, 
+        line
+    ):
         og = line
         line = line.split(": ")
         name = line[0].lstrip("parameter ")
@@ -533,25 +532,25 @@ class mm_backend_util(
             return (None,None)
 
     def _get_benchmark_dict(
-            self,
-            string
-        ): 
+        self,
+        string
+    ): 
         string = string.split(": ")
         name = string[0].lstrip("benchmark ")
         tags = dict([tuple((elt.split("=")[0], float(elt.split("=")[1]))) for elt in string[1].rstrip().lstrip().split(", ")])
         return name, tags
 
     def _get_obseravble_dict(
-            self, 
-            string
-        ):
+        self, 
+        string
+    ):
         string = string.split(": ")
         name = string[0].lstrip("observable ")
         return name, string[1]
 
     def _check_valid_backend(
-            self
-        ):
+        self
+    ):
 
         valid_flag = True
 
@@ -583,8 +582,8 @@ class mm_backend_util(
         return self.error_codes.Success
 
 class mm_simulate_util(
-        mm_base_util
-    ):
+    mm_base_util
+):
     """
     Container class for simulation-related util functions.
     Seperation from other functions is purely for cleanliness
@@ -594,10 +593,10 @@ class mm_simulate_util(
     __CONTAINS_SIMULATION_UTIL = True
 
     def _equal_sample_sizes(
-            self, 
-            samples,
-            sample_limit
-        ):
+        self, 
+        samples,
+        sample_limit
+    ):
         sample_sizes = [sample_limit for i in range(int(samples/sample_limit))]
         
         if int(samples % int(sample_limit)):
@@ -606,20 +605,20 @@ class mm_simulate_util(
         return sample_sizes
 
     def _number_of_cards(
-            self,
-            samples, 
-            sample_limit            
-        ):
+        self,
+        samples, 
+        sample_limit            
+    ):
         size = int(samples/sample_limit)
         if int(samples % int(sample_limit)):
             return size + 1
         return size
 
     def _get_simulation_step(
-            self, 
-            num_cards,
-            samples
-        ):
+        self, 
+        num_cards,
+        samples
+    ):
         step = 0
         blist = [
             self._check_valid_cards(num_cards),
@@ -634,9 +633,9 @@ class mm_simulate_util(
         return step
 
     def _check_valid_cards(
-            self,
-            num_cards
-        ):
+        self,
+        num_cards
+    ):
         """Description:
             Helper function to check validity of cards. 
 
@@ -661,8 +660,8 @@ class mm_simulate_util(
         return self.error_codes.Success
 
     def _check_valid_morphing(
-            self
-        ):
+        self
+    ):
         if self._dir_size(
                 pathname=self.dir + "/data",
                 matching_pattern="madminer_{}.h5".format(self.name)
@@ -673,9 +672,9 @@ class mm_simulate_util(
         return self.error_codes.Success        
 
     def _check_valid_mg5_scripts(
-            self,
-            samples
-        ):
+        self,
+        samples
+    ):
         size = self._dir_size(
             pathname=self.dir + '/mg_processes/signal/madminer/scripts',
             matching_pattern=".sh",
@@ -693,8 +692,8 @@ class mm_simulate_util(
         return self.error_codes.Success
 
     def _check_valid_mg5_run(
-            self
-        ):
+        self
+    ):
 
         try:
             mg5_run_dict = self._load_config(self._main_sample_config())
@@ -721,8 +720,8 @@ class mm_simulate_util(
         return self.error_codes.Success
         
     def _check_valid_mg5_process(
-            self    
-        ):
+        self    
+    ):
         size = self._dir_size(
             self.dir + "/data",
             matching_pattern="madminer_{}_with_data_parton.h5".format(self.name)
@@ -738,8 +737,8 @@ class mm_simulate_util(
         return self.error_codes.Success
 
 class mm_train_util(
-        mm_base_util
-    ):
+    mm_base_util
+):
 
     __CONTAINS_TRAINING_UTIL = True
 
@@ -750,8 +749,8 @@ class mm_train_util(
     """
 
     def _get_raw_mg5_arrays(
-            self
-        ):
+        self
+    ):
         mg5_observations = []
         mg5_weights = []
 
@@ -777,12 +776,12 @@ class mm_train_util(
         return mg5_obs, mg5_weights, mg5_norm_weights, n_mg5
 
     def _get_mg5_and_augmented_arrays(
-            self,
-            sample_name,
-            bins,            
-            ranges,
-            dens
-        ):  
+        self,
+        sample_name,
+        bins,            
+        ranges,
+        dens
+    ):  
 
         rets = [ 
             self._check_valid_augmented_data(sample_name=sample_name),
@@ -869,12 +868,12 @@ class mm_train_util(
         return [self.error_codes.Success], (aug_values, aug_bins, n_aug), (mg5_values, mg5_bins, n_mg5, mg5_err_scaled)
 
     def _compare_mg5_and_augmented_data(
-            self,
-            x_aug, 
-            x_mg5,
-            y_fac=1.0,
-            threshold=2.0
-        ):
+        self,
+        x_aug, 
+        x_mg5,
+        y_fac=1.0,
+        threshold=2.0
+    ):
 
         r = abs(x_mg5[0] - x_aug[0]) / x_mg5[3]
 
@@ -883,9 +882,8 @@ class mm_train_util(
         return r, pers
 
     def _check_valid_training_data(
-            self
-        ):
-
+        self
+    ):
         size = self._dir_size(
             pathname=self.dir + '/mg_processes/signal/Events', 
             matching_pattern="run_"
@@ -900,10 +898,10 @@ class mm_train_util(
         return self.error_codes.Success
 
     def _check_valid_augmented_data(
-            self,
-            sample_name,
-            expected_benchmarks=None
-        ):
+        self,
+        sample_name,
+        expected_benchmarks=None
+    ):
         size = self._dir_size(
             pathname=self.dir + '/data/samples/{}'.format(sample_name),
             matching_pattern="_augmented_samples"
@@ -932,17 +930,22 @@ class mm_train_util(
         # return self.error_codes.Success
 
     def _check_for_matching_augmented_data(
-            self,
-            sample_size, 
-            sample_benchmark  
-        ):
-        conf_dics = [self._load_config(f + "/augmented_sample.mmconfig") for f in glob.glob("{}/*/*".format(self.dir)) + glob.glob("{}/*/*".format(self.dir))]
+        self,
+        sample_size, 
+        sample_benchmark  
+    ):
+        farr = [(f, self._load_config(f)) for f in glob.glob("{}/evaluations/*/*/augmented_sample.mmconfig".format(self.dir)) + glob.glob("{}/data/samples/*/augmented_sample.mmconfig".format(self.dir))]
+        for path, config_dict in farr:
+            if (config_dict['augmentation_samples'] == sample_size and
+                config_dict['augmentation_benchmark'] == sample_benchmark):
+                return path 
+        return None
 
     def _check_valid_trained_models(
-            self,
-            training_name,
-            sample_name="*"
-        ):
+        self,
+        training_name,
+        sample_name="*"
+    ):
 
         matching_files = glob.glob("{}/models/{}/{}/train_settings.json".format(self.dir, sample_name, training_name))
 
@@ -965,10 +968,10 @@ class mm_train_util(
         return self.error_codes.Success
 
     def _check_valid_evaluation_data(
-            self,
-            evaluation_name,
-            training_name="*"
-        ):
+        self,
+        evaluation_name,
+        training_name="*"
+    ):
         matching = glob.glob("{}/evaluations/{}/{}".format(self.dir, training_name, evaluation_name))
         size = len(matching)
 
@@ -987,21 +990,21 @@ class mm_train_util(
         return self.error_codes.Success
 
     def _get_evaluation_path(
-            self, 
-            evaluation_name,
-            training_name="*"
-        ):
+        self, 
+        evaluation_name,
+        training_name="*"
+    ):
         ret = self._check_valid_evaluation_data(evaluation_name, training_name) 
         if ret != self.error_codes.Success:
             return ret, None
         return self.error_codes.Success, glob.glob("{}/evaluations/{}/{}".format(self.dir, training_name, evaluation_name))[0]
 
 class mm_util(
-        mm_backend_util,
-        mm_simulate_util,
-        mm_train_util,
-        mm_base_util
-    ):
+    mm_backend_util,
+    mm_simulate_util,
+    mm_train_util,
+    mm_base_util
+):
         
     """
     Wrapper class for all tth utility related classes. 
@@ -1010,10 +1013,10 @@ class mm_util(
     """
     
     def _submit_condor(
-            self,
-            arg_list,
-            max_runtime=30.
-        ):
+        self,
+        arg_list,
+        max_runtime=30.
+    ):
         """
         Doesn't currently work. Need to add python tarballing as per http://chtc.cs.wisc.edu/python-jobs.shtml.
 
@@ -1054,9 +1057,9 @@ class mm_util(
         return self.error_codes.Success
     
     def _submit_flashy(
-            self,
-            arg_list,
-            max_runtime=60*60 # 1 hour
-        ):
+        self,
+        arg_list,
+        max_runtime=60*60 # 1 hour
+    ):
         raise NotImplementedError   
         return self.error_codes.Success

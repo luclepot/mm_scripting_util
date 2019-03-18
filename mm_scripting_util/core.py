@@ -140,40 +140,47 @@ class miner(mm_util):
     ):
         self.log.info("Augmented samples:")
         samples = []
-        for i,sample in enumerate(os.listdir("{}/data/samples/".format(self.dir))):
-            samples.append((sample, self._load_config(self._augmentation_config(sample))))
-            self.log.info(" - {}".format(sample))
+        sample_list = glob.glob("{}/data/samples/*/augmented_sample.mmconfig".format(self.dir))
+        for i,sample in enumerate(sample_list):
+            samples.append((sample, self._load_config(sample)))
+            self.log.info(" - {}".format(samples[i][1]['sample_name']))
             if verbose:
                 for elt in samples[i][1]:
-                    self.log.info("    - {}: {}".format(elt, samples[i][1][elt]))
-
+                    if elt is not 'sample_name':
+                        self.log.info("    - {}: {}".format(elt, samples[i][1][elt]))
         return samples
 
     def list_trained_models(
         self,
         verbose=True
     ):
-
-        model_pairs = [f.split("/")[-2:] for f in glob.glob("{}/models/*/*".format(self.dir))] 
         models = []
+        model_list = glob.glob("{}/models/*/*/training_model.mmconfig".format(self.dir))
 
         self.log.info("Trained Models:")
 
-        for i,model in enumerate(model_pairs):
-            models.append((model, self._load_config(self._training_config(*model))))
-            self.log.info(" - {}".format(model[1]))
+        for i,model in enumerate(model_list):
+            models.append((model, self._load_config(model)))
+            self.log.info(" - {}".format(models[i][1]['training_name']))
             if verbose:
                 for elt in models[i][1]:
-                    self.log.info("    - {}: {}".format(elt, models[i][1][elt]))
+                    if elt is not 'training_name':
+                        self.log.info("    - {}: {}".format(elt, models[i][1][elt]))
         return models
 
     def list_evaluations(
-        self
+        self,
+        verbose=True
     ):
-        evaluation_list = glob.glob("{}/evaluations/*/*".format(self.dir))
-        for evaluation in evaluation_list:
-            self.log.info(evaluation)
-            self.log.info(" - subinfo to be added")
+        evaluations = [ ]
+        evaluation_list = glob.glob("{}/evaluations/*/*/evaluation.mmconfig".format(self.dir))
+        for i,evaluation in enumerate(evaluation_list):
+            evaluations.append((evaluation, self._load_config(evaluation)))
+            self.log.info(" - {}".format(evaluations[i][1]['evaluation_name']))
+            if verbose: 
+                for elt in evaluations[i][1]:
+                    self.log.info("    - {}: {}".format(elt, evaluations[i][1][elt]))
+        return evaluations
     
     def __del__(
         self
@@ -1179,6 +1186,17 @@ class miner(mm_util):
                 
         evaluation_dir = "{}/evaluations/{}/{}/".format(self.dir, model_params['training_name'], evaluation_name)
         
+        self._write_config(
+            {
+                'evaluation_name': evaluation_name,
+                'training_name': training_name,
+                'evaluation_samples': evaluation_samples,
+                'evaluation_benchmark': evaluation_benchmark
+            },
+            self._evaluation_config(training_name, evaluation_name)
+        )
+        return  
+
         if os.path.exists(evaluation_dir):
             if len([f for f in os.listdir(evaluation_dir) if "log_r_hat" in f]) > 0:
                 self.log.error("Identically sampled, trained, and named evaluation instance already exists!! Pick another.")
@@ -1206,19 +1224,12 @@ class miner(mm_util):
         theta_grid = np.mgrid[[slice(*tup, theta_grid_spacing*1.0j) for tup in [self.params['parameters'][parameter]['parameter_range'] for parameter in self.params['parameters']]]].T
         theta_dim = theta_grid.shape[-1]
 
-        augment_switch = True
+        if evaluation_benchmark is None: 
+            evaluation_benchmark = sample_params['augmentation_benchmark']
 
-        if os.path.isfile("{}/augmented_sample.mmconfig".format(evaluation_dir)):
-            old_eval_params = self._load_config("{}/augmented_sample.mmconfig".format(evaluation_dir))
-            if all(
-                [
-                    os.path.isfile("{}/x_augmented_samples_{}.npy".format(evaluation_dir, benchmark)) for benchmark in sample_augmenter.benchmarks
-                ]) and (old_eval_params['augmentation_samples'] == evaluation_samples):
-                augment_switch = False
+        evaluation_sample_config = self._check_for_matching_augmented_data(evaluation_samples, evaluation_benchmark)
         
-        if augment_switch:
-            if evaluation_benchmark is None: 
-                evaluation_benchmark = sample_params['augmentation_benchmark']
+        if evaluation_sample_config is None: 
             self.augment_samples(
                 sample_name="{}_eval_augment".format(evaluation_name),
                 n_or_frac_augmented_samples=evaluation_samples,
@@ -1226,12 +1237,13 @@ class miner(mm_util):
                 n_theta_samples=sample_params['theta_samples'],
                 evaluation_aug_dir=evaluation_dir
             )
+            evaluation_sample_config = '{}/augmented_sample.mmconfig'.format(evaluation_dir)
 
         # stack parameter grid into (N**M X M) size vector (tragic scale factor :--< ) 
         for i in range(theta_dim): 
             theta_grid = np.vstack(theta_grid)
         
-        np.save("{}/theta_grid.npy".format(evaluation_dir),theta_grid)
+        np.save("{}/theta_grid.npy".format(evaluation_dir), theta_grid)
         
         log_r_hat_dict = {}
 
@@ -1260,10 +1272,23 @@ class miner(mm_util):
 
     def plot_evaluation_results(
         self,
-        evaluation_name  
+        evaluation_name,
+        training_name
     ):
         self.log.info("Plotting evaluation results for evaluation instance '{}'".format(evaluation_name))
-        
-        theta = np.load(glob.glob(evaluation_name + "/theta_grid*"))
+
+        evaluations = self.list_evaluations()
+        evaluation_tuples = [evaluation for evaluation in evaluations if evaluation[1]['evaluation_name'] == evaluation_name] 
+
+        if len(evaluation_tuples) == 0:
+            self.log.error("Evaluation name '{}' not found")
+            self.log.error("Please choose oneof the following evaluations:")
+            for evaluation in self.list_evaluations():
+                self.log.error(" - {}".format(evaluation[1]['evaluation_name']))
+            return self.error_codes.NoEvaluatedModelError
+        elif len(evaluation_tuples) > 1:
+            self.log.error("Mutiple matching evaluations found. Please specify")
+
+        theta = np.load( "/theta_grid*"))
 
         return self.error_codes.Success
