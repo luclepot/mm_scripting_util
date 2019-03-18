@@ -140,7 +140,8 @@ class miner(mm_util):
     ):
         self.log.info("Augmented samples:")
         samples = []
-        sample_list = glob.glob("{}/data/samples/*/augmented_sample.mmconfig".format(self.dir))
+        sample_list = glob.glob("{}/data/samples/*/augmented_sample.mmconfig".format(self.dir)) + \
+            glob.glob("{}/evaluations/*/*/augmented_sample.mmconfig".format(self.dir))
         for i,sample in enumerate(sample_list):
             samples.append((sample, self._load_config(sample)))
             self.log.info(" - {}".format(samples[i][1]['sample_name']))
@@ -1295,8 +1296,8 @@ class miner(mm_util):
 
         # else tuple is CLEAN, with len 1
         evaluation_tuple = evaluation_tuples[0]
+        evaluation_dir = os.path.dirname(evaluation_tuple[0])
 
-
-        theta = np.load("/theta_grid*")
+        # theta = np.load("/theta_grid*")
 
         return self.error_codes.Success

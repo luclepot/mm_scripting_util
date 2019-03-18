@@ -19,6 +19,7 @@ import collections
 import scipy.stats
 import tabulate
 import glob
+import json
 
 class mm_base_util(
 ):
@@ -391,17 +392,17 @@ class mm_base_util(
         dict_to_write,
         file_to_write
     ):
-
         with open(file_to_write, 'w+') as config_file:
-            config_file.write("{}\n".format(dict_to_write))
+            json.dump(dict_to_write, fp=config_file)
+            # config_file.write("{}\n".format(dict_to_write))
 
     def _load_config(
         self, 
         file_to_load
     ):
         with open(file_to_load, 'r') as config_file:
-            retdict = eval(config_file.readline().strip('\n'))
-        
+            # retdict = eval(config_file.readline().strip('\n'))
+            retdict = json.load(config_file)
         return retdict
 
 class mm_backend_util(
