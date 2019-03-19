@@ -13,6 +13,7 @@ import madminer.ml
 import madminer.utils.interfaces.madminer_hdf5
 import corner
 import matplotlib.pyplot as plt
+import matplotlib
 import inspect
 import enum 
 import collections
@@ -20,6 +21,7 @@ import scipy.stats
 import tabulate
 import glob
 import json
+import argparse
 
 class mm_base_util(
 ):
@@ -30,7 +32,9 @@ class mm_base_util(
     Also, baseline init function for dir/name/path etc. 
     """
     
-    __CONTAINS_BASE_UTIL = True
+    _CONTAINS_BASE_UTIL = True
+    _DEFAULT_COLOR_CYCLE = plt.rcParams['axes.prop_cycle'].by_key()['color']
+    _DEFAULT_LINESTYLE_CYCLE = list(matplotlib.lines.lineStyles.keys())[1:]
 
     class error_codes(enum.Enum):
 
@@ -405,11 +409,29 @@ class mm_base_util(
             retdict = json.load(config_file)
         return retdict
 
+    def _scale_to_range(
+        self, 
+        arr, 
+        _range
+    ):
+        #normalkized to 0,1
+        arr = (arr - np.min(arr)) / (np.max(arr) - np.min(arr))
+        return (arr)*(_range[1] - _range[0]) + _range[0]
+
+    def _scale_to_range_flipped(
+        self, 
+        arr, 
+        _range
+    ):
+        #normalkized to 0,1
+        arr = (arr - np.min(arr)) / (np.max(arr) - np.min(arr))
+        return (1 - arr)*(_range[1] - _range[0]) + _range[0]
+
 class mm_backend_util(
     mm_base_util
 ):
 
-    __CONTAINS_BACKEND_UTIL = True
+    _CONTAINS_BACKEND_UTIL = True
 
     def __init__(
         self,
@@ -591,7 +613,7 @@ class mm_simulate_util(
     while writing. 
     """
 
-    __CONTAINS_SIMULATION_UTIL = True
+    _CONTAINS_SIMULATION_UTIL = True
 
     def _equal_sample_sizes(
         self, 
@@ -741,7 +763,7 @@ class mm_train_util(
     mm_base_util
 ):
 
-    __CONTAINS_TRAINING_UTIL = True
+    _CONTAINS_TRAINING_UTIL = True
 
     """
     Container class for training-related util functions. 
@@ -1064,3 +1086,78 @@ class mm_util(
     ):
         raise NotImplementedError   
         return self.error_codes.Success
+
+class arg_util(
+):
+
+    DEFAULT_ARGS = [
+        ('samples', int, 's', 10000),
+        ('benchmark', str, 'b', 'sm')
+    ]
+
+    def __init__(
+        self,
+        description="default parser"
+    ):
+        self.parser = argparse.ArgumentParser(description=description)
+        self.shortnames = set()
+        self.names = set()
+
+    def add(
+        self, 
+        name,
+        argtype=str,
+        shortname=None,
+        default=None,
+        help=None,
+        action='store'
+    ):
+
+        if shortname is None:  
+            shortname = ''
+            for word in name.split('_'):
+                shortname += word[0]
+
+        i = 0
+        newname = shortname
+        while newname in self.shortnames:
+            newname = '{}{}'.format(shortname, i)
+            i += 1
+        shortname = newname
+        i = 0
+        newname = name
+        while newname in self.names:
+            newname = '{}{}'.format(name, i)
+            i += 1
+        name = newname
+
+        self.shortnames.add(shortname)
+        self.names.add(name)
+
+        self.parser.add_argument(
+            '-' + shortname,
+            '--' + name,
+            action=action,
+            dest=name,
+            default=default,
+            type=argtype,
+            help=help)
+
+    def setup_default(
+        self
+    ):
+        for arg in self.DEFAULT_ARGS: 
+            self.add(*arg)
+
+    def parse(
+        self,
+        args=None
+    ):
+        if args is None: 
+            args = sys.argv[1:]
+        return self.parser.parse_args(args)
+
+    def info(
+        self
+    ):
+        return self.parser.print_help()

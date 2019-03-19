@@ -136,16 +136,17 @@ class miner(mm_util):
     
     def list_augmented_samples(
         self,
-        verbose=True
+        verbose=False
     ):
-        self.log.info("Augmented samples:")
+        if verbose: 
+            self.log.info("Augmented samples:")
         samples = []
         sample_list = glob.glob("{}/data/samples/*/augmented_sample.mmconfig".format(self.dir)) + \
             glob.glob("{}/evaluations/*/*/augmented_sample.mmconfig".format(self.dir))
         for i,sample in enumerate(sample_list):
             samples.append((sample, self._load_config(sample)))
-            self.log.info(" - {}".format(samples[i][1]['sample_name']))
             if verbose:
+                self.log.info(" - {}".format(samples[i][1]['sample_name']))
                 for elt in samples[i][1]:
                     if elt is not 'sample_name':
                         self.log.info("    - {}: {}".format(elt, samples[i][1][elt]))
@@ -153,17 +154,18 @@ class miner(mm_util):
 
     def list_trained_models(
         self,
-        verbose=True
+        verbose=False
     ):
         models = []
         model_list = glob.glob("{}/models/*/*/training_model.mmconfig".format(self.dir))
 
-        self.log.info("Trained Models:")
+        if verbose: 
+            self.log.info("Trained Models:")
 
         for i,model in enumerate(model_list):
             models.append((model, self._load_config(model)))
-            self.log.info(" - {}".format(models[i][1]['training_name']))
             if verbose:
+                self.log.info(" - {}".format(models[i][1]['training_name']))
                 for elt in models[i][1]:
                     if elt is not 'training_name':
                         self.log.info("    - {}: {}".format(elt, models[i][1][elt]))
@@ -171,14 +173,18 @@ class miner(mm_util):
 
     def list_evaluations(
         self,
-        verbose=True
+        verbose=False
     ):
+
+        if verbose: 
+            self.log.info("Evaluations:")
         evaluations = [ ]
         evaluation_list = glob.glob("{}/evaluations/*/*/evaluation.mmconfig".format(self.dir))
+        
         for i,evaluation in enumerate(evaluation_list):
             evaluations.append((evaluation, self._load_config(evaluation)))
-            self.log.info(" - {}".format(evaluations[i][1]['evaluation_name']))
             if verbose: 
+                self.log.info(" - {}".format(evaluations[i][1]['evaluation_name']))
                 for elt in evaluations[i][1]:
                     self.log.info("    - {}: {}".format(elt, evaluations[i][1][elt]))
         return evaluations
@@ -1187,16 +1193,6 @@ class miner(mm_util):
                 
         evaluation_dir = "{}/evaluations/{}/{}/".format(self.dir, model_params['training_name'], evaluation_name)
         
-        self._write_config(
-            {
-                'evaluation_name': evaluation_name,
-                'training_name': training_name,
-                'evaluation_samples': evaluation_samples,
-                'evaluation_benchmark': evaluation_benchmark
-            },
-            self._evaluation_config(training_name, evaluation_name)
-        )
-        return  
 
         if os.path.exists(evaluation_dir):
             if len([f for f in os.listdir(evaluation_dir) if "log_r_hat" in f]) > 0:
@@ -1229,8 +1225,8 @@ class miner(mm_util):
             evaluation_benchmark = sample_params['augmentation_benchmark']
 
         evaluation_sample_config = self._check_for_matching_augmented_data(evaluation_samples, evaluation_benchmark)
-        
-        if evaluation_sample_config is None: 
+
+        if evaluation_sample_config is None:
             self.augment_samples(
                 sample_name="{}_eval_augment".format(evaluation_name),
                 n_or_frac_augmented_samples=evaluation_samples,
@@ -1251,7 +1247,7 @@ class miner(mm_util):
         for benchmark in sample_augmenter.benchmarks: 
             ret = forge.evaluate(
                 theta0_filename="{}/theta_grid.npy".format(evaluation_dir),
-                x='{}/x_augmented_samples_{}.npy'.format(evaluation_dir, benchmark)
+                x='{}/x_augmented_samples_{}.npy'.format(os.path.dirname(evaluation_sample_config), benchmark)
             )
             log_r_hat_dict[benchmark] = ret[0]
 
@@ -1264,7 +1260,8 @@ class miner(mm_util):
                 'evaluation_name': evaluation_name,
                 'training_name': training_name,
                 'evaluation_samples': evaluation_samples,
-                'evaluation_benchmark': evaluation_benchmark
+                'evaluation_benchmark': evaluation_benchmark,
+                'evaluation_datasets': {key : "{}/log_r_hat_{}.npy".format(evaluation_dir, key) for key in log_r_hat_dict}
             },
             self._evaluation_config(training_name, evaluation_name)
         )
@@ -1274,12 +1271,17 @@ class miner(mm_util):
     def plot_evaluation_results(
         self,
         evaluation_name,
-        training_name
+        training_name=None,
+        z_contour_list=[],
+        fill_contours=False
     ):
         self.log.info("Plotting evaluation results for evaluation instance '{}'".format(evaluation_name))
 
         evaluations = self.list_evaluations()
         evaluation_tuples = [evaluation for evaluation in evaluations if evaluation[1]['evaluation_name'] == evaluation_name] 
+
+        if training_name is not None:
+            evaluation_tuples = list(filter(lambda elt : elt[1]['training_name'] == training_name, evaluation_tuples))
 
         if len(evaluation_tuples) == 0:
             self.log.error("Evaluation name '{}' not found")
@@ -1292,12 +1294,57 @@ class miner(mm_util):
             for evaluation_tuple in evaluation_tuples:
                 self.log.error(" - {}".format(evaluation_tuple[1]['evaluation_name']))
                 self.log.error("   AT PATH: {}".format(evaluation_tuple[0]))
+                self.log.error("   WITH TRAINING PARENT {}".format(evaluation_tuple[1]['training_name']))
             return self.error_codes.MultipleMatchingFilesError
 
         # else tuple is CLEAN, with len 1
         evaluation_tuple = evaluation_tuples[0]
         evaluation_dir = os.path.dirname(evaluation_tuple[0])
 
-        # theta = np.load("/theta_grid*")
+        theta_grid = np.squeeze(np.load('{}/theta_grid.npy'.format(evaluation_dir)))
+        log_r_hat_dict = {key: np.load(evaluation_tuple[1]['evaluation_datasets'][key]) for key in evaluation_tuple[1]['evaluation_datasets']}
+       
+        if len(z_contour_list) > 0:
+            alphas = self._scale_to_range_flipped([0.,] + z_contour_list, [0.05, .5])[1:]
+        else: 
+            alphas = []
+
+        for i,benchmark in enumerate(log_r_hat_dict):
+            mu = np.mean(log_r_hat_dict[benchmark], axis=1)
+            sigma = np.std(log_r_hat_dict[benchmark], axis=1)
+            plt.plot(
+                theta_grid,
+                mu,
+                self._DEFAULT_COLOR_CYCLE[i],
+                label="{}, mean".format(benchmark)
+            )
+
+            for j,z in enumerate(z_contour_list): 
+                plt.plot(
+                    theta_grid,
+                    mu + sigma*z,
+                    self._DEFAULT_COLOR_CYCLE[i],
+                    linestyle=self._DEFAULT_LINESTYLE_CYCLE[j],
+                    label="{}, {}-sigma".format(benchmark, z)
+                )
+                plt.plot(                    
+                    theta_grid,
+                    mu - sigma*z,
+                    self._DEFAULT_COLOR_CYCLE[i],
+                    linestyle=self._DEFAULT_LINESTYLE_CYCLE[j]
+                )
+                if fill_contours: 
+                    plt.fill_between(
+                        theta_grid, 
+                        y1=(mu + sigma*z),
+                        y2=(mu - sigma*z),
+                        facecolor=self._DEFAULT_COLOR_CYCLE[i], 
+                        alpha=alphas[j]
+                    )
+                    
+        plt.tight_layout() 
+        plt.legend() 
+        plt.show()
 
         return self.error_codes.Success
+ 
