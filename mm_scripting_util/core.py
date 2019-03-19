@@ -1358,4 +1358,3 @@ class miner(mm_util):
             plt.savefig("{}/evaluation_result_param_{}.png".format(evaluation_dir, parameter), bbox_inches='tight')
             plt.show()
         return self.error_codes.Success
- 
