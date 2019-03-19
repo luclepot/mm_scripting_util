@@ -1272,8 +1272,10 @@ class miner(mm_util):
         self,
         evaluation_name,
         training_name=None,
-        z_contour_list=[],
-        fill_contours=False
+        z_contour_list=[1.0],
+        fill_contours=True,
+        bb_b=1.16,
+        bb_m=0.05
     ):
         self.log.info("Plotting evaluation results for evaluation instance '{}'".format(evaluation_name))
 
@@ -1301,50 +1303,59 @@ class miner(mm_util):
         evaluation_tuple = evaluation_tuples[0]
         evaluation_dir = os.path.dirname(evaluation_tuple[0])
 
-        theta_grid = np.squeeze(np.load('{}/theta_grid.npy'.format(evaluation_dir)))
+        theta_grid = np.load('{}/theta_grid.npy'.format(evaluation_dir))
         log_r_hat_dict = {key: np.load(evaluation_tuple[1]['evaluation_datasets'][key]) for key in evaluation_tuple[1]['evaluation_datasets']}
        
+
         if len(z_contour_list) > 0:
             alphas = self._scale_to_range_flipped([0.,] + z_contour_list, [0.05, .5])[1:]
         else: 
             alphas = []
 
-        for i,benchmark in enumerate(log_r_hat_dict):
-            mu = np.mean(log_r_hat_dict[benchmark], axis=1)
-            sigma = np.std(log_r_hat_dict[benchmark], axis=1)
-            plt.plot(
-                theta_grid,
-                mu,
-                self._DEFAULT_COLOR_CYCLE[i],
-                label="{}, mean".format(benchmark)
-            )
-
-            for j,z in enumerate(z_contour_list): 
+        for p_num,parameter in enumerate(self.params['parameters']):
+            for i,benchmark in enumerate(log_r_hat_dict):
+                mu = np.mean(log_r_hat_dict[benchmark], axis=1)
+                sigma = np.std(log_r_hat_dict[benchmark], axis=1)
                 plt.plot(
-                    theta_grid,
-                    mu + sigma*z,
+                    theta_grid[:,p_num],
+                    mu,
                     self._DEFAULT_COLOR_CYCLE[i],
-                    linestyle=self._DEFAULT_LINESTYLE_CYCLE[j],
-                    label="{}, {}-sigma".format(benchmark, z)
+                    label=r'%s, $\mu$' % benchmark
                 )
-                plt.plot(                    
-                    theta_grid,
-                    mu - sigma*z,
-                    self._DEFAULT_COLOR_CYCLE[i],
-                    linestyle=self._DEFAULT_LINESTYLE_CYCLE[j]
-                )
-                if fill_contours: 
-                    plt.fill_between(
-                        theta_grid, 
-                        y1=(mu + sigma*z),
-                        y2=(mu - sigma*z),
-                        facecolor=self._DEFAULT_COLOR_CYCLE[i], 
-                        alpha=alphas[j]
-                    )
-                    
-        plt.tight_layout() 
-        plt.legend() 
-        plt.show()
 
+                for j,z in enumerate(z_contour_list): 
+                    plt.plot(
+                        theta_grid[:,p_num],
+                        mu + sigma*z,
+                        self._DEFAULT_COLOR_CYCLE[i],
+                        linestyle=self._DEFAULT_LINESTYLE_CYCLE[j],
+                        label=r'%s, $%s\sigma $' % (benchmark, z)
+                    )
+                    plt.plot(                    
+                        theta_grid[:,p_num],
+                        mu - sigma*z,
+                        self._DEFAULT_COLOR_CYCLE[i],
+                        linestyle=self._DEFAULT_LINESTYLE_CYCLE[j]
+                    )
+                    if fill_contours: 
+                        plt.fill_between(
+                            theta_grid[:,p_num], 
+                            y1=(mu + sigma*z),
+                            y2=(mu - sigma*z),
+                            facecolor=self._DEFAULT_COLOR_CYCLE[i], 
+                            alpha=alphas[j]
+                        )
+
+            plt.legend(
+                bbox_to_anchor=(0.5, bb_b + bb_m*(len(z_contour_list))),
+                ncol=len(log_r_hat_dict),
+                fancybox=True,
+                loc="upper center"
+            )
+            plt.xlabel(r'$\theta_%s$: %s' % (p_num + 1, parameter))
+            plt.ylabel(r'$\mathbb{E}_x [ -2\, \log \,\hat{r}(x | \theta, \theta_{SM}) ]$')
+            plt.tight_layout()
+            plt.savefig("{}/evaluation_result_param_{}.png".format(evaluation_dir, parameter), bbox_inches='tight')
+            plt.show()
         return self.error_codes.Success
  
