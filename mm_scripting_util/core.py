@@ -97,7 +97,7 @@ class miner(mm_util):
         if card_directory is not None:
             for path_check in [card_directory, "{}/data/{}".format(self.module_path, card_directory)]:
                 if os.path.exists(path_check):
-                    self.card_directory = path
+                    self.card_directory = path_check
             if self.card_directory is None:
                 self.log.error("Selected card directory '{}' could not be found.".format(card_directory))
                 self.log.error("Using default card directory instead.")
