@@ -1,6 +1,18 @@
 
 from .util import *
 
+def list_backends(): 
+    print("Backends:")
+    for f in os.listdir("{}/data/backends/".format(os.path.dirname(__file__))):
+        print(" - {}".format(f))
+    return 0 
+
+def list_cards():
+    print("Cards avaliable:")
+    for f in glob.glob("{}/data/*cards*".format(os.path.dirname(__file__))):
+        print(" - {}".format(f))
+    return 0 
+
 class miner(mm_util):
     madminer.core
     """
