@@ -679,7 +679,8 @@ class miner(mm_util):
         self,
         image_save_name=None,
         bins=40,
-        ranges=None
+        ranges=None,
+        include_automatic_benchmarks=True
     ):
 
         rets = [ 
@@ -699,13 +700,19 @@ class miner(mm_util):
             filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
 
+        include_array = None
+        
+        if not include_automatic_benchmarks:
+            include_array = [i for i,bm in enumerate(benchmarks) if bm in self.params['benchmarks']]
+            benchmarks = {bm: benchmarks[bm] for bm in benchmarks if bm in self.params['benchmarks']}
+        
         legend_labels = [label for label in benchmarks]
         labels = [label for label in observables]
 
         if type(bins != list):
             bins=[bins for i in range(len(observables))]
 
-        obs, _, norm_weights, _ = self._get_raw_mg5_arrays()
+        obs, _, norm_weights, _ = self._get_raw_mg5_arrays(include_array=include_array)
 
         self.log.info("correcting normalizations by total sum of weights per benchmark:")
 
@@ -918,7 +925,7 @@ class miner(mm_util):
         image_save_name=None,
         bins=None,
         ranges=None,
-        max_index=0
+        include_automatic_benchmarks=True
     ):
         rets = [ 
             self._check_valid_augmented_data(sample_name=sample_name),
@@ -946,10 +953,13 @@ class miner(mm_util):
         _,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
             filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
+        
+        if not include_automatic_benchmarks:
+            benchmarks = {bm: benchmarks[bm] for bm in benchmarks if bm in self.params['benchmarks']}
+            x_arrays = { bm: x_arrays[bm] for bm in x_arrays if bm in self.params['benchmarks'] }
 
         legend_labels = [label for label in benchmarks]
         labels = [label for label in observables]
-
 
         default_bins = 40
 

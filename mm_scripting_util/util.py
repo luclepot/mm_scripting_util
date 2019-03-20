@@ -800,8 +800,10 @@ class mm_train_util(
     """
 
     def _get_raw_mg5_arrays(
-        self
+        self,
+        include_array=None
     ):
+
         mg5_observations = []
         mg5_weights = []
 
@@ -824,21 +826,27 @@ class mm_train_util(
             mg5_norm_weights[i] /= sum_bench
             self.log.debug("{}: {}".format(i + 1, sum_bench))
         
-        return mg5_obs, mg5_weights, mg5_norm_weights, n_mg5
+        if include_array is None: 
+            include_array = range(mg5_weights.shape[0])
+
+        return mg5_obs, mg5_weights[include_array], mg5_norm_weights[include_array], n_mg5
 
     def _get_automatic_ranges(
         self, 
         obs, 
         weights
     ):
-        if weights is not None:
-            return [
-                    tuple(np.mean(
-                        [
-                            np.histogram(obs[:,i], weights=weights[int(i*weights.shape[0]/obs.shape[1] + j)])[1][[0,-1]] for j in range(int(weights.shape[0]/obs.shape[1]))                        
-                        ],
-                    axis=0)) for i in range(obs.shape[1])
+    
+        return np.mean(
+            np.array(
+                [
+                    [
+                        np.histogram(obs[:,i], weights=weights[j])[1][[0,-1]] for j in range(weights.shape[0])
+                    ]
+                    for i in range(obs.shape[1])
                 ]
+            ), axis=1
+        )
         
     def _get_mg5_and_augmented_arrays(
         self,
