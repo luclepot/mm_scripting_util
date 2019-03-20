@@ -710,15 +710,7 @@ class miner(mm_util):
         self.log.info("correcting normalizations by total sum of weights per benchmark:")
 
         if ranges is None: 
-            print(obs.shape)
-            print(norm_weights.shape)
-            ranges = [
-                    tuple(np.mean(
-                        [
-                            np.histogram(obs[:,i], weights=norm_weights[int(i*norm_weights.shape[0]/obs.shape[1] + j)])[1][[0,-1]] for j in range(int(norm_weights.shape[0]/obs.shape[1]))                        
-                        ],
-                    axis=0)) for i in range(obs.shape[1])
-                ]
+            ranges = self._get_automatic_ranges(obs, norm_weights)
             self.log.info("No ranges specified, using automatic range finding.")
 
         assert(len(bins) == len(observables) == len(ranges))
@@ -760,6 +752,7 @@ class miner(mm_util):
         augmentation_benchmark,
         n_theta_samples=2500,
         bins=None,
+        ranges=None,
         override_step=None,
         image_save_name=None
     ):
