@@ -836,7 +836,7 @@ class mm_train_util(
         obs, 
         weights
     ):
-    
+
         return np.mean(
             np.array(
                 [
@@ -853,7 +853,9 @@ class mm_train_util(
         sample_name,
         bins,            
         ranges,
-        dens
+        dens,
+        params=None,
+        include_automatic_benchmarks=True,        
     ):  
 
         rets = [ 
@@ -874,6 +876,7 @@ class mm_train_util(
 
         n_aug = max([x_arrays[obs].shape[0] for obs in x_arrays])
 
+
         # grab benchmarks and observables from files
         (_, 
         benchmarks, 
@@ -882,12 +885,23 @@ class mm_train_util(
         _,_,_,_) = madminer.utils.interfaces.madminer_hdf5.load_madminer_settings(
             filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
+        
+        include_array = None
+
+        if not include_automatic_benchmarks:
+            if params is not None: 
+                bm_to_keep = params['benchmarks']
+            else: 
+                bm_to_keep = ['sm', 'w'] # default
+            include_array = [i for i,bm in enumerate(benchmarks) if bm in bm_to_keep]            
+            benchmarks = {bm: benchmarks[bm] for bm in benchmarks if bm in bm_to_keep}
+            x_arrays = { bm: x_arrays[bm] for bm in x_arrays if bm in bm_to_keep}
 
         # create lists of each variable
         benchmark_list = [benchmark for benchmark in benchmarks]
         observable_list = [observable for observable in observables]
 
-        mg5_obs, mg5_weights, mg5_norm_weights, n_mg5 = self._get_raw_mg5_arrays()
+        mg5_obs, mg5_weights, mg5_norm_weights, n_mg5 = self._get_raw_mg5_arrays(include_array=include_array)
 
         x_aug = np.asarray([
             [ 

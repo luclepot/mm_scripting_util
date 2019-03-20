@@ -1009,14 +1009,17 @@ class miner(mm_util):
         dens=True,
         alphas=(0.8, 0.4),
         figlen=5, 
-        threshold=2.0
+        threshold=2.0,
+        include_automatic_benchmarks=True
     ):
 
         err, x_aug, x_mg5 = self._get_mg5_and_augmented_arrays(
                 sample_name, 
                 bins, 
                 ranges, 
-                dens
+                dens,
+                include_automatic_benchmarks=include_automatic_benchmarks,
+                params=self.params
             )
 
         if self.error_codes.Success not in err:
