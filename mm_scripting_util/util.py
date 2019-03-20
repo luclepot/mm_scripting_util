@@ -831,15 +831,15 @@ class mm_train_util(
         obs, 
         weights
     ):
-    
-        return [
-                tuple(np.mean(
-                    [
-                        np.histogram(obs[:,i], weights=weights[int(i*weights.shape[0]/obs.shape[1] + j)])[1][[0,-1]] for j in range(int(weights.shape[0]/obs.shape[1]))                        
-                    ],
-                axis=0)) for i in range(obs.shape[1])
-            ]
-
+        if weights is not None:
+            return [
+                    tuple(np.mean(
+                        [
+                            np.histogram(obs[:,i], weights=weights[int(i*weights.shape[0]/obs.shape[1] + j)])[1][[0,-1]] for j in range(int(weights.shape[0]/obs.shape[1]))                        
+                        ],
+                    axis=0)) for i in range(obs.shape[1])
+                ]
+        
     def _get_mg5_and_augmented_arrays(
         self,
         sample_name,

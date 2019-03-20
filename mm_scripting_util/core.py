@@ -779,6 +779,7 @@ class miner(mm_util):
                     sample_name, 
                     image_save_name=image_save_name,
                     bins=bins,
+                    ranges=ranges,
                     mark_outlier_bins=True
                 )
             if self.error_codes.Success not in ret:
@@ -866,7 +867,11 @@ class miner(mm_util):
 
         # parameter ranges
         priors = [('flat',) + self.params['parameters'][parameter]['parameter_range'] for parameter in self.params['parameters']]
+        self.log.debug("Priors: ")
 
+        for prior in priors: 
+            self.log.debug(" - {}".format(prior))
+ 
         if evaluation_aug_dir is not None:
             aug_dir = evaluation_aug_dir
             config_file = "{}/augmented_sample.mmconfig".format(aug_dir)
@@ -875,12 +880,13 @@ class miner(mm_util):
             config_file = self._augmentation_config(sample_name)
 
         # train the ratio
+
         sample_augmenter.extract_samples_train_ratio(
             theta0=madminer.sampling.random_morphing_thetas(n_thetas=n_theta_samples, priors=priors),
             theta1=madminer.sampling.constant_benchmark_theta(augmentation_benchmark),
             n_samples=samples,
             folder=aug_dir,
-            filename="augmented_samples_"
+            filename="augmented_sample_ratio"
         )
 
         # extract samples at each benchmark
@@ -898,7 +904,8 @@ class miner(mm_util):
                 "augmentation_benchmark": augmentation_benchmark,
                 "augmentation_samples": samples,
                 "theta_samples": n_theta_samples,
-                "sample_name": sample_name
+                "sample_name": sample_name,
+                "all_benchmarks": dict(sample_augmenter.benchmarks)
             },
             config_file
         )
@@ -909,8 +916,8 @@ class miner(mm_util):
         self,
         sample_name,
         image_save_name=None,
-        bins=(40,40),
-        ranges=[(-8,8),(0,600)],
+        bins=None,
+        ranges=None,
         max_index=0
     ):
         rets = [ 
@@ -942,10 +949,22 @@ class miner(mm_util):
 
         legend_labels = [label for label in benchmarks]
         labels = [label for label in observables]
+
+
+        default_bins = 40
+
+        if bins is None:
+            bins = [default_bins for i in range(len(labels))]
+        
+        if ranges is None:
+            ranges = np.mean([[np.min(x_arrays[bm], axis=0), np.max(x_arrays[bm], axis=0)] for bm in x_arrays], axis=0).T 
+        
         # alternate labels?? here they be
         # labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
-
+        assert(len(labels)==len(bins)==len(ranges))
+        
         plt = corner.corner(x_arrays[legend_labels[0]], labels=labels, color='C0', bins=bins, range=ranges)
+        
         plt.label = legend_labels[0] 
 
         for i,benchmark in enumerate(legend_labels[1:]):
