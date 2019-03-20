@@ -93,11 +93,12 @@ class miner(mm_util):
         self.lhe_processor_object = None
         
         self.log.debug("Loading custom card directory... ")
+        self.card_directory=None
         if card_directory is not None:
             for path_check in [card_directory, "{}/data/{}".format(self.module_path, card_directory)]:
                 if os.path.exists(path_check):
                     self.card_directory = path
-            else:
+            if self.card_directory is None:
                 self.log.error("Selected card directory '{}' could not be found.".format(card_directory))
                 self.log.error("Using default card directory instead.")
                 self.card_directory = self.default_card_directory
