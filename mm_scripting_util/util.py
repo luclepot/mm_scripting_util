@@ -93,11 +93,13 @@ class mm_base_util(
         self.dir = self.path + "/" + self.name
         self.log = logging.getLogger(__name__)
         self.module_path = os.path.dirname(__file__)
-        
+        self.default_card_directory = "{}/data/cards_tth".format(self.module_path)
+
         self._main_sample_config = lambda : "{}/main_sample.mmconfig".format(self.dir)
         self._augmentation_config = lambda aug_sample_name : "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, aug_sample_name)
         self._training_config = lambda aug_sample_name, training_name : "{}/models/{}/{}/training_model.mmconfig".format(self.dir, aug_sample_name, training_name)
         self._evaluation_config = lambda training_name, evaluation_name : "{}/evaluations/{}/{}/evaluation.mmconfig".format(self.dir, training_name, evaluation_name)
+        
 
     def _check_valid_init(
         self
@@ -427,6 +429,26 @@ class mm_base_util(
         arr = (arr - np.min(arr)) / (np.max(arr) - np.min(arr))
         return (1 - arr)*(_range[1] - _range[0]) + _range[0]
 
+    def _get_keyword_filenumbers(
+        self,
+        keywords,
+        fname,
+        fdir=""
+    ):
+        if type(keywords) != list:
+            keywords = [keywords]
+        locs = []
+        nums = []
+        with open("{}/{}".format(fdir, fname)) as f:
+            for num,line in enumerate(f, 1):
+                if len(line.strip()) > 0 and line.strip()[0] != '#':
+                    for keyword in keywords:
+                        if keyword in line and keyword not in locs:
+                            locs.append(keyword)
+                            nums.append(num)
+                        
+        return nums, locs
+
 class mm_backend_util(
     mm_base_util
 ):
@@ -435,7 +457,7 @@ class mm_backend_util(
 
     def __init__(
         self,
-        required_params=["model", "madgraph_generation_command", "backend_name", "parameters", "benchmarks", "observables"],
+        required_params=["backend_name", "parameters", "benchmarks", "observables"],
         required_experimental_params=["lha_block", "lha_id", "morphing_max_power", "parameter_range"]
     ):
         self.params = {}
@@ -501,6 +523,7 @@ class mm_backend_util(
             self.log.debug("")
             self.log.debug("--- Backend parameter specifications ---")
             self.log.debug("")
+            self.log.debug("REQUIRED PARAMS:")
             for required_parameter in self.required_params:
                 self.log.debug(required_parameter + ": ")
                 if type(self.params[required_parameter]) == dict:
@@ -514,6 +537,11 @@ class mm_backend_util(
                 else:
                     self.log.debug("  - {}".format(self.params[required_parameter]))
             self.log.debug("")
+            self.log.debug("NON-REQUIRED PARAMS:")
+            for param in self.params:
+                if param not in self.required_params: 
+                    self.log.debug("{}:".format(param))
+                    self.log.debug("  - {}".format(self.params[param]))
             return self.error_codes.Success
 
         self.log.warning("Backend found, but parameters were not fully loaded.")        

@@ -1,0 +1,13 @@
+# VBF_higgs process backend file
+
+backend_name: VBF_higgs
+
+parameter CWL2: lha_block=dim6, lha_id=2, morphing_max_power=2, parameter_range=(-10.,10.)
+parameter CPWL2: lha_block=dim6, lha_id=5, morphing_max_power=2, parameter_range=(-10.,10.)
+
+observable pt_j1: j[0].pt
+observable delta_phi_jj: j[0].deltaphi(j[1]) * (-1. + 2.*float(j[0].eta > j[1].eta))
+observable met: met.pt
+
+benchmark w: CWL2=10., CPWL2=0.
+benchmark sm: CWL2=0., CPWL2=0.

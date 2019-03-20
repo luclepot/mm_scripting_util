@@ -57,9 +57,9 @@ def __main__():
                         default='sm', type=str, 
                         help="sample benchmark at which to generate data")
     parser.add_argument('-sd','--sim-card-directory',
-                        action='store', dest='custom_card_directory', 
+                        action='store', dest='card_directory', 
                         default=None, type=str,
-                        help="path to custom card directory")
+                        help="path to card directory")
     parser.add_argument('-sp','--sim-use-pythia', 
                         action='store_true', dest='use_pythia_card',
                         default=False,
@@ -110,7 +110,7 @@ def __main__():
             name=args.name,
             loglevel=logging.ERROR,
             backend=args.backend,
-            custom_card_directory=args.custom_card_directory
+            card_directory=args.card_directory
         )   
 
         miner_object._submit_flashy(
@@ -124,7 +124,7 @@ def __main__():
         name=args.name,
         loglevel=args.loglevel,
         backend=args.backend,
-        custom_card_directory=args.custom_card_directory
+        card_directory=args.card_directory
     )   
     ## if generation flag, run generation function
     if args.generate:

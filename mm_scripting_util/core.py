@@ -87,10 +87,11 @@ class miner(mm_util):
             else:
                 self.log.error("Selected card directory '{}' could not be found.".format(card_directory))
                 self.log.error("Using default card directory instead.")
-                self.card_directory = None
+                self.card_directory = self.default_card_directory
         else: 
             self.log.debug("No card directory provided.")
             self.log.debug("Using default card directory for all cards.")
+            self.card_directory = self.default_card_directory
         
         self.log.info("Using card directory '{}',".format(self.card_directory))
         self.log.info("with {} files".format(len(os.listdir(self.card_directory))))
@@ -316,7 +317,11 @@ class miner(mm_util):
         self, 
         n_samples,
         seed_file=None,
-        force=False
+        force=False,
+        run_card_modifications=[
+            " = nevents ! Number of unweighted events requested",
+            " = iseed   ! (0=assigned automatically=default))"
+        ]
     ):
 
         rets = [ 
@@ -347,47 +352,33 @@ class miner(mm_util):
             pattern="card"
         )
 
-        if self.card_directory is not None:
-            custom_files = os.listdir(self.card_directory)
-        else:
-            custom_files = []
-
-        default_files = [f for f in os.listdir(self.module_path + "/data/cards/") if f not in custom_files]
+        files = os.listdir(self.card_directory)
+        filenames = {} 
         
-        for f in custom_files: 
+        for f in files: 
             shutil.copyfile(
                 src=self.card_directory + "/" + f,
                 dst=self.dir + "/cards/" + f
             )
+            filenames[f] = "{}/cards/{}".format(self.card_directory, f)
 
-        if len(custom_files) > 0: 
-            self.log.debug("Copied {} custom card files from directory '{}'".format(len(custom_files), self.card_directory))
+        self.log.info("Copied {} card files from directory '{}'".format(len(files), self.card_directory))
         
-        for f in default_files:
-            shutil.copyfile(
-                src=self.module_path + "/data/cards/" + f,
-                dst=self.dir + "/cards/" + f
-            )
-
-        self.log.debug("Copied {} default card files from directory '{}'".format(len(default_files), self.module_path + "/data/cards/"))
+        #
+        # SETUP RUN CARDS
+        #
+        run_card_filenames = { f : filenames[f] for f in filenames if "run_card" in f }
 
         for i in range(len(sample_sizes)):
-            self._replace_lines(
-                infile=self.dir + "/cards/run_card.dat", 
-                line_numbers=[31,32],
-                line_strings=["{} = nevents ! Number of unweighted events requested\n".format(sample_sizes[i]),
-                            "{} = iseed   ! (0=assigned automatically=default))\n".format(seeds[i])],
-                outfile=self.dir + "/cards/run_card{}.dat".format(i + 1)
-            )
-        
-        self._replace_lines(
-            infile=self.dir + "/cards/proc_card.dat",
-            line_numbers=[1,2,3],
-            line_strings=[
-                "import model {}\n".format(self.params['model']),
-                "generate {}\n".format(self.params['madgraph_generation_command']),
-                ""]
-        )
+            for f in run_card_filenames:
+                nums, names = self._get_keyword_filenumbers(run_card_modifications, f, fdir=self.card_directory)
+                values = [sample_sizes[i], seeds[i]]
+                self._replace_lines(
+                    infile="{}/cards/{}".format(self.dir, f), 
+                    line_numbers=nums,
+                    line_strings=["{}{}\n".format(values[j], name) for j,name in enumerate(names)],
+                    outfile=self.dir + "/cards/{}{}.dat".format(f.replace('.dat',''), i + 1)
+                )
 
         self.log.debug("Setup {} cards in dir {}".format(
             len(sample_sizes), self.dir + "/cards")
@@ -396,7 +387,27 @@ class miner(mm_util):
         files = os.listdir(self.dir + "/cards")
         for f in files: 
             self.log.debug(" - \"{}\"".format(f))
+
+        #
+        # SETUP PROC CARDS // disabled for now, just do it manually (easy enough man)
+        #
+        # proc_card_filenames = { f : filenames[f] for f in filenames if "proc_card" in f }
+        # possible_proc_card_changes = [
+        #     ("madgraph_generation_command", "generate "),
+        #     ("model", "import model ")
+        # ]
         
+        # for f in proc_card_filenames: 
+        #     for key in self.params:
+        #         for change, change_syntax in possible_proc_card_changes: 
+        #             if change in key:
+        #                 self._replace_lines(
+        #                     infile="{}/cards/{}".format(self.dir, f),
+        #                     line_numbers=self._get_keyword_filenumbers([change_syntax], f, fdir=self.card_directory)[0],
+        #                     line_strings=["{}{}\n".format(change_syntax, change)],
+        #                     outfile="{}/cards/{}.dat".format(self.dir, f.replace('.dat',''))
+        #                 )   
+
         return [self.error_codes.Success]
 
     def run_morphing(
@@ -404,7 +415,6 @@ class miner(mm_util):
         morphing_trials=2500,
         force=False
     ):
-
         rets = [ 
                 self._check_valid_backend()
                 ] 

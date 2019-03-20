@@ -1,0 +1,3 @@
+import model HC_UFO
+# g g > t t~ h, (t > W+ b, W+ > p p), (t~ > W- b~, W- > p p), (h > mu+ mu- mu+ mu-)
+generate g g > x0 t t~, x0 > a a, t > l+ vl b, t~ > l- vl~ b~
