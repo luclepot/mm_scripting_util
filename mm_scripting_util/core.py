@@ -23,7 +23,7 @@ class miner(mm_util):
         madminer_loglevel=logging.INFO,
         autodestruct=False,
         backend="tth.dat",
-        custom_card_directory=None
+        card_directory=None
     ):
         """
         madminer-helper object for quickly running madgraph scripts. 
@@ -38,7 +38,7 @@ class miner(mm_util):
                 bool, cleanup switch for object// all files. if true, the whole thing will destroy itself upon deletion. useful for testing.
             backend:
                 string, path to a backend file. Examples found at "mm_scripting_util/data/backends/". Provides all benchmarks/ simulation information
-            custom_card_directory:
+            card_directory:
                 string, path to a card directory from which to load template cards, if one desires to switch the current template cards out for new ones.
         """
 
@@ -81,18 +81,19 @@ class miner(mm_util):
         self.lhe_processor_object = None
         
         self.log.debug("Loading custom card directory... ")
-        if custom_card_directory is not None:
-            ret = self._search_for_paths(custom_card_directory, include_module_paths=False)
-            if ret is None: 
-                self.log.error("Selected custom card directory '{}' could not be found.".format(custom_card_directory))
-                self.log.error("Using default card directory instead.")
-                self.custom_card_directory = None
+        if card_directory is not None:
+            if os.path.exists(card_directory):
+                self.card_directory = card_directory
             else:
-                self.log.debug("Using custom card directory '{}'".format(ret))
-                self.custom_card_directory = ret
+                self.log.error("Selected card directory '{}' could not be found.".format(card_directory))
+                self.log.error("Using default card directory instead.")
+                self.card_directory = None
         else: 
-            self.custom_card_directory = None
-            self.log.debug("No custom card directory provided.")
+            self.log.debug("No card directory provided.")
+            self.log.debug("Using default card directory for all cards.")
+        
+        self.log.info("Using card directory '{}',".format(self.card_directory))
+        self.log.info("with {} files".format(len(os.listdir(self.card_directory))))
 
         self._load_backend(backend)
 
@@ -100,7 +101,7 @@ class miner(mm_util):
         self,
         loglevel,
         module=None
-    ):     
+    ):
 
         logging.basicConfig(
             format='%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s',
@@ -345,8 +346,9 @@ class miner(mm_util):
             force=force,
             pattern="card"
         )
-        if self.custom_card_directory is not None:
-            custom_files = os.listdir(self.custom_card_directory)
+
+        if self.card_directory is not None:
+            custom_files = os.listdir(self.card_directory)
         else:
             custom_files = []
 
@@ -354,12 +356,12 @@ class miner(mm_util):
         
         for f in custom_files: 
             shutil.copyfile(
-                src=self.custom_card_directory + "/" + f,
+                src=self.card_directory + "/" + f,
                 dst=self.dir + "/cards/" + f
             )
 
         if len(custom_files) > 0: 
-            self.log.debug("Copied {} custom card files from directory '{}'".format(len(custom_files), self.custom_card_directory))
+            self.log.debug("Copied {} custom card files from directory '{}'".format(len(custom_files), self.card_directory))
         
         for f in default_files:
             shutil.copyfile(
