@@ -678,8 +678,8 @@ class miner(mm_util):
     def plot_mg5_data_corner(
         self,
         image_save_name=None,
-        bins=(40,40),
-        ranges=[(-8,8),(0,600)]
+        bins=40,
+        ranges=None
     ):
 
         rets = [ 
@@ -701,26 +701,28 @@ class miner(mm_util):
 
         legend_labels = [label for label in benchmarks]
         labels = [label for label in observables]
-        observations = []
-        weights = []
 
-        for o, w in madminer.utils.interfaces.madminer_hdf5.madminer_event_loader(
-            filename=self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
-        ):
-            observations.append(o)
-            weights.append(w)
+        if type(bins != list):
+            bins=[bins for i in range(len(observables))]
 
-        obs = np.squeeze(np.asarray(observations))
-        weights = np.squeeze(np.asarray(weights)).T
-        norm_weights = np.copy(weights) # normalization factors for plots
+        obs, _, norm_weights, _ = self._get_raw_mg5_arrays()
 
         self.log.info("correcting normalizations by total sum of weights per benchmark:")
 
-        for i, weight in enumerate(weights):
-            sum_bench = (weight.sum())
-            norm_weights[i] /= sum_bench
-            self.log.info("{}: {}".format(i + 1, sum_bench))
-        
+        if ranges is None: 
+            print(obs.shape)
+            print(norm_weights.shape)
+            ranges = [
+                    tuple(np.mean(
+                        [
+                            np.histogram(obs[:,i], weights=norm_weights[int(i*norm_weights.shape[0]/obs.shape[1] + j)])[1][[0,-1]] for j in range(int(norm_weights.shape[0]/obs.shape[1]))                        
+                        ],
+                    axis=0)) for i in range(obs.shape[1])
+                ]
+            self.log.info("No ranges specified, using automatic range finding.")
+
+        assert(len(bins) == len(observables) == len(ranges))
+
         # labels=[r'$\Delta \eta_{t\bar{t}}$',r'$p_{T, x0}$ [GeV]']
 
         plt = corner.corner(obs, labels=labels, color='C0', bins=bins, range=ranges, weights=norm_weights[0])
@@ -757,7 +759,7 @@ class miner(mm_util):
         training_name,
         augmentation_benchmark,
         n_theta_samples=2500,
-        bins=(40,40),
+        bins=None,
         override_step=None,
         image_save_name=None
     ):
