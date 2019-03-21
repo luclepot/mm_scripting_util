@@ -1004,8 +1004,8 @@ class miner(mm_util):
         sample_name,
         image_save_name=None,
         mark_outlier_bins=False,
-        bins=(40,40),
-        ranges=[(-8,8),(0,600)],
+        bins=40,
+        ranges=None,
         dens=True,
         alphas=(0.8, 0.4),
         figlen=5, 
@@ -1034,6 +1034,10 @@ class miner(mm_util):
             filename = self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
         )
 
+        if not include_automatic_benchmarks: 
+            benchmarks = {bm: benchmarks[bm] for bm in benchmarks if bm in self.params['benchmarks']}
+
+
         # create lists of each variable
         benchmark_list = [benchmark for benchmark in benchmarks]
 
@@ -1058,6 +1062,7 @@ class miner(mm_util):
             )
 
         fig, axs = plt.subplots(1, x_aug[0].shape[0], figsize=(figlen*x_aug[0].shape[0], figlen))
+        
         for i in range(x_aug[0].shape[0]):
             colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red', 'tab:purple', 'tab:brown', 'tab:pink', 'tab:gray', 'tab:olive', 'tab:cyan']
             height_step = np.max([mg5_y[i], aug_y[i]])/40.0

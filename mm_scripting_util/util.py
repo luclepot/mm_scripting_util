@@ -851,9 +851,9 @@ class mm_train_util(
     def _get_mg5_and_augmented_arrays(
         self,
         sample_name,
-        bins,            
-        ranges,
-        dens,
+        bins=40,            
+        ranges=None,
+        dens=True,
         params=None,
         include_automatic_benchmarks=True,        
     ):  
@@ -876,7 +876,6 @@ class mm_train_util(
 
         n_aug = max([x_arrays[obs].shape[0] for obs in x_arrays])
 
-
         # grab benchmarks and observables from files
         (_, 
         benchmarks, 
@@ -897,11 +896,20 @@ class mm_train_util(
             benchmarks = {bm: benchmarks[bm] for bm in benchmarks if bm in bm_to_keep}
             x_arrays = { bm: x_arrays[bm] for bm in x_arrays if bm in bm_to_keep}
 
+        if type(bins) != list: 
+            bins = [bins for i in range(len(observables))]
+            
         # create lists of each variable
         benchmark_list = [benchmark for benchmark in benchmarks]
         observable_list = [observable for observable in observables]
 
         mg5_obs, mg5_weights, mg5_norm_weights, n_mg5 = self._get_raw_mg5_arrays(include_array=include_array)
+
+        if ranges is None: 
+            ranges = self._get_automatic_ranges(mg5_obs, mg5_norm_weights)
+            self.log.info("No ranges specified, using automatic range finding.")
+
+        # return benchmark_list, observable_list, x_arrays, mg5_obs, mg5_weights, ranges
 
         x_aug = np.asarray([
             [ 
@@ -913,7 +921,7 @@ class mm_train_util(
                     density=dens
                 )    
                 for benchmark in benchmark_list
-            ] for i in range(len(observable_list)) 
+            ] for i in range(len(observable_list))
         ])
 
         x_mg5 = np.asarray([
@@ -930,6 +938,8 @@ class mm_train_util(
         ])
         aug_values, aug_bins = [np.asarray([[subarr for subarr in arr] for arr in x_aug[:,:,i]]) for i in range(2)]
         mg5_values, mg5_bins = [np.asarray([[subarr for subarr in arr] for arr in x_mg5[:,:,i]]) for i in range(2)]
+
+        # return (x_aug, aug_values, aug_bins), (x_mg5, mg5_values, mg5_bins) 
 
         digitized = np.asarray([np.digitize(mg5_obs[:,i],np.histogram(mg5_obs[:,i], bins=bins[i] ,range=ranges[i])[1]) for i in range(len(bins)) ]) - 1
         mg5_err = np.asarray([ [ [ np.sqrt(np.sum(weight[digitized[bn] == b]*weight[digitized[bn] == b])) for b in range(bin_n)] for weight in mg5_norm_weights] for bn,bin_n in enumerate(bins)])
