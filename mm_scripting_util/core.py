@@ -205,9 +205,16 @@ class miner(mm_util):
         return evaluations
 
     def environment_setup(
-        self
+        self, 
+        configure_madgraph=False
     ):
-        return
+        # cannot setup environment on windows, this is entirely bash-based
+        if platform.system() == "Windows":
+            self.log.error("Setup attempted on a windows system; must use Linux.")
+            self.log.error("Exiting environment setup function.")
+            return self.error_codes.InvalidPlatformError
+        
+        
 
     def __del__(
         self
