@@ -134,7 +134,6 @@ class miner(mm_util):
     def destroy_sample(
         self
     ):
-
         rets = [
             self._check_valid_init()
             ]
@@ -149,7 +148,7 @@ class miner(mm_util):
             )
 
         return [self.error_codes.Success]
-    
+
     def list_augmented_samples(
         self,
         verbose=False
@@ -204,7 +203,12 @@ class miner(mm_util):
                 for elt in evaluations[i][1]:
                     self.log.info("    - {}: {}".format(elt, evaluations[i][1][elt]))
         return evaluations
-    
+
+    def environment_setup(
+        self
+    ):
+        return
+
     def __del__(
         self
     ):
