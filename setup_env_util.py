@@ -97,7 +97,7 @@ def write_environment_setup_script(
 
         # if the required environment doesn't exist, create it
         if "mm_scripting_util" not in conda_envs:
-            f.write("# create anaconda environment from file")
+            f.write("echo 'creating anaconda environment from file'")
             f.write("conda env create -n {0} -f \"{1}/environment.yml\"".format(new_env_name, module_directory))
 
         f.write("# activate anaconda env")
@@ -105,11 +105,15 @@ def write_environment_setup_script(
         f.write("# install madminer, build")
         f.write("git clone {0} \"{1}/madminer\"".format(madminer_repository, installation_directory))
         f.write("python \"{0}/madminer/setup.py\" build".format(installation_directory))
-        f.write("")
+        f.write("python setup.py build")
 
         if include_madgraph_install: 
             f.write("# install madgraph dir")
-            f.write("tar xvzf -C \"{0}\MG5\ \" < <(wget -q -O - https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz)".format(installation_directory))
+            f.write("cd ..")
+            f.write("wget -c https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz")
+            f.write("tar -xzvf MG5_aMC_v2.6.5.tar.gz")
+            f.write("rm MG5_aMC_v2.6.5.tar.gz")
+            f.write("cd mm_scripting_util")
 
 if __name__== "__main__":
     parser = argparse.ArgumentParser()

@@ -192,13 +192,6 @@ class miner(mm_util):
                     self.log.info("    - {}: {}".format(elt, evaluations[i][1][elt]))
         return evaluations
 
-    def environment_setup(self, configure_madgraph=False):
-        # cannot setup environment on windows, this is entirely bash-based
-        if platform.system() == "Windows":
-            self.log.error("Setup attempted on a windows system; must use Linux.")
-            self.log.error("Exiting environment setup function.")
-            return self.error_codes.InvalidPlatformError
-
     def __del__(self):
         if self.autodestruct:
             self.destroy_sample()
@@ -213,7 +206,7 @@ class miner(mm_util):
         force=True,
         mg_dir=None,
         use_pythia_card=False,
-        platform="lxplus7",
+        mg_environment_cmd="lxplus7",
         morphing_trials=2500,
         override_step=None,
     ):
@@ -264,8 +257,8 @@ class miner(mm_util):
                     samples=samples,
                     sample_benchmark=sample_benchmark,
                     force=force,
-                    mg_dir=mg_dir,
-                    platform=platform,
+                    mg_dir=mg_dir, 
+                    mg_environment_cmd=mg_environment_cmd,
                     use_pythia_card=use_pythia_card,
                 )
                 if self.error_codes.Success not in ret:
@@ -466,7 +459,7 @@ class miner(mm_util):
         sample_benchmark,
         force=False,
         mg_dir=None,
-        platform="lxplus7",
+        mg_environment_cmd='lxplus7',
         use_pythia_card=False,
     ):
 
@@ -493,16 +486,13 @@ class miner(mm_util):
         self.madminer_object.load(self.dir + "/data/madminer_{}.h5".format(self.name))
 
         # check platform and change initial_command as necessary
-        if platform == "lxplus7":
+        if mg_environment_cmd == "lxplus7":
             initial_command = 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh; echo "SOURCED IT"'
             self.log.debug("Ran lxplus7 initial source cmd.")
-        elif platform == "pheno":
+        elif mg_environment_cmd == "pheno":
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         else:
-            self.log.error("Platform not recognized. Canceling mg5 script setup.")
-            self.log.error("(note: use name 'pheno' for the default belgian server)")
-            self.log.error("((I didn't know the proper name, sorry))")
-            failed.append(self.error_codes.InvalidPlatformError)
+            initial_command = mg_environment_cmd
 
         # init mg_dir
         if mg_dir is not None:
@@ -510,7 +500,8 @@ class miner(mm_util):
                 self.log.warning("MGDIR variable '{}' invalid".format(mg_dir))
                 self.log.warning("Aborting mg5 script setup routine.")
                 failed.append(self.error_codes.NoDirectoryError)
-
+        elif len(glob.glob("../MG5_aMC_*")) > 0:
+            mg_dir = os.path.abspath(glob.glob("../MG5_aMC_*")[0])
         elif getpass.getuser() == "pvischia":
             mg_dir = "/home/ucl/cp3/pvischia/smeft_ml/MG5_aMC_v2_6_2"
         elif getpass.getuser() == "alheld":
