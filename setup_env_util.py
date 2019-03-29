@@ -104,12 +104,12 @@ def write_environment_setup_script(
         f.write("conda activate {0}".format(new_env_name))
         f.write("# install madminer, build")
         f.write("git clone {0} \"{1}/madminer\"".format(madminer_repository, installation_directory))
-        f.write("python \"{0}/madminer/setup.py build\"".format(installation_directory))
+        f.write("python \"{0}/madminer/setup.py\" build".format(installation_directory))
         f.write("")
 
         if include_madgraph_install: 
             f.write("# install madgraph dir")
-            f.write("wget -qO- https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz | tar xvz - -C \"{0}\"".format(installation_directory))
+            f.write("tar xvzf -C \"{0}\MG5\ \" < <(wget -q -O - https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz)".format(installation_directory))
 
 if __name__== "__main__":
     parser = argparse.ArgumentParser()
