@@ -66,10 +66,15 @@ class bash_file_wrapper:
         self.f.write(to_write)
 
 def write_environment_setup_script(
-    include_madgraph_install=False,
-    installation_directory=None,
-    new_env_name="mm_scripting_util",
-    madminer_repository="git@github.com:johannbrehmer/madminer.git"
+    madminer_install,
+    madgraph_install, 
+    conda_install, 
+    conda_env_install,
+    conda_env_activate,
+    build_modules,
+    installation_directory='',
+    run_all=False,
+    new_env_name='mm_scripting_util'
 ):
     """
     creates a bash file which is run for setup. 
@@ -78,7 +83,7 @@ def write_environment_setup_script(
     module_directory = os.path.dirname(os.path.abspath(__file__))
 
     # auto install directory: one back from the directory of mm_scripting_util (extremely lame way to do this, I know... sorry)
-    if installation_directory is None:
+    if installation_directory is None or installation_directory == '':
         installation_directory = os.path.dirname(module_directory)
 
     conda_envs, current_env = _conda_info()
@@ -86,39 +91,51 @@ def write_environment_setup_script(
     # open bash file
     with bash_file_wrapper(open("setup_env_util.sh", 'w+')) as f:
 
-        # if no conda installed/activated... 
-        if current_env is None:
-            f.write("# install anaconda")
+        if conda_install or run_all:
+            f.write("echo 'attempting to install anaconda..'")
             f.write("wget -nv https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O \"{0}/miniconda.sh\"".format(installation_directory))
             f.write("bash \"{0}/miniconda.sh\" -b -p \"{1}/miniconda\"".format(installation_directory, installation_directory))
             f.write("source \"{0}/miniconda/etc/profile.d/conda.sh\"".format(installation_directory))
             f.write("rm \"{0}/miniconda.sh\"".format(installation_directory))
-            f.write()
 
-        # if the required environment doesn't exist, create it
-        if "mm_scripting_util" not in conda_envs:
-            f.write("echo 'creating anaconda environment from file'")
+        if conda_env_install or run_all:
+            f.write("echo 'attempting to create anaconda environment from file'")
             f.write("conda env create -n {0} -f \"{1}/environment.yml\"".format(new_env_name, module_directory))
 
-        f.write("# activate anaconda env")
-        f.write("conda activate {0}".format(new_env_name))
-        f.write("# install madminer, build")
-        f.write("git clone {0} \"{1}/madminer\"".format(madminer_repository, installation_directory))
-        f.write("python \"{0}/madminer/setup.py\" build".format(installation_directory))
-        f.write("python setup.py build")
-
-        if include_madgraph_install: 
-            f.write("# install madgraph dir")
+        if conda_env_activate or run_all:
+            f.write("echo 'attempting to activate anaconda env'")
+            f.write("conda activate {0}".format(new_env_name))
+        
+        if madminer_install or run_all:
+            f.write("echo 'attempting to install madminer'")
+            f.write("git clone {0} \"{1}/madminer\"".format(madminer_repository, installation_directory))
+            
+        if madgraph_install or run_all: 
+            f.write("echo 'attempting to install madgraph'")
             f.write("cd ..")
             f.write("wget -c https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz")
             f.write("tar -xzvf MG5_aMC_v2.6.5.tar.gz")
             f.write("rm MG5_aMC_v2.6.5.tar.gz")
             f.write("cd mm_scripting_util")
 
+        # build everything, automatic
+        if build_modules or run_all:
+            f.write("echo 'attempting to build python modules'")
+            f.write("python \"{0}/madminer/setup.py\" build".format(installation_directory))
+            f.write("python \"{0}/setup.py\" build".format(module_directory))
+
+
 if __name__== "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-m', '--include-madgraph', dest='include_madgraph',
-        action='store_true')
+    parser.add_argument('-mm', '--madminer', dest='install_madminer', action='store_true', default=False)
+    parser.add_argument('-mg', '--madgraph', dest='install_madgraph', action='store_true', default=False)
+    parser.add_argument('-c', '--conda', dest='install_conda', action='store_true', default=False)
+    parser.add_argument('-e', '--env-install', dest='install_env', action='store_true', default=False)
+    parser.add_argument('-ea', '--activate-env', dest='activate_env', action='store_true')
+    parser.add_argument('-ed', '--no-activate-env', dest='activate_env', action='store_false')
+    parser.add_argument('-d', '--install-dir', dest='install_directory', action='store', default='', type=str)
+    parser.add_argument('-b', '--build', dest='build_modules', action='store_true', default=False)
+    parser.add_argument('-a', '--run-all', dest='run_all', action='store_true', default=False)
     args = parser.parse_args(sys.argv[1:])
-    write_environment_setup_script(include_madgraph_install=args.include_madgraph)
-    
+    write_environment_setup_script(args.install_madminer, args.install_madgraph, args.install_conda, args.install_env, args.activate_env, args.build_modules, args.install_directory, run_all)
+
