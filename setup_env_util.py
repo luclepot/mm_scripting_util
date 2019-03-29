@@ -84,7 +84,7 @@ def write_environment_setup_script(
     conda_envs, current_env = _conda_info()
 
     # open bash file
-    with bash_file_wrapper(open("env_setup_util.sh", 'w+')) as f:
+    with bash_file_wrapper(open("setup_env_util.sh", 'w+')) as f:
 
         # if no conda installed/activated... 
         if current_env is None:
@@ -115,6 +115,6 @@ if __name__== "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--include-madgraph', dest='include_madgraph',
         action='store_true')
-    args = parser.parse_args(sys.argv[1:])
+    args = parser.parse_args(sys.argv)
     write_environment_setup_script(include_madgraph_install=args.include_madgraph)
     
