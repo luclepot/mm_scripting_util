@@ -74,7 +74,7 @@ def write_environment_setup_script(
     creates a bash file which is run for setup. 
     """
 
-    module_directory = os.path.dirname(__file__)
+    module_directory = os.getcwd()
 
     # auto install directory: one back from the directory of mm_scripting_util (extremely lame way to do this, I know... sorry)
     if installation_directory is None:
