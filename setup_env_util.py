@@ -115,6 +115,6 @@ if __name__== "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('-m', '--include-madgraph', dest='include_madgraph',
         action='store_true')
-    args = parser.parse_args(sys.argv)
+    args = parser.parse_args(sys.argv[1:])
     write_environment_setup_script(include_madgraph_install=args.include_madgraph)
     
