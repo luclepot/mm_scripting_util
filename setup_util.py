@@ -33,7 +33,7 @@ class bash_file_wrapper:
         opened_file_object
     ):
         self.f = opened_file_object
-        self.f.write("#!/bin/bash")
+        self.write("#!/bin/bash")
 
     def __enter__(
         self
@@ -86,17 +86,16 @@ def write_environment_setup_script(
 
         # if no conda installed/activated... 
         if current_env is None:
-            f.write("wget -nv  http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O {}/miniconda.sh".format(installation_directory))
-            f.write("bash {}/miniconda.sh -b -p {}/miniconda".format(installation_directory, installation_directory))
-            f.write("source {}/miniconda/etc/profile.d/conda.sh".format(installation_directory))
-            f.write("rm {}/miniconda.sh".format(installation_directory))
+            f.write("wget -nv  http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O {0}/miniconda.sh".format(installation_directory))
+            f.write("bash {0}/miniconda.sh -b -p {1}/miniconda".format(installation_directory, installation_directory))
+            f.write("source {0}/miniconda/etc/profile.d/conda.sh".format(installation_directory))
+            f.write("rm {0}/miniconda.sh".format(installation_directory))
             f.write()
 
         # if the required environment doesn't exist, create it
         if "mm_scripting_util" not in conda_envs:
-            f.write("conda env create -n {} -f {}/environment.yml".format(new_env_name, module_directory))
+            f.write("conda env create -n {0} -f {1}/environment.yml".format(new_env_name, module_directory))
 
-        f.write("conda activate {}".format(new_env_name))
-        f.write("git clone {} {}/{}".format(madminer_repository, installation_directory, madminer_repository))
+        f.write("conda activate {0}".format(new_env_name))
+        f.write("git clone {0} {1}/madminer".format(madminer_repository, installation_directory))
         f.write("")
-        
