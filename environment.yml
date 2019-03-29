@@ -1,4 +1,4 @@
-name: atlas
+name: mm_scripting_util
 channels:
   - pytorch
   - anaconda
