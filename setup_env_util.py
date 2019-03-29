@@ -110,4 +110,6 @@ def write_environment_setup_script(
             f.write("# install madgraph dir")
             f.write("wget -qO- https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz | tar xvz - -C {0}".format(installation_directory))
 
-        
+if __name__== "__main__":
+    write_environment_setup_script()
+    
