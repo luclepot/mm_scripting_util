@@ -65,6 +65,7 @@ class bash_file_wrapper:
         self.f.write(to_write)
 
 def write_environment_setup_script(
+    include_madgraph_install=False,
     installation_directory=None,
     new_env_name="mm_scripting_util",
     madminer_repository="git@github.com:johannbrehmer/madminer.git"
@@ -86,7 +87,8 @@ def write_environment_setup_script(
 
         # if no conda installed/activated... 
         if current_env is None:
-            f.write("wget -nv  http://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O {0}/miniconda.sh".format(installation_directory))
+            f.write("# install anaconda")
+            f.write("wget -nv https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O {0}/miniconda.sh".format(installation_directory))
             f.write("bash {0}/miniconda.sh -b -p {1}/miniconda".format(installation_directory, installation_directory))
             f.write("source {0}/miniconda/etc/profile.d/conda.sh".format(installation_directory))
             f.write("rm {0}/miniconda.sh".format(installation_directory))
@@ -94,8 +96,18 @@ def write_environment_setup_script(
 
         # if the required environment doesn't exist, create it
         if "mm_scripting_util" not in conda_envs:
+            f.write("# create anaconda environment from file")
             f.write("conda env create -n {0} -f {1}/environment.yml".format(new_env_name, module_directory))
 
+        f.write("# activate anaconda env")
         f.write("conda activate {0}".format(new_env_name))
+        f.write("# install madminer, build")
         f.write("git clone {0} {1}/madminer".format(madminer_repository, installation_directory))
+        f.write("python {0}/madminer/setup.py build".format(installation_directory))
         f.write("")
+
+        if include_madgraph_install: 
+            f.write("# install madgraph dir")
+            f.write("wget -qO- https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz | tar xvz - -C {0}".format(installation_directory))
+
+        
