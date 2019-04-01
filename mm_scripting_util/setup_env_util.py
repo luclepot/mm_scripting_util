@@ -162,7 +162,6 @@ if __name__== "__main__":
         parser.print_help()
         exit(1)
     else:
-        print(args)
         args = parser.parse_args(sys.argv[1:])
         write_environment_setup_script(
             args.install_madminer,
