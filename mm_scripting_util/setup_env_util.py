@@ -141,9 +141,9 @@ def write_environment_setup_script(
         # build everything, automatic
         if build_modules:
             f.write("echo 'attempting to build madminer and mm_scripting_util modules'")
-            f.write("python setup.py build")
+            f.write("python setup.py develop")
             f.write("cd \"{0}/madminer/\"".format(installation_directory))
-            f.write("python setup.py build")
+            f.write("python setup.py develop")
             f.write(" cd \"{0}\"".format(module_directory))
 
 if __name__== "__main__":
