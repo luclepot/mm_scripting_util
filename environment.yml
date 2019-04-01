@@ -17,3 +17,5 @@ dependencies:
   - scikit-hep
   - corner
   - argparse
+  - tabulate
+  - ipython
