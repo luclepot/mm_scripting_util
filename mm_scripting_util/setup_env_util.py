@@ -159,7 +159,6 @@ if __name__== "__main__":
     parser.add_argument('-a', '--run-all', dest='run_all', action='store_true', default=False)
 
     if len(sys.argv[1:]) == 0:
-        parser.print_help()
         exit(1)
     else:
         args = parser.parse_args(sys.argv[1:])
