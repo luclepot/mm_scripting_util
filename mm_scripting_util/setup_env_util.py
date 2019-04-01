@@ -93,6 +93,13 @@ def write_environment_setup_script(
 
     conda_installation_directory = "~"
 
+    if run_all:
+        madminer_install = True
+        conda_install = True
+        conda_env_install = True
+        conda_env_activate = True
+        build_modules = True
+
     # conda_envs, current_env = _conda_info()
     
     # open bash file
@@ -100,7 +107,7 @@ def write_environment_setup_script(
 
         f.write("source \"{0}/miniconda/etc/profile.d/conda.sh\"".format(conda_installation_directory))
 
-        if conda_install or run_all:
+        if conda_install:
             f.write("echo 'attempting to install anaconda..'")
             f.write("wget -nv {0} -O miniconda.sh".format(anaconda_link))
             # f.write("echo 'got miniconda source?'")
@@ -109,22 +116,22 @@ def write_environment_setup_script(
             f.write("source {0}/miniconda/etc/profile.d/conda.sh".format(conda_installation_directory))
             f.write("rm miniconda.sh")
 
-        if conda_env_install or run_all:
+        if conda_env_install:
             f.write("echo 'attempting to create anaconda environment from file'")
             f.write("conda env create -n {0} -f \"{1}/environment.yml\"".format(new_env_name, module_directory))
 
-        if conda_env_activate or run_all:
+        if conda_env_activate:
             f.write("echo 'attempting to activate anaconda env'")
             f.write("conda activate {0}".format(new_env_name))
         
-        if madminer_install or run_all:
+        if madminer_install:
             f.write("echo 'attempting to install madminer'")
             if len(madminer_link) > 0:
                 f.write("git clone {0} \"{1}/madminer\"".format(madminer_link, installation_directory))
             else:
                 f.write("pip install madminer")
 
-        if madgraph_install or run_all: 
+        if madgraph_install: 
             f.write("echo 'attempting to install madgraph'")
             f.write("cd ..")
             f.write("wget -c {0}".format(madgraph_link))
@@ -133,7 +140,7 @@ def write_environment_setup_script(
             f.write("cd mm_scripting_util")
 
         # build everything, automatic
-        if build_modules or run_all:
+        if build_modules:
             f.write("echo 'attempting to build python modules'")
             f.write("python \"{0}/madminer/setup.py\" build".format(installation_directory))
             f.write("python \"{0}/setup.py\" build".format(module_directory))
