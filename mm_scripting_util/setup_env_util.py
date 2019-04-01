@@ -112,7 +112,7 @@ def write_environment_setup_script(
             f.write("chmod +x miniconda.sh")
             f.write("bash miniconda.sh -b -p {0}/miniconda".format(conda_installation_directory))
             f.write("source {0}/miniconda/etc/profile.d/conda.sh".format(conda_installation_directory))
-            f.write("echo 'source {0}/miniconda/etc/profile.d/conda.sh' >> ~/.bashrc".format(conda_installation_directory))
+            # f.write("echo 'source {0}/miniconda/etc/profile.d/conda.sh' >> ~/.bashrc".format(conda_installation_directory))
             f.write("rm miniconda.sh")
 
         if conda_env_install:
