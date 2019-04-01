@@ -140,9 +140,10 @@ def write_environment_setup_script(
 
         # build everything, automatic
         if build_modules:
-            f.write("echo 'attempting to build python modules'")
-            f.write("python \"{0}/madminer/setup.py\" build".format(installation_directory))
-            f.write("python \"{0}/setup.py\" build".format(module_directory))
+            f.write("echo 'attempting to build madminer and mm_scripting_util modules'")
+            f.write("python setup.py build")
+            f.write("cd \"{0}/madminer/\"".format(installation_directory))
+            f.write("python setup.py build")
 
 if __name__== "__main__":
     parser = argparse.ArgumentParser()
