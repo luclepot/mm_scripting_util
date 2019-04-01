@@ -93,10 +93,10 @@ def write_environment_setup_script(
 
     conda_installation_directory = "~"
 
-    if conda_installation_directory is not "~":
-        conda_installation_directory = "\"" + conda_installation_directory
-    else:
+    if conda_installation_directory == "~":
         conda_installation_directory = conda_installation_directory + "\""
+    else:
+        conda_installation_directory = "\"" + conda_installation_directory
 
     # conda_envs, current_env = _conda_info()
     
