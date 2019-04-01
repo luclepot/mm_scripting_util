@@ -157,10 +157,12 @@ if __name__== "__main__":
     parser.add_argument('-d', '--install-dir', dest='install_directory', action='store', default='', type=str)
     parser.add_argument('-b', '--build', dest='build_modules', action='store_true', default=False)
     parser.add_argument('-a', '--run-all', dest='run_all', action='store_true', default=False)
+
     if len(sys.argv[1:]) == 0:
         parser.print_help()
         exit(1)
     else:
+        print(args)
         args = parser.parse_args(sys.argv[1:])
         write_environment_setup_script(
             args.install_madminer,
