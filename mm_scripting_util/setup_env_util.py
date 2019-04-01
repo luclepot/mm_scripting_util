@@ -91,17 +91,21 @@ def write_environment_setup_script(
     if installation_directory is None or len(installation_directory) == 0:
         installation_directory = os.path.abspath(os.path.dirname(module_directory))
 
+    conda_installation_directory = "~"
+
     # conda_envs, current_env = _conda_info()
     
     # open bash file
     with bash_file_wrapper(open("setup_env_util.sh", 'w+')) as f:
 
+        f.write("source \"{0}/miniconda/etc/profile.d/conda.sh\"".format(conda_installation_directory))
+
         if conda_install or run_all:
             f.write("echo 'attempting to install anaconda..'")
-            f.write("wget -nv {0} -O \"{1}/miniconda.sh\"".format(anaconda_link, installation_directory))
-            f.write("bash \"{0}/miniconda.sh\" -b -p \"{1}/miniconda\"".format(installation_directory, installation_directory))
-            f.write("source \"{0}/miniconda/etc/profile.d/conda.sh\"".format(installation_directory))
-            f.write("rm \"{0}/miniconda.sh\"".format(installation_directory))
+            f.write("wget -nv {0} -O \"{1}/miniconda.sh\"".format(anaconda_link, conda_installation_directory))
+            f.write("bash \"{0}/miniconda.sh\" -b -p \"{1}/miniconda\"".format(conda_installation_directory, conda_installation_directory))
+            f.write("source \"{0}/miniconda/etc/profile.d/conda.sh\"".format(conda_installation_directory))
+            f.write("rm \"{0}/miniconda.sh\"".format(conda_installation_directory))
 
         if conda_env_install or run_all:
             f.write("echo 'attempting to create anaconda environment from file'")

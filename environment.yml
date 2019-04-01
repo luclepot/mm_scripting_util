@@ -16,18 +16,6 @@ dependencies:
   - uproot
   - scikit-hep
   - madminer
-  - sys
-  - os
-  - platform
-  - getpass
-  - traceback
-  - matplotlib
-  - inspect
-  - enum
-  - collections
-  - scipy.stats
-  - tabulate 
-  - glob
-  - json
   - corner
   - argparse
+  - madminer
