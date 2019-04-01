@@ -144,6 +144,7 @@ def write_environment_setup_script(
             f.write("python setup.py build")
             f.write("cd \"{0}/madminer/\"".format(installation_directory))
             f.write("python setup.py build")
+            f.write(" cd \"{0}\"".format(module_directory))
 
 if __name__== "__main__":
     parser = argparse.ArgumentParser()
