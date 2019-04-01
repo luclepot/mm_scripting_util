@@ -28,7 +28,8 @@ def _conda_info(
 
     return conda_envs, conda_env_current
 
-class bash_file_wrapper:
+class bash_file_wrapper(
+):
     def __init__(
         self, 
         opened_file_object
@@ -80,20 +81,24 @@ def write_environment_setup_script(
     creates a bash file which is run for setup. 
     """
 
-    module_directory = os.path.dirname(os.path.abspath(__file__))
+    madminer_link="https://github.com/johannbrehmer/madminer.git"
+    anaconda_link="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh "
+    madgraph_link="https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz"
+
+    module_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
     # auto install directory: one back from the directory of mm_scripting_util (extremely lame way to do this, I know... sorry)
-    if installation_directory is None or installation_directory == '':
-        installation_directory = os.path.dirname(module_directory)
+    if installation_directory is None or len(installation_directory) == 0:
+        installation_directory = os.path.abspath(os.path.dirname(module_directory))
 
-    conda_envs, current_env = _conda_info()
-
+    # conda_envs, current_env = _conda_info()
+    
     # open bash file
     with bash_file_wrapper(open("setup_env_util.sh", 'w+')) as f:
 
         if conda_install or run_all:
             f.write("echo 'attempting to install anaconda..'")
-            f.write("wget -nv https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O \"{0}/miniconda.sh\"".format(installation_directory))
+            f.write("wget -nv {0} -O \"{1}/miniconda.sh\"".format(anaconda_link, installation_directory))
             f.write("bash \"{0}/miniconda.sh\" -b -p \"{1}/miniconda\"".format(installation_directory, installation_directory))
             f.write("source \"{0}/miniconda/etc/profile.d/conda.sh\"".format(installation_directory))
             f.write("rm \"{0}/miniconda.sh\"".format(installation_directory))
@@ -108,12 +113,15 @@ def write_environment_setup_script(
         
         if madminer_install or run_all:
             f.write("echo 'attempting to install madminer'")
-            f.write("git clone {0} \"{1}/madminer\"".format(madminer_repository, installation_directory))
-            
+            if len(madminer_link) > 0:
+                f.write("git clone {0} \"{1}/madminer\"".format(madminer_link, installation_directory))
+            else:
+                f.write("pip install madminer")
+
         if madgraph_install or run_all: 
             f.write("echo 'attempting to install madgraph'")
             f.write("cd ..")
-            f.write("wget -c https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz")
+            f.write("wget -c {0}".format(madgraph_link))
             f.write("tar -xzvf MG5_aMC_v2.6.5.tar.gz")
             f.write("rm MG5_aMC_v2.6.5.tar.gz")
             f.write("cd mm_scripting_util")
@@ -123,7 +131,6 @@ def write_environment_setup_script(
             f.write("echo 'attempting to build python modules'")
             f.write("python \"{0}/madminer/setup.py\" build".format(installation_directory))
             f.write("python \"{0}/setup.py\" build".format(module_directory))
-
 
 if __name__== "__main__":
     parser = argparse.ArgumentParser()
@@ -136,6 +143,20 @@ if __name__== "__main__":
     parser.add_argument('-d', '--install-dir', dest='install_directory', action='store', default='', type=str)
     parser.add_argument('-b', '--build', dest='build_modules', action='store_true', default=False)
     parser.add_argument('-a', '--run-all', dest='run_all', action='store_true', default=False)
-    args = parser.parse_args(sys.argv[1:])
-    write_environment_setup_script(args.install_madminer, args.install_madgraph, args.install_conda, args.install_env, args.activate_env, args.build_modules, args.install_directory, run_all)
-
+    if len(sys.argv[1:]) == 0:
+        parser.print_help()
+        exit(1)
+    else:
+        args = parser.parse_args(sys.argv[1:])
+        write_environment_setup_script(
+            args.install_madminer,
+            args.install_madgraph,
+            args.install_conda,
+            args.install_env,
+            args.activate_env,
+            args.build_modules,
+            args.install_directory,
+            args.run_all
+        )
+        exit(0)
+    

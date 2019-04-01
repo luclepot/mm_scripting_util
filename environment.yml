@@ -11,25 +11,23 @@ dependencies:
 - scikit-learn=0.19.*
 - six
 - pytorch=0.4.*
-- pytest
-- corner
-- shutil
-- sys
-- os
-- platform
-- getpass
-- traceback
-- matplotlib
-- inspect
-- enum
-- collections
-- scipy.stats
-- tabulate 
-- glob
-- json
-- argparse
 - pip
 - pip:
   - uproot
   - scikit-hep
   - madminer
+  - sys
+  - os
+  - platform
+  - getpass
+  - traceback
+  - matplotlib
+  - inspect
+  - enum
+  - collections
+  - scipy.stats
+  - tabulate 
+  - glob
+  - json
+  - corner
+  - argparse
