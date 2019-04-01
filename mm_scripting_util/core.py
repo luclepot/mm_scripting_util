@@ -1284,7 +1284,7 @@ class miner(mm_util):
             activation=activation_function,
             n_epochs=n_epochs,
             batch_size=batch_size,
-            trainer=trainer,
+            optimizer=trainer,
             initial_lr=initial_learning_rate,
             final_lr=final_learning_rate,
         )
