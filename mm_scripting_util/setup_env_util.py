@@ -105,8 +105,6 @@ def write_environment_setup_script(
     # open bash file
     with bash_file_wrapper(open("setup_env_util.sh", 'w+')) as f:
 
-        f.write("source \"{0}/miniconda/etc/profile.d/conda.sh\"".format(conda_installation_directory))
-
         if conda_install:
             f.write("echo 'attempting to install anaconda..'")
             f.write("wget -nv {0} -O miniconda.sh".format(anaconda_link))
@@ -114,6 +112,7 @@ def write_environment_setup_script(
             f.write("chmod +x miniconda.sh")
             f.write("bash miniconda.sh -b -p {0}/miniconda".format(conda_installation_directory))
             f.write("source {0}/miniconda/etc/profile.d/conda.sh".format(conda_installation_directory))
+            f.write("echo 'source {0}/miniconda/etc/profile.d/conda.sh' >> ~/.bashrc".format(conda_installation_directory))
             f.write("rm miniconda.sh")
 
         if conda_env_install:
