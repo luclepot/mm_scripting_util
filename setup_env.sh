@@ -6,4 +6,4 @@ if [ -e setup_env_util.sh ]; then
     source setup_env_util.sh;
     rm setup_env_util.sh;
 fi
-echo "done"
+# echo "done"
