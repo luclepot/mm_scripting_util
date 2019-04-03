@@ -31,13 +31,13 @@ class miner(mm_util):
 
     def __init__(
         self,
-        name="temp",
+        name,
+        backend,
+        card_directory=None,
         path=None,
         loglevel=logging.INFO,
         madminer_loglevel=logging.INFO,
         autodestruct=False,
-        backend="tth.dat",
-        card_directory=None,
     ):
         """
         madminer-helper object for quickly running madgraph scripts. 
@@ -92,10 +92,16 @@ class miner(mm_util):
 
         self.log.debug("Loading custom card directory... ")
         self.card_directory = None
+
+        # backend param should refer to the name, not a specific backend filepath
+        self.backend = backend.replace('.dat', '')
+            
+
+        # if card_directory is specified.. 
         if card_directory is not None:
             for path_check in [
                 card_directory,
-                "{}/data/{}".format(self.module_path, card_directory),
+                "{}/data/{}".format(self.module_path, card_directory)
             ]:
                 if os.path.exists(path_check):
                     self.card_directory = path_check
@@ -106,16 +112,24 @@ class miner(mm_util):
                     )
                 )
                 self.log.error("Using default card directory instead.")
-                self.card_directory = self.default_card_directory
+                self.card_directory = self.default_card_directory    
+        # else, check using the backend parameter
         else:
-            self.log.debug("No card directory provided.")
-            self.log.debug("Using default card directory for all cards.")
-            self.card_directory = self.default_card_directory
+            for path_check in [
+                "cards_{}".format(self.backend),
+                "{}/data/cards_{}".format(self.module_path, self.backend)
+            ]:
+                if os.path.exists(path_check):
+                    self.card_directory = path_check
+            if self.card_directory is None:
+                self.log.error("No card directory found using auto-spec backend {}".format(self.backend))
+                self.log.error("Using default card directory instead.")
+                self.card_directory = self.default_card_directory
+                
+        self._load_backend("{}.dat".format(self.backend))
 
         self.log.info("Using card directory '{}',".format(self.card_directory))
         self.log.info("with {} files".format(len(os.listdir(self.card_directory))))
-
-        self._load_backend(backend)
 
     def set_loglevel(self, loglevel, module=None):
 
