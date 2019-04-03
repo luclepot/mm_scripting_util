@@ -64,7 +64,7 @@ def write_parser():
 
     commands = {
         'ls' : [
-            sd['TYPE'](['aug', 'train', 'eval'], name='ls_type'),
+            sd['TYPE'](['samples', 'models', 'evaluations'], name='ls_type'),
             sd['STR'](False, '-c', '--criteria'),
             ],
         'simulate' : [
