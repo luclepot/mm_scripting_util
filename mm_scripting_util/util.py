@@ -473,7 +473,7 @@ class mm_base_util:
 #         conda_env_current = conda_ret["*" in conda_ret][0]
 #         return conda_envs, conda_env_current
 
-
+ 
 class mm_backend_util(mm_base_util):
 
     _CONTAINS_BACKEND_UTIL = True

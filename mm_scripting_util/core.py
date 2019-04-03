@@ -1457,7 +1457,7 @@ class miner(mm_util):
 
         for benchmark in log_r_hat_dict:
             np.save(
-                "{}/log_r_hat_{}.npy".format(evaluation_dir, benchmark),
+                "log_r_hat_{}.npy".format(benchmark),
                 log_r_hat_dict[benchmark],
             )
             self.log.info(
@@ -1473,7 +1473,7 @@ class miner(mm_util):
                 "evaluation_samples": evaluation_samples,
                 "evaluation_benchmark": evaluation_benchmark,
                 "evaluation_datasets": {
-                    key: "{}/log_r_hat_{}.npy".format(evaluation_dir, key)
+                    key: "{}/{}/log_r_hat_{}.npy".format(self.name, evaluation_dir.split("{}/".format(self.name))[-1], key)
                     for key in log_r_hat_dict
                 },
             },
@@ -1533,10 +1533,10 @@ class miner(mm_util):
         # else tuple is CLEAN, with len 1
         evaluation_tuple = evaluation_tuples[0]
         evaluation_dir = os.path.dirname(evaluation_tuple[0])
-
+        self.log.debug(evaluation_tuple)
         theta_grid = np.load("{}/theta_grid.npy".format(evaluation_dir))
         log_r_hat_dict = {
-            key: np.load(evaluation_tuple[1]["evaluation_datasets"][key])
+            key: np.load(evaluation_tuple[1]["evaluation_datasets"][key].replace('//', '/'))
             for key in evaluation_tuple[1]["evaluation_datasets"]
         }
 
