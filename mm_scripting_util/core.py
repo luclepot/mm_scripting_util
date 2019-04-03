@@ -71,7 +71,7 @@ class miner(mm_util):
 
         self.set_loglevel(loglevel)
         self.set_loglevel(madminer_loglevel, module="madminer")
-
+        
         self.name = name
         self.dir = "{}/{}".format(self.path, self.name)
 
