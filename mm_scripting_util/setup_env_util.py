@@ -75,6 +75,7 @@ def write_environment_setup_script(
     build_modules,
     installation_directory='',
     run_all=False,
+    setup_alias=True,
     new_env_name='mm_scripting_util'
 ):
     """
@@ -104,6 +105,10 @@ def write_environment_setup_script(
     
     # open bash file
     with bash_file_wrapper(open("setup_env_util.sh", 'w+')) as f:
+
+        if setup_alias:
+            f.write("alias mm_scripting_util='python {}/run.py \"$@\"'".format(os.path.dirname(__file__)))
+            f.write("alias mmsc='python {}/run.py \"$@\"'".format(os.path.dirname(__file__)))
 
         if conda_install:
             f.write("echo 'attempting to install anaconda..'")
@@ -159,6 +164,15 @@ if __name__== "__main__":
     parser.add_argument('-a', '--run-all', dest='run_all', action='store_true', default=False)
 
     if len(sys.argv[1:]) == 0:
+        write_environment_setup_script(
+            False,
+            False,
+            False,
+            False, 
+            False, 
+            False,
+            setup_alias=True
+        )
         exit(1)
     else:
         args = parser.parse_args(sys.argv[1:])
@@ -170,7 +184,8 @@ if __name__== "__main__":
             args.activate_env,
             args.build_modules,
             args.install_directory,
-            args.run_all
+            args.run_all,
+            True
         )
         exit(0)
     

@@ -16,11 +16,18 @@ REQUIRES_PYTHON = '>=3.6.7'
 
 # What packages are required for this module to be executed?
 REQUIRED = [
-    "logging",
-    "numpy>=1.13.0",
-    "scipy>=1.0.0",
-    "madminer",
-    "matplotlib>=2.0.0",
+    "numpy",
+    "h5py",
+    "scipy",
+    "scikit-learn",
+    "six",
+    "pytorch",
+    "uproot",
+    "scikit-hep",
+    "corner",
+    "argparse",
+    "tabulate",
+    "ipython"
 ]
 
 package_data={'': ['mm_scripting_util/data/*']}

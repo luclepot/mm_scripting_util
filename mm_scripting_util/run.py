@@ -1,4 +1,4 @@
-from .core import miner
+from mm_scripting_util.core import miner
 import subprocess
 import sys
 import os
@@ -6,40 +6,41 @@ import logging
 import argparse
 import traceback
 
-
 def __main__():
     parser = argparse.ArgumentParser(
         description="processing for mm_scripting_util.run.py file"
     )
 
     ## general arguments
+    # name
     parser.add_argument(
         "-n",
         "--name",
         action="store",
         dest="name",
-        default="temp",
         type=str,
         help="master simulation folder name",
     )
-    parser.add_argument(
-        "-l",
-        "--log-level",
-        action="store",
-        dest="loglevel",
-        default=20,
-        type=int,
-        help="loglevel for miner object",
-    )
+    # backend
     parser.add_argument(
         "-b",
         "--backend",
         action="store",
         dest="backend",
-        default="tth.dat",
         type=str,
         help="backend name or path",
     )
+    # loglevel
+    parser.add_argument(
+        "-l",
+        "--log-level",
+        action="store",
+        dest="loglevel",
+        default=10,
+        type=int,
+        help="loglevel for miner object",
+    )
+
     parser.add_argument(
         "-f",
         "--force",
@@ -245,6 +246,5 @@ def __main__():
             bins=tuple(args.bins),
             image_save_name=imgsv,
         )
-
 
 __main__()
