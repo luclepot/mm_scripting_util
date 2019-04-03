@@ -1471,7 +1471,7 @@ class miner(mm_util):
 
         for benchmark in log_r_hat_dict:
             np.save(
-                "log_r_hat_{}.npy".format(benchmark),
+                "{}/log_r_hat_{}.npy".format(evaluation_dir, benchmark),
                 log_r_hat_dict[benchmark],
             )
             self.log.info(
