@@ -125,7 +125,7 @@ class miner(mm_util):
                 self.log.error("No card directory found using auto-spec backend {}".format(self.backend))
                 self.log.error("Using default card directory instead.")
                 self.card_directory = self.default_card_directory
-                
+
         self._load_backend("{}.dat".format(self.backend))
 
         self.log.info("Using card directory '{}',".format(self.card_directory))
@@ -157,13 +157,13 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def list_augmented_samples(self, verbose=False):
+    def list_augmented_samples(self, verbose=False, criteria='*'):
         if verbose:
             self.log.info("Augmented samples:")
         samples = []
         sample_list = glob.glob(
-            "{}/data/samples/*/augmented_sample.mmconfig".format(self.dir)
-        ) + glob.glob("{}/evaluations/*/*/augmented_sample.mmconfig".format(self.dir))
+            "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, criteria)
+        ) + glob.glob("{}/evaluations/*/{}/augmented_sample.mmconfig".format(self.dir, criteria))
         for i, sample in enumerate(sample_list):
             samples.append((sample, self._load_config(sample)))
             if verbose:
@@ -173,9 +173,9 @@ class miner(mm_util):
                         self.log.info("    - {}: {}".format(elt, samples[i][1][elt]))
         return samples
 
-    def list_trained_models(self, verbose=False):
+    def list_trained_models(self, verbose=False, criteria='*'):
         models = []
-        model_list = glob.glob("{}/models/*/*/training_model.mmconfig".format(self.dir))
+        model_list = glob.glob("{}/models/*/{}/training_model.mmconfig".format(self.dir, criteria))
 
         if verbose:
             self.log.info("Trained Models:")
@@ -189,13 +189,13 @@ class miner(mm_util):
                         self.log.info("    - {}: {}".format(elt, models[i][1][elt]))
         return models
 
-    def list_evaluations(self, verbose=False):
+    def list_evaluations(self, verbose=False, criteria='*'):
 
         if verbose:
             self.log.info("Evaluations:")
         evaluations = []
         evaluation_list = glob.glob(
-            "{}/evaluations/*/*/evaluation.mmconfig".format(self.dir)
+            "{}/evaluations/*/{}/evaluation.mmconfig".format(self.dir, criteria)
         )
 
         for i, evaluation in enumerate(evaluation_list):
