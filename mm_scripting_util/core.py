@@ -157,13 +157,15 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def list_augmented_samples(self, verbose=False, criteria='*'):
+    def list_samples(self, verbose=False, criteria='*'):
         if verbose:
             self.log.info("Augmented samples:")
         samples = []
+        print(criteria)
         sample_list = glob.glob(
             "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, criteria)
         ) + glob.glob("{}/evaluations/*/{}/augmented_sample.mmconfig".format(self.dir, criteria))
+        
         for i, sample in enumerate(sample_list):
             samples.append((sample, self._load_config(sample)))
             if verbose:
@@ -173,7 +175,7 @@ class miner(mm_util):
                         self.log.info("    - {}: {}".format(elt, samples[i][1][elt]))
         return samples
 
-    def list_trained_models(self, verbose=False, criteria='*'):
+    def list_models(self, verbose=False, criteria='*'):
         models = []
         model_list = glob.glob("{}/models/*/{}/training_model.mmconfig".format(self.dir, criteria))
 
@@ -205,10 +207,6 @@ class miner(mm_util):
                 for elt in evaluations[i][1]:
                     self.log.info("    - {}: {}".format(elt, evaluations[i][1][elt]))
         return evaluations
-
-    def __del__(self):
-        if self.autodestruct:
-            self.destroy_sample()
 
     # simulation-related member functions
 

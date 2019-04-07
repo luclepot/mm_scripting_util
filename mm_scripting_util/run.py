@@ -5,67 +5,147 @@ import os
 import logging
 import argparse
 import traceback
+import numpy as np
 
+run_main = True
+
+def rng(s):
+    try:
+        _min, _max = map(int, s.split(','))
+        return _min, _max
+    except: 
+        raise argparse.ArgumentTypeError
+
+class header:
+    styles = ['l', 'c']
+    def __init__(self, width, char, colwidth=1):
+        self.output = ''
+        self.width = width
+        self.char = char
+        self.colwidth = colwidth
+        self.hline()
+    
+    def __call__(self, s='', side='l'):
+        assert(side in self.styles)
+        newline = self.char*self.colwidth
+        if side is 'l':
+            newline += ' '*self.colwidth
+        else: 
+            newline += int((self.width - 2*self.colwidth - len(s))/2.0)*' '    
+        newline += s
+        newline += (self.width - len(newline) - 1*self.colwidth)*' '
+        newline += self.char*self.colwidth + '\n'
+        self.output += newline
+    
+    def __str__(self):
+        return self.output
+    
+    def hline(self):
+        newline = self.char*self.width + '\n'
+        self.output += newline
+
+    @staticmethod
+    def fmt(s, char='%', colwidth=2, factor=2, side='l'):
+        slist = s.split('\n')
+        len_max = max(*map(len, slist))
+        h = header(len_max + 2*colwidth*factor, char, colwidth)
+        h()
+        for i,line in enumerate(slist):
+            if len(line) == 0:
+                h()
+                h.hline()
+                if i < len(slist) - 1:
+                    h()
+            else:
+                h(line, side='l')
+
+        return str(h)
+        
 def write_parser():
-    def rng(s):
-        try:
-            _min, _max = map(int, s.split(','))
-            return _min, _max
-        except: 
-            raise argparse.ArgumentTypeError
+
+    desc_str = """MM_SCRIPTING_UTIL COMMAND LINE PROGRAM\n
+The cmd line program for the mm_scripting_util class.
+Gives (almost) all of the functionality of the base class,
+in a single (great) command line program.
+Tips:
+ - always specify NAME, BACKEND, and then the command you'd
+   like to run, otherwise you'll have a bad time
+ - For more in-depth documentation, see the python code itself
+   (which you definitely have documented if you're running this)
+"""
+    desc_str = header.fmt(desc_str, side='c')
+
+    module_directory = os.path.dirname(os.path.abspath(__file__))
 
     sd = {
-        'STR' : lambda req, sname='-n', name='--name': [
+        'STR' : lambda req, sname='-n', name='--name', _help=None, default=None: [
                 (sname, name), {
                     'action': 'store',
                     'dest': name.strip('-').replace('-', '_'),
                     'type': str,
-                    'help': 'instance of paramname \'{}\''.format(name.strip('-').replace('-', '_')),
+                    'help': _help,
                     'required': bool(req),
-                    'default': None
+                    'default': default
                 }
             ],
-        'NUM' : lambda ntype=int, req=True, sname='-x', name='--num': [
+        'NUM' : lambda ntype=int, req=True, sname='-x', name='--num', default=None, _help=None: [
                 (sname, name), {
                     'action': 'store', 
                     'dest': name.strip('-').replace('-', '_'),
                     'type': ntype,
-                    'required': bool(req)
+                    'required': bool(req),
+                    'default': default,
+                    'help': _help,
                 }
             ],
-        'RANGE' : lambda req=False, sname='-r', name='--ranges': [
+        'RANGE' : lambda req=False, sname='-r', name='--ranges', _help=None: [
                 (sname, name), {
                     'action': 'store',
                     'dest': name.strip('-').replace('-', '_'),
                     'type': rng,
                     'required': req,
-                    'default': None
+                    'default': None,
+                    'help': _help,
                 }  
             ],
-        'TYPE' : lambda types, name='TYPE': [
+        'TYPE' : lambda types, name='TYPE', _help=None: [
                 (name,), {
-                    'choices': types
+                    'choices': types,
+                    'help': _help,
                 }
             ],
-        'BOOL' : lambda store=True, req=False, sname='-f', name='--flag': [
+        'BOOL' : lambda store=True, req=False, sname='-f', name='--flag', _help=None: [
                 (sname, name), {
                     'action': 'store_true' if store else 'store_false',
                     'dest': name.strip('-').replace('-', '_',),
                     'required': req,
-                    'default': not store
+                    'default': not store, 
+                    'help': _help, 
                 }
-            ]
+            ],
+        'POS' : lambda name='POS', dispname=None, _help=None: [
+                (name,), {
+                    'action': 'store',
+                    'metavar': name if dispname is None else dispname,
+                    'help': _help,
+                }
+            ],
     }
 
     global_options = [
-        sd['STR'](True, '-N', '--NAME'),
-        sd['STR'](True, '-B', '--BACKEND')
+        sd['POS']('NAME', None, 'name for overall sample'),
+        # sd['STR'](False, '-N', '--NAME'),
+        sd['POS']('BACKEND', None, 'backend; default choices'),
+        # sd['STR'](False, '-B', '--BACKEND'),
+        sd['STR'](False, '-CD', '--CARD-DIRECTORY'),
+        sd['NUM'](int, False, '-LL', '--LOG-LEVEL', 20),
+        sd['NUM'](int, False, '-MLL', '--MADMINER-LOG-LEVEL', 20),
         ]
 
     commands = {
         'ls' : [
-            sd['TYPE'](['samples', 'models', 'evaluations'], name='ls_type'),
-            sd['STR'](False, '-c', '--criteria'),
+            sd['TYPE'](['samples', 'models', 'evaluations'], 'ls_type', 'type for ls command'),
+            sd['STR'](False, '-c', '--criteria', 'ls filter criteria', '*'),
             ],
         'simulate' : [
             sd['STR'](True),
@@ -91,13 +171,15 @@ def write_parser():
     command_subparsers = {} 
 
     parser = argparse.ArgumentParser(
-        description="processing for mm_scripting_util.run.py file"
+        description=desc_str,
+        formatter_class=argparse.RawTextHelpFormatter
     )
 
     for argument in global_options: 
         parser.add_argument(*argument[0], **argument[1])
 
-    subparsers = parser.add_subparsers(dest='command')
+    subparsers = parser.add_subparsers(dest='COMMAND')
+
     subparsers.required = True
 
     for command in commands:
@@ -105,15 +187,44 @@ def write_parser():
         for subcommand in commands[command]:
             command_subparsers[command].add_argument(*subcommand[0], **subcommand[1])
     
-
     return parser
 
+
 def __main__():
+
     parser = write_parser()
-    args = parser.parse_args(sys.argv[1:])
-    print()
+    if len(sys.argv[1:]) > 0:
+        args = parser.parse_args(sys.argv[1:])
+    else:
+        parser.print_help()
+        exit(0)
+
     print(args)
-    print()
+
+    m = miner(
+        name=args.NAME,
+        backend=args.BACKEND,
+        card_directory=args.CARD_DIRECTORY, 
+        loglevel=args.LOG_LEVEL,
+        )
+
+    cmd = args.COMMAND
+
+    if cmd=='ls':
+        getattr(m, 'list_{}'.format(args.ls_type))(True, args.criteria)
+    elif cmd=='simulate':
+        pass
+    elif cmd=='plot':
+        pass
+    elif cmd=='augment':
+        pass
+    elif cmd=='train':
+        pass
+    elif cmd=='evaluate':
+        pass
+    else:
+        raise argparse.ArgumentTypeError
+
     return 0
     ## CMD, positional argument
     parser.add_argument("cmd", 
@@ -322,4 +433,5 @@ def __main__():
             image_save_name=imgsv,
         )
 
-__main__()
+if run_main: 
+    __main__()
