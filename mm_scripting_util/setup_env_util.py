@@ -90,7 +90,7 @@ def write_environment_setup_script(
 
     # auto install directory: one back from the directory of mm_scripting_util (extremely lame way to do this, I know... sorry)
     if installation_directory is None or len(installation_directory) == 0:
-        installation_directory = os.path.abspath(os.path.dirname(module_directory))
+        installation_directory = os.path.abspath(os.path.dirname(os.path.abspath(module_directory)))
 
     conda_installation_directory = "~"
 

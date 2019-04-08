@@ -21,9 +21,11 @@ import madminer.core
 import madminer.lhe
 import madminer.sampling
 import madminer.utils.interfaces.madminer_hdf5
+import subprocess
 
-HAS_ML = True
-ML_ERROR = None
+
+HAS_TORCH = True
+TORCH_IMPORT_ERROR = None
 
 try:
     import madminer.ml
@@ -1318,60 +1320,3 @@ class mm_util(mm_backend_util, mm_simulate_util, mm_train_util, mm_base_util):
     def _submit_flashy(self, arg_list, max_runtime=60 * 60):  # 1 hour
         raise NotImplementedError
         return self.error_codes.Success
-
-
-class arg_util:
-
-    DEFAULT_ARGS = [("samples", int, "s", 10000), ("benchmark", str, "b", "sm")]
-
-    def __init__(self, description="default parser"):
-        self.parser = argparse.ArgumentParser(description=description)
-        self.shortnames = set()
-        self.names = set()
-
-    def add(
-        self, name, argtype=str, shortname=None, default=None, help=None, action="store"
-    ):
-
-        if shortname is None:
-            shortname = ""
-            for word in name.split("_"):
-                shortname += word[0]
-
-        i = 0
-        newname = shortname
-        while newname in self.shortnames:
-            newname = "{}{}".format(shortname, i)
-            i += 1
-        shortname = newname
-        i = 0
-        newname = name
-        while newname in self.names:
-            newname = "{}{}".format(name, i)
-            i += 1
-        name = newname
-
-        self.shortnames.add(shortname)
-        self.names.add(name)
-
-        self.parser.add_argument(
-            "-" + shortname,
-            "--" + name,
-            action=action,
-            dest=name,
-            default=default,
-            type=argtype,
-            help=help,
-        )
-
-    def setup_default(self):
-        for arg in self.DEFAULT_ARGS:
-            self.add(*arg)
-
-    def parse(self, args=None):
-        if args is None:
-            args = sys.argv[1:]
-        return self.parser.parse_args(args)
-
-    def info(self):
-        return self.parser.print_help()

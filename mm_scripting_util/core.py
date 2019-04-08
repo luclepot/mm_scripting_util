@@ -16,7 +16,6 @@ def list_cards():
 
 
 class miner(mm_util):
-    madminer.core
     """
     Main container for the class. 
 
@@ -39,6 +38,7 @@ class miner(mm_util):
         madminer_loglevel=logging.INFO,
         init_loglevel=logging.INFO,
         autodestruct=False,
+        _cmd_line_origin=False,
     ):
         """
         madminer-helper object for quickly running madgraph scripts. 
@@ -56,6 +56,8 @@ class miner(mm_util):
             card_directory:
                 string, path to a card directory from which to load template cards, if one desires to switch the current template cards out for new ones.
         """
+
+        self._cmd_line_origin = _cmd_line_origin
 
         if path is None:
             path = os.getcwd()
@@ -719,19 +721,27 @@ class miner(mm_util):
             )
             plt_prime.label = legend_labels[i + 1]
 
-        full_save_name = "{}/madgraph_data_{}_{}s.png".format(
-            self.dir, image_save_name, obs.shape[0]
+        full_save_name = "{}/data/madgraph_data_{}.png".format(
+            self.dir, image_save_name
         )
 
         plt.axes[0].autoscale("y")
         plt.axes[3].autoscale("y")
         plt.legend(legend_labels)
 
-        if image_save_name is not None:
+        full_save_name = "{}/data/madgraph_data_{}.png".format(
+            self.dir, image_save_name if image_save_name is not None else 'temp'
+        )   
+    
+        if self._cmd_line_origin:
+            self.log.debug('showing graph via feh... (cmd line interface triggered)')
             plt.savefig(full_save_name)
-            self.log.debug("Saving plot!!")
+            subprocess.Popen(['feh', full_save_name ])
+        elif image_save_name is not None:
+            self.log.debug('saving image to \'{}\''.format(full_save_name))
+            plt.savefig(full_save_name)
         else:
-            self.log.debug("Showing plot!!")
+            self.log.debug('displaying image...')
             plt.show()
 
         return [self.error_codes.Success]
@@ -984,7 +994,9 @@ class miner(mm_util):
         default_bins = 40
 
         if bins is None:
-            bins = [default_bins for i in range(len(labels))]
+            bins = default_bins 
+        if not hasattr(bins, '__iter__'):
+            bins  = [bins for i in range(len(labels))]
 
         if ranges is None:
             ranges = np.mean(
@@ -1020,19 +1032,24 @@ class miner(mm_util):
             )
             plt_prime.label = legend_labels[i + 1]
 
-        full_save_name = "{}/data/samples/{}/augmented_data_{}_{}s.png".format(
-            self.dir, sample_name, image_save_name, x_size
-        )
 
         plt.axes[0].autoscale("y")
         plt.axes[3].autoscale("y")
         plt.legend(legend_labels)
 
-        if image_save_name is not None:
+
+        full_save_name = "{}/data/samples/{}/augmented_data_{}.png".format(
+            self.dir, sample_name, image_save_name if image_save_name is not None else 'temp'
+        )   
+    
+        if self._cmd_line_origin:
+            plt.savefig(full_save_name)
+            subprocess.Popen(['feh', full_save_name ])
+        elif image_save_name is not None:
             plt.savefig(full_save_name)
         else:
             plt.show()
-
+        
         return [self.error_codes.Success]
 
     def plot_compare_mg5_and_augmented_data(
@@ -1188,16 +1205,19 @@ class miner(mm_util):
         self._tabulate_comparison_information(
             r, pers, observables, benchmarks, threshold
         )
-
-        if image_save_name is not None:
-            full_save_name = "{}/mg5_vs_augmented_data_{}_{}s.png".format(
-                self.dir, image_save_name, x_aug[0].shape[0]
-            )
+        
+        full_save_name = "{}/data/samples/{}/mg5_vs_augmented_data_{}s.png".format(
+            self.dir, sample_name, image_save_name if image_save_name is not None else 'temp'
+        )
+    
+        if self._cmd_line_origin:
             plt.savefig(full_save_name)
-            plt.clf()
+            subprocess.Popen(['feh', full_save_name ])
+        elif image_save_name is not None:
+            plt.savefig(full_save_name)
         else:
             plt.show()
-
+        
         return [self.error_codes.Success]
 
     def train_method(

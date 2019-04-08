@@ -26,7 +26,8 @@ REQUIRED = [
     "corner",
     "argparse",
     "tabulate",
-    "ipython"
+    "ipython",
+    "lucs_tools"
 ]
 
 package_data={'': ['mm_scripting_util/data/*']}
@@ -132,4 +133,5 @@ setup(
     cmdclass={
         'upload': UploadCommand,
     },
+    dependency_links=['http://github.com/luclepot/lucs_tools/tarball/master#egg=lucs_tools-0.0.1'],
 )
