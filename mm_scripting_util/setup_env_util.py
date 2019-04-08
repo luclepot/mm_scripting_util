@@ -107,8 +107,8 @@ def write_environment_setup_script(
     with bash_file_wrapper(open("setup_env_util.sh", 'w+')) as f:
 
         if setup_alias:
-            f.write("alias mm_scripting_util='python \"{}/run.py\" \"$@\"'".format(os.path.dirname(os.path.abspath(__file__))))
-            f.write("alias mmsc='python \"{}/run.py\" \"$@\"'".format(os.path.dirname(os.path.abspath(__file__))))
+            f.write("alias mm_scripting_util='python \"{0}/run.py\" \"$@\"'".format(os.path.dirname(os.path.abspath(__file__))))
+            f.write("alias mmsc='python \"{0}/run.py\" \"$@\"'".format(os.path.dirname(os.path.abspath(__file__))))
 
         if conda_install:
             f.write("echo 'attempting to install anaconda..'")
