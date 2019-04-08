@@ -21,7 +21,6 @@ REQUIRED = [
     "scipy",
     "scikit-learn",
     "six",
-    "pytorch",
     "uproot",
     "scikit-hep",
     "corner",
