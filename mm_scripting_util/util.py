@@ -6,11 +6,6 @@ import shutil
 import platform
 import getpass
 import traceback
-import madminer.core
-import madminer.lhe
-import madminer.sampling
-import madminer.ml
-import madminer.utils.interfaces.madminer_hdf5
 import corner
 import matplotlib.pyplot as plt
 import matplotlib
@@ -22,7 +17,15 @@ import tabulate
 import glob
 import json
 import argparse
-
+import madminer.core
+import madminer.lhe
+import madminer.sampling
+import madminer.utils.interfaces.madminer_hdf5
+try:
+    import madminer.ml
+    HAS_ML = True
+except ImportError:
+    HAS_ML = False
 
 class mm_base_util:
 
@@ -82,8 +85,10 @@ class mm_base_util:
         MultipleMatchingFilesError = 25
         ExistingEvaluationError = 26
         NoEvaluatedModelError = 27
+        TorchImportError = 28
 
     def __init__(self, name, path):
+        self.HAS_ML = HAS_ML
         self.name = name
         self.path = path
         self.dir = self.path + "/" + self.name
@@ -111,6 +116,11 @@ class mm_base_util:
             return self.error_codes.Success
         self.log.error("Init not successful; directory " + self.dir + "does not exist.")
         return self.error_codes.InitError
+
+    def _check_valid_madminer_ml(self):
+        if self.HAS_ML:
+            return self.error_codes.Success
+        return self.error_codes.TorchImportError
 
     def _dir_size(self, pathname, matching_pattern=""):
         """Description:
@@ -480,6 +490,7 @@ class mm_base_util:
                                 self.log.info("    - {}: {}".format(elt, files[i][1][elt]))
         return files
  
+
 class mm_backend_util(mm_base_util):
 
     _CONTAINS_BACKEND_UTIL = True

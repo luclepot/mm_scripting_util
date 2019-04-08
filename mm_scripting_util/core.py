@@ -1213,9 +1213,10 @@ class miner(mm_util):
         initial_learning_rate=0.001,
         final_learning_rate=0.0001,
     ):
+
         known_training_methods = ["alices", "alice"]
 
-        rets = [self._check_valid_augmented_data(sample_name=sample_name)]
+        rets = [self._check_valid_augmented_data(sample_name=sample_name), self._check_valid_madminer_ml()]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
@@ -1323,10 +1324,13 @@ class miner(mm_util):
         rets = [
             self._check_valid_trained_models(
                 training_name=training_name, sample_name=sample_name
-            )
+            ),
+            self._check_valid_madminer_ml()
         ]
 
         failed = [ret for ret in rets if ret != self.error_codes.Success]
+
+        
 
         if len(failed) > 0:
             self.log.warning("Quitting train_method function.")
