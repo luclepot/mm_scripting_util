@@ -453,6 +453,32 @@ class mm_base_util:
 
         return nums, locs
 
+    def _list_verbose_helper(self, list_type, file_list, verbose, criteria, name_parameter, include_info):
+        if verbose:
+            n = len(file_list)
+            if n > 0:
+                if criteria != '*': 
+                    self.log.info("Found {} {} with critera '{}':".format(n, list_type, criteria))
+                else:
+                    self.log.info("Found {} {}:".format(n, list_type))
+            else:
+                self.log.info("No {} found with critera '{}'!".format(list_type, criteria))
+        
+        files = []
+        for i, f in enumerate(file_list):
+            files.append((f, self._load_config(f)))
+            if verbose:
+                self.log.info(" - {}".format(files[i][1][name_parameter]))
+                if include_info:
+                    for elt in files[i][1]:
+                        if elt is not name_parameter:                        
+                            if type(files[i][1][elt]) == dict:
+                                self.log.info("    - {}:".format(elt))
+                                for subelt in files[i][1][elt]:
+                                    self.log.info("      - {}: {}".format(subelt, files[i][1][elt][subelt]))
+                            else:
+                                self.log.info("    - {}: {}".format(elt, files[i][1][elt]))
+        return files
  
 class mm_backend_util(mm_base_util):
 
@@ -483,7 +509,7 @@ class mm_backend_util(mm_base_util):
         # process backend file
         with open(self.backend_name) as f:
 
-            self.log.info(
+            self.log.debug(
                 "Attempting to load backend file at {}".format(self.backend_name)
             )
 
@@ -530,7 +556,7 @@ class mm_backend_util(mm_base_util):
         # verify required backend parameters in backend file
 
         if self._check_valid_backend() == self.error_codes.Success:
-            self.log.info(
+            self.log.debug(
                 "Loaded {} parameters for backend with name {}".format(
                     len(self.params), self.params["backend_name"]
                 )

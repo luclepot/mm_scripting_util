@@ -11,7 +11,7 @@ run_main = True
 
 def rng(s):
     try:
-        _min, _max = map(int, s.split(','))
+        _min, _max = map(float, s.split(','))
         return _min, _max
     except: 
         raise argparse.ArgumentTypeError
@@ -88,7 +88,7 @@ Tips:
                     'default': default
                 }
             ],
-        'NUM' : lambda ntype=int, req=True, sname='-x', name='--num', default=None, _help=None: [
+        'NUM' : lambda ntype=int, req=True, sname='-n', name='--num', default=None, _help=None: [
                 (sname, name), {
                     'action': 'store', 
                     'dest': name.strip('-').replace('-', '_'),
@@ -106,6 +106,7 @@ Tips:
                     'required': req,
                     'default': None,
                     'help': _help,
+                    'nargs': '*'
                 }  
             ],
         'TYPE' : lambda types, name='TYPE', _help=None: [
@@ -130,6 +131,17 @@ Tips:
                     'help': _help,
                 }
             ],
+        'LIST' : lambda req=True, sname='-l', name='--list', type=int, _help=None, default=None, nargs='+': [
+                (sname, name), {
+                    'action': 'store',
+                    'dest': name.strip('-').replace('-', '_'),
+                    'type': type,
+                    'help': _help,
+                    'default': default,
+                    'required': req,
+                    'nargs': '+'
+                }
+            ],
     }
 
     global_options = [
@@ -146,17 +158,46 @@ Tips:
         'ls' : [
             sd['TYPE'](['samples', 'models', 'evaluations'], 'ls_type', 'type for ls command'),
             sd['STR'](False, '-c', '--criteria', 'ls filter criteria', '*'),
+            sd['BOOL'](True, False, '-i', '--include-info'),
             ],
         'simulate' : [
-            sd['STR'](True),
-            sd['NUM'](int, True),
-            sd['STR'](True, '-b', '--benchmark')
+            # sd['STR'](True),
+            sd['NUM'](sname='-n'),
+            sd['STR'](True, '-b', '--benchmark'),
+            sd['STR'](False, '-mg', '--mg-dir'),
+            sd['STR'](False, '-e', '--env-command', default='lxplus7')
             ],
-        'plot' : [
-            sd['TYPE'](['aug', 'mg', 'comp', 'eval']),
-            sd['RANGE'](False),
-            sd['STR'](False)
+        'plot' : {
+            'mg': [
+                sd['STR'](False, '-n', '--image-save-name'),
+                sd['NUM'](int, False, '-b', '--bins', 40),
+                sd['RANGE'](False, '-r', '--ranges'),
+                sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
             ],
+            'aug': [
+                sd['STR'](True, '-s', '--sample-name'),
+                sd['STR'](False, '-n', '--image-save-name'),
+                sd['NUM'](int, False, '-b', '--bins', 40),
+                sd['RANGE'](False, '-r', '--ranges'),
+                sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
+            ],
+            'comp': [
+                sd['STR'](True, '-s', '--sample-name'),
+                sd['STR'](False, '-n', '--image-save-name'),
+                sd['BOOL'](True, False, '-o', '--mark-outlier-bins'),
+                sd['NUM'](int, False, '-b', '--bins', 40),
+                sd['RANGE'](False, '-r', '--ranges'),
+                sd['NUM'](float, False, '-t', '--threshold', 2.0),
+                sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
+            ],
+            'eval': [
+                sd['STR'](True, '-e', '--eval-name'),
+                sd['STR'](False, '-t', '--training-name'),
+                sd['LIST'](False, '-z', '--z-contours', float),
+                sd['BOOL'](True, False, '-f', '--fill-contours')
+            ],
+
+            },
         'augment' : [
 
             ],
@@ -183,9 +224,17 @@ Tips:
     subparsers.required = True
 
     for command in commands:
-        command_subparsers[command] = subparsers.add_parser(command)
-        for subcommand in commands[command]:
-            command_subparsers[command].add_argument(*subcommand[0], **subcommand[1])
+        command_subparsers[command] = [subparsers.add_parser(command), {}]
+        if type(commands[command]) != dict:
+            for argument in commands[command]:
+                command_subparsers[command][0].add_argument(*argument[0], **argument[1])
+        else:
+            sub = command_subparsers[command][0].add_subparsers(dest='{}_TYPE'.format(command.upper()))
+            sub.required = True
+            for subcommand in commands[command]:
+                command_subparsers[command][1][subcommand] = sub.add_parser(subcommand)
+                for argument in commands[command][subcommand]:
+                    command_subparsers[command][1][subcommand].add_argument(*argument[0], **argument[1])
     
     return parser
 
@@ -199,23 +248,33 @@ def __main__():
         parser.print_help()
         exit(0)
 
-    print(args)
-
     m = miner(
         name=args.NAME,
         backend=args.BACKEND,
         card_directory=args.CARD_DIRECTORY, 
         loglevel=args.LOG_LEVEL,
+        init_loglevel=10
         )
 
     cmd = args.COMMAND
 
     if cmd=='ls':
-        getattr(m, 'list_{}'.format(args.ls_type))(True, args.criteria)
+        getattr(m, 'list_{}'.format(args.ls_type))(True, args.criteria, args.include_info)
     elif cmd=='simulate':
         pass
     elif cmd=='plot':
-        pass
+        args_to_pass = {var: vars(args)[var] for var in vars(args) if not var.isupper()}
+        print(args_to_pass)
+        if args.PLOT_TYPE=='mg':
+            m.plot_mg5_data_corner(**args_to_pass)
+        elif args.PLOT_TYPE=='aug':
+            m.plot_augmented_data_corner(**args_to_pass)
+        elif args.PLOT_TYPE=='comp':
+            m.plot_compare_mg5_and_augmented_data(**args_to_pass)
+        elif args.PLOT_TYPE=='eval':
+            m.plot_evaluation_results(**args_to_pass)
+        else:
+            raise argparse.ArgumentTypeError 
     elif cmd=='augment':
         pass
     elif cmd=='train':
