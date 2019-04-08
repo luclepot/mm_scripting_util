@@ -21,11 +21,15 @@ import madminer.core
 import madminer.lhe
 import madminer.sampling
 import madminer.utils.interfaces.madminer_hdf5
+
+HAS_ML = True
+ML_ERROR = None
+
 try:
     import madminer.ml
-    HAS_ML = True
 except ImportError:
-    HAS_ML = False
+    TORCH_IMPORT_ERROR = traceback.format_exc()
+    HAS_TORCH = False
 
 class mm_base_util:
 
@@ -88,7 +92,8 @@ class mm_base_util:
         TorchImportError = 28
 
     def __init__(self, name, path):
-        self.HAS_ML = HAS_ML
+        self.HAS_TORCH = HAS_TORCH
+        self.TORCH_IMPORT_ERROR = TORCH_IMPORT_ERROR
         self.name = name
         self.path = path
         self.dir = self.path + "/" + self.name
@@ -118,8 +123,11 @@ class mm_base_util:
         return self.error_codes.InitError
 
     def _check_valid_madminer_ml(self):
-        if self.HAS_ML:
+        if self.HAS_TORCH:
             return self.error_codes.Success
+        self.log.error("Error - pytorch unable to be imported on this machine. Check error message: ")
+        for err_line in self.TORCH_IMPORT_ERROR.strip('\n').split('\n'):
+            self.log.error(err_line)
         return self.error_codes.TorchImportError
 
     def _dir_size(self, pathname, matching_pattern=""):
