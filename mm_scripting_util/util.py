@@ -127,7 +127,7 @@ class mm_base_util:
             return self.error_codes.Success
         self.log.error("Error - pytorch unable to be imported on this machine. Check error message: ")
         for err_line in self.TORCH_IMPORT_ERROR.strip('\n').split('\n'):
-            self.log.error(err_line)
+            self.log.error(' %  {}'.format(err_line))
         return self.error_codes.TorchImportError
 
     def _dir_size(self, pathname, matching_pattern=""):
