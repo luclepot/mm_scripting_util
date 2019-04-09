@@ -1,4 +1,4 @@
-from .core import miner
+from mm_scripting_util.core import miner 
 import subprocess
 import sys
 import os
@@ -19,6 +19,8 @@ def rng(s):
 
 def write_parser():
 
+    full_av = miner.list_full_backends()
+
     desc_str = """MM_SCRIPTING_UTIL COMMAND LINE PROGRAM\n
 The cmd line program for the mm_scripting_util class.
 Gives (almost) all of the functionality of the base class,
@@ -27,8 +29,12 @@ Tips:
  - always specify NAME, BACKEND, and then the command you'd
    like to run, otherwise you'll have a bad time
  - For more in-depth documentation, see the python code itself
-   (which you definitely have documented if you're running this)
-"""
+   (which you definitely have documented if you're running this)\n
+Fully avaliable BACKEND specifications in your current directory:\n"""
+    
+    for backend in full_av:
+        desc_str += """ - {}\n""".format(backend)
+
     desc_str = lucs_tools.header.fmt(desc_str, side='c')
 
     module_directory = os.path.dirname(os.path.abspath(__file__))
@@ -195,7 +201,7 @@ Tips:
     return parser
 
 
-def __main__():
+def main():
 
     parser = write_parser()
     if len(sys.argv[1:]) > 0:
@@ -243,4 +249,4 @@ def __main__():
     return 0
 
 if run_main: 
-    __main__()
+    main()

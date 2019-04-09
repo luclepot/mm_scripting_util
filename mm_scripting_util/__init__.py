@@ -1,7 +1,7 @@
 import os
 import logging
 
-from . import core
+import mm_scripting_util.core
 
 logging.getLogger("mm_scripting_util").addHandler(logging.NullHandler())
 

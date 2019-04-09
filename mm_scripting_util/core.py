@@ -1,18 +1,4 @@
-from .util import *
-
-
-def list_backends():
-    print("Backends:")
-    for f in os.listdir("{}/data/backends/".format(os.path.dirname(__file__))):
-        print(" - {}".format(f))
-    return 0
-
-
-def list_cards():
-    print("Cards avaliable:")
-    for f in glob.glob("{}/data/*cards*".format(os.path.dirname(__file__))):
-        print(" - {}".format(f))
-    return 0
+from mm_scripting_util.util import * 
 
 
 class miner(mm_util):
@@ -181,6 +167,23 @@ class miner(mm_util):
         )
         return self._list_verbose_helper('evaluations', evaluation_list, verbose, criteria, 'evaluation_name', include_info)
 
+    @staticmethod
+    def list_backends():
+        return os.listdir("{}/data/backends/".format(os.path.dirname(__file__)))
+
+    @staticmethod
+    def list_cards():
+        return glob.glob("{}/data/*cards*".format(os.path.dirname(__file__)))
+    
+    @staticmethod
+    def list_full_backends():
+        backends = [w.replace('.dat', '') for w in miner.list_backends()]
+        cards = [card.split('/')[-1].replace('cards_', '') for card in miner.list_cards()]
+        return set(backends).intersection(cards)
+
+    @staticmethod
+    def list_existing_samples():
+        possible_folders = [f for f in os.listdir() if os.path.isdir(f) and f[0] != '.']
     # simulation-related member functions
 
     def simulate_data(
