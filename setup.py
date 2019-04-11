@@ -14,13 +14,24 @@ EMAIL = 'luc.lepottier@cern.ch'
 URL = 'https://github.com/luclepot/'
 REQUIRES_PYTHON = '>=3.6.7'
 
+DEPENDENCY_LINKS = [
+    'http://github.com/luclepot/lucs_tools/tarball/master#egg=lucs_tools-0.0.1',
+]
+
 # What packages are required for this module to be executed?
 REQUIRED = [
-    "logging",
-    "numpy>=1.13.0",
-    "scipy>=1.0.0",
-    "madminer",
-    "matplotlib>=2.0.0",
+    "numpy",
+    "h5py",
+    "scipy",
+    "scikit-learn",
+    "six",
+    "uproot",
+    "scikit-hep",
+    "corner",
+    "argparse",
+    "tabulate",
+    "ipython",
+    "lucs_tools"
 ]
 
 package_data={'': ['mm_scripting_util/data/*']}
@@ -126,4 +137,5 @@ setup(
     cmdclass={
         'upload': UploadCommand,
     },
+    dependency_links=DEPENDENCY_LINKS,
 )

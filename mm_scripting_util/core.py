@@ -1,22 +1,7 @@
-from .util import *
-
-
-def list_backends():
-    print("Backends:")
-    for f in os.listdir("{}/data/backends/".format(os.path.dirname(__file__))):
-        print(" - {}".format(f))
-    return 0
-
-
-def list_cards():
-    print("Cards avaliable:")
-    for f in glob.glob("{}/data/*cards*".format(os.path.dirname(__file__))):
-        print(" - {}".format(f))
-    return 0
+from mm_scripting_util.util import * 
 
 
 class miner(mm_util):
-    madminer.core
     """
     Main container for the class. 
 
@@ -31,13 +16,15 @@ class miner(mm_util):
 
     def __init__(
         self,
-        name="temp",
+        name,
+        backend,
+        card_directory=None,
         path=None,
         loglevel=logging.INFO,
         madminer_loglevel=logging.INFO,
+        init_loglevel=logging.INFO,
         autodestruct=False,
-        backend="tth.dat",
-        card_directory=None,
+        _cmd_line_origin=False,
     ):
         """
         madminer-helper object for quickly running madgraph scripts. 
@@ -56,6 +43,8 @@ class miner(mm_util):
                 string, path to a card directory from which to load template cards, if one desires to switch the current template cards out for new ones.
         """
 
+        self._cmd_line_origin = _cmd_line_origin
+
         if path is None:
             path = os.getcwd()
 
@@ -71,31 +60,37 @@ class miner(mm_util):
 
         self.set_loglevel(loglevel)
         self.set_loglevel(madminer_loglevel, module="madminer")
-
+        
         self.name = name
         self.dir = "{}/{}".format(self.path, self.name)
 
         if not os.path.exists(self.dir):
             os.mkdir(self.dir)
-            self.log.info("Creating new directory " + self.dir)
+            self.log.log(init_loglevel, "Creating new directory " + self.dir)
         else:
-            self.log.info("Initialized to existing directory " + self.dir)
+            self.log.log(init_loglevel, "Initialized to existing directory " + self.dir)
 
-        self.log.debug(
+        self.log.log(init_loglevel, 
             "Initialized a new miner object with name '{}'".format(self.name)
         )
-        self.log.debug("- module path at {}".format(self.module_path))
-        self.log.debug("- new miner object path at " + self.dir)
+        self.log.log(init_loglevel, "- module path at {}".format(self.module_path))
+        self.log.log(init_loglevel, "- new miner object path at " + self.dir)
 
         self.madminer_object = madminer.core.MadMiner()
         self.lhe_processor_object = None
 
-        self.log.debug("Loading custom card directory... ")
+        self.log.log(init_loglevel, "Loading custom card directory... ")
         self.card_directory = None
+
+        # backend param should refer to the name, not a specific backend filepath
+        self.backend = backend.replace('.dat', '')
+            
+
+        # if card_directory is specified.. 
         if card_directory is not None:
             for path_check in [
                 card_directory,
-                "{}/data/{}".format(self.module_path, card_directory),
+                "{}/data/{}".format(self.module_path, card_directory)
             ]:
                 if os.path.exists(path_check):
                     self.card_directory = path_check
@@ -106,16 +101,24 @@ class miner(mm_util):
                     )
                 )
                 self.log.error("Using default card directory instead.")
-                self.card_directory = self.default_card_directory
+                self.card_directory = self.default_card_directory    
+        # else, check using the backend parameter
         else:
-            self.log.debug("No card directory provided.")
-            self.log.debug("Using default card directory for all cards.")
-            self.card_directory = self.default_card_directory
+            for path_check in [
+                "cards_{}".format(self.backend),
+                "{}/data/cards_{}".format(self.module_path, self.backend)
+            ]:
+                if os.path.exists(path_check):
+                    self.card_directory = path_check
+            if self.card_directory is None:
+                self.log.error("No card directory found using auto-spec backend {}".format(self.backend))
+                self.log.error("Using default card directory instead.")
+                self.card_directory = self.default_card_directory
 
-        self.log.info("Using card directory '{}',".format(self.card_directory))
-        self.log.info("with {} files".format(len(os.listdir(self.card_directory))))
+        self._load_backend("{}.dat".format(self.backend))
 
-        self._load_backend(backend)
+        self.log.log(init_loglevel, "Using card directory '{}',".format(self.card_directory))
+        self.log.log(init_loglevel, "with {} files".format(len(os.listdir(self.card_directory))))
 
     def set_loglevel(self, loglevel, module=None):
 
@@ -143,59 +146,44 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def list_augmented_samples(self, verbose=False):
-        if verbose:
-            self.log.info("Augmented samples:")
-        samples = []
+    def list_samples(self, verbose=False, criteria='*', include_info=False,):
+
         sample_list = glob.glob(
-            "{}/data/samples/*/augmented_sample.mmconfig".format(self.dir)
-        ) + glob.glob("{}/evaluations/*/*/augmented_sample.mmconfig".format(self.dir))
-        for i, sample in enumerate(sample_list):
-            samples.append((sample, self._load_config(sample)))
-            if verbose:
-                self.log.info(" - {}".format(samples[i][1]["sample_name"]))
-                for elt in samples[i][1]:
-                    if elt is not "sample_name":
-                        self.log.info("    - {}: {}".format(elt, samples[i][1][elt]))
-        return samples
+            "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, criteria)
+        ) + glob.glob("{}/evaluations/*/{}/augmented_sample.mmconfig".format(self.dir, criteria))
 
-    def list_trained_models(self, verbose=False):
-        models = []
-        model_list = glob.glob("{}/models/*/*/training_model.mmconfig".format(self.dir))
+        return self._list_verbose_helper('augmented samples', sample_list, verbose, criteria, 'sample_name', include_info)
+        
+    def list_models(self, verbose=False, criteria='*', include_info=False,):
+        
+        model_list = glob.glob("{}/models/*/{}/training_model.mmconfig".format(self.dir, criteria))
 
-        if verbose:
-            self.log.info("Trained Models:")
+        return self._list_verbose_helper('trained models', model_list, verbose, criteria, 'training_name', include_info)
 
-        for i, model in enumerate(model_list):
-            models.append((model, self._load_config(model)))
-            if verbose:
-                self.log.info(" - {}".format(models[i][1]["training_name"]))
-                for elt in models[i][1]:
-                    if elt is not "training_name":
-                        self.log.info("    - {}: {}".format(elt, models[i][1][elt]))
-        return models
+    def list_evaluations(self, verbose=False, criteria='*', include_info=False,):
 
-    def list_evaluations(self, verbose=False):
-
-        if verbose:
-            self.log.info("Evaluations:")
-        evaluations = []
         evaluation_list = glob.glob(
-            "{}/evaluations/*/*/evaluation.mmconfig".format(self.dir)
+            "{}/evaluations/*/{}/evaluation.mmconfig".format(self.dir, criteria)
         )
+        return self._list_verbose_helper('evaluations', evaluation_list, verbose, criteria, 'evaluation_name', include_info)
 
-        for i, evaluation in enumerate(evaluation_list):
-            evaluations.append((evaluation, self._load_config(evaluation)))
-            if verbose:
-                self.log.info(" - {}".format(evaluations[i][1]["evaluation_name"]))
-                for elt in evaluations[i][1]:
-                    self.log.info("    - {}: {}".format(elt, evaluations[i][1][elt]))
-        return evaluations
+    @staticmethod
+    def list_backends():
+        return os.listdir("{}/data/backends/".format(os.path.dirname(__file__)))
 
-    def __del__(self):
-        if self.autodestruct:
-            self.destroy_sample()
+    @staticmethod
+    def list_cards():
+        return glob.glob("{}/data/*cards*".format(os.path.dirname(__file__)))
+    
+    @staticmethod
+    def list_full_backends():
+        backends = [w.replace('.dat', '') for w in miner.list_backends()]
+        cards = [card.split('/')[-1].replace('cards_', '') for card in miner.list_cards()]
+        return set(backends).intersection(cards)
 
+    @staticmethod
+    def list_existing_samples():
+        possible_folders = [f for f in os.listdir() if os.path.isdir(f) and f[0] != '.']
     # simulation-related member functions
 
     def simulate_data(
@@ -736,17 +724,27 @@ class miner(mm_util):
             )
             plt_prime.label = legend_labels[i + 1]
 
-        full_save_name = "{}/madgraph_data_{}_{}s.png".format(
-            self.dir, image_save_name, obs.shape[0]
+        full_save_name = "{}/data/madgraph_data_{}.png".format(
+            self.dir, image_save_name
         )
 
         plt.axes[0].autoscale("y")
         plt.axes[3].autoscale("y")
         plt.legend(legend_labels)
 
-        if image_save_name is not None:
+        full_save_name = "{}/data/madgraph_data_{}.png".format(
+            self.dir, image_save_name if image_save_name is not None else 'temp'
+        )   
+    
+        if self._cmd_line_origin:
+            self.log.debug('showing graph via feh... (cmd line interface triggered)')
+            plt.savefig(full_save_name)
+            subprocess.Popen(['feh', full_save_name ])
+        elif image_save_name is not None:
+            self.log.debug('saving image to \'{}\''.format(full_save_name))
             plt.savefig(full_save_name)
         else:
+            self.log.debug('displaying image...')
             plt.show()
 
         return [self.error_codes.Success]
@@ -999,7 +997,9 @@ class miner(mm_util):
         default_bins = 40
 
         if bins is None:
-            bins = [default_bins for i in range(len(labels))]
+            bins = default_bins 
+        if not hasattr(bins, '__iter__'):
+            bins  = [bins for i in range(len(labels))]
 
         if ranges is None:
             ranges = np.mean(
@@ -1035,19 +1035,24 @@ class miner(mm_util):
             )
             plt_prime.label = legend_labels[i + 1]
 
-        full_save_name = "{}/data/samples/{}/augmented_data_{}_{}s.png".format(
-            self.dir, sample_name, image_save_name, x_size
-        )
 
         plt.axes[0].autoscale("y")
         plt.axes[3].autoscale("y")
         plt.legend(legend_labels)
 
-        if image_save_name is not None:
+
+        full_save_name = "{}/data/samples/{}/augmented_data_{}.png".format(
+            self.dir, sample_name, image_save_name if image_save_name is not None else 'temp'
+        )   
+    
+        if self._cmd_line_origin:
+            plt.savefig(full_save_name)
+            subprocess.Popen(['feh', full_save_name ])
+        elif image_save_name is not None:
             plt.savefig(full_save_name)
         else:
             plt.show()
-
+        
         return [self.error_codes.Success]
 
     def plot_compare_mg5_and_augmented_data(
@@ -1203,16 +1208,19 @@ class miner(mm_util):
         self._tabulate_comparison_information(
             r, pers, observables, benchmarks, threshold
         )
-
-        if image_save_name is not None:
-            full_save_name = "{}/mg5_vs_augmented_data_{}_{}s.png".format(
-                self.dir, image_save_name, x_aug[0].shape[0]
-            )
+        
+        full_save_name = "{}/data/samples/{}/mg5_vs_augmented_data_{}s.png".format(
+            self.dir, sample_name, image_save_name if image_save_name is not None else 'temp'
+        )
+    
+        if self._cmd_line_origin:
             plt.savefig(full_save_name)
-            plt.clf()
+            subprocess.Popen(['feh', full_save_name ])
+        elif image_save_name is not None:
+            plt.savefig(full_save_name)
         else:
             plt.show()
-
+        
         return [self.error_codes.Success]
 
     def train_method(
@@ -1228,9 +1236,10 @@ class miner(mm_util):
         initial_learning_rate=0.001,
         final_learning_rate=0.0001,
     ):
+
         known_training_methods = ["alices", "alice"]
 
-        rets = [self._check_valid_augmented_data(sample_name=sample_name)]
+        rets = [self._check_valid_augmented_data(sample_name=sample_name), self._check_valid_madminer_ml()]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
@@ -1338,10 +1347,13 @@ class miner(mm_util):
         rets = [
             self._check_valid_trained_models(
                 training_name=training_name, sample_name=sample_name
-            )
+            ),
+            self._check_valid_madminer_ml()
         ]
 
         failed = [ret for ret in rets if ret != self.error_codes.Success]
+
+        
 
         if len(failed) > 0:
             self.log.warning("Quitting train_method function.")
@@ -1473,7 +1485,7 @@ class miner(mm_util):
                 "evaluation_samples": evaluation_samples,
                 "evaluation_benchmark": evaluation_benchmark,
                 "evaluation_datasets": {
-                    key: "{}/log_r_hat_{}.npy".format(evaluation_dir, key)
+                    key: "{}/{}/log_r_hat_{}.npy".format(self.name, evaluation_dir.split("{}/".format(self.name))[-1], key)
                     for key in log_r_hat_dict
                 },
             },
@@ -1486,7 +1498,7 @@ class miner(mm_util):
         self,
         evaluation_name,
         training_name=None,
-        z_contour_list=[1.0],
+        z_contours=[1.0],
         fill_contours=True,
         bb_b=1.16,
         bb_m=0.05,
@@ -1533,15 +1545,15 @@ class miner(mm_util):
         # else tuple is CLEAN, with len 1
         evaluation_tuple = evaluation_tuples[0]
         evaluation_dir = os.path.dirname(evaluation_tuple[0])
-
+        self.log.debug(evaluation_tuple)
         theta_grid = np.load("{}/theta_grid.npy".format(evaluation_dir))
         log_r_hat_dict = {
-            key: np.load(evaluation_tuple[1]["evaluation_datasets"][key])
+            key: np.load(evaluation_tuple[1]["evaluation_datasets"][key].replace('//', '/'))
             for key in evaluation_tuple[1]["evaluation_datasets"]
         }
 
-        if len(z_contour_list) > 0:
-            alphas = self._scale_to_range_flipped([0.0] + z_contour_list, [0.05, 0.5])[
+        if len(z_contours) > 0:
+            alphas = self._scale_to_range_flipped([0.0] + z_contours, [0.05, 0.5])[
                 1:
             ]
         else:
@@ -1558,7 +1570,7 @@ class miner(mm_util):
                     label=r"%s, $\mu$" % benchmark,
                 )
 
-                for j, z in enumerate(z_contour_list):
+                for j, z in enumerate(z_contours):
                     plt.plot(
                         theta_grid[:, p_num],
                         mu + sigma * z,
@@ -1582,7 +1594,7 @@ class miner(mm_util):
                         )
 
             plt.legend(
-                bbox_to_anchor=(0.5, bb_b + bb_m * (len(z_contour_list))),
+                bbox_to_anchor=(0.5, bb_b + bb_m * (len(z_contours))),
                 ncol=len(log_r_hat_dict),
                 fancybox=True,
                 loc="upper center",

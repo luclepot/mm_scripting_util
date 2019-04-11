@@ -6,11 +6,6 @@ import shutil
 import platform
 import getpass
 import traceback
-import madminer.core
-import madminer.lhe
-import madminer.sampling
-import madminer.ml
-import madminer.utils.interfaces.madminer_hdf5
 import corner
 import matplotlib.pyplot as plt
 import matplotlib
@@ -22,7 +17,21 @@ import tabulate
 import glob
 import json
 import argparse
+import madminer.core
+import madminer.lhe
+import madminer.sampling
+import madminer.utils.interfaces.madminer_hdf5
+import subprocess
 
+
+HAS_TORCH = True
+TORCH_IMPORT_ERROR = None
+
+try:
+    import madminer.ml
+except ImportError:
+    TORCH_IMPORT_ERROR = traceback.format_exc()
+    HAS_TORCH = False
 
 class mm_base_util:
 
@@ -82,8 +91,11 @@ class mm_base_util:
         MultipleMatchingFilesError = 25
         ExistingEvaluationError = 26
         NoEvaluatedModelError = 27
+        TorchImportError = 28
 
     def __init__(self, name, path):
+        self.HAS_TORCH = HAS_TORCH
+        self.TORCH_IMPORT_ERROR = TORCH_IMPORT_ERROR
         self.name = name
         self.path = path
         self.dir = self.path + "/" + self.name
@@ -111,6 +123,14 @@ class mm_base_util:
             return self.error_codes.Success
         self.log.error("Init not successful; directory " + self.dir + "does not exist.")
         return self.error_codes.InitError
+
+    def _check_valid_madminer_ml(self):
+        if self.HAS_TORCH:
+            return self.error_codes.Success
+        self.log.error("Error - pytorch unable to be imported on this machine. Check error message: ")
+        for err_line in self.TORCH_IMPORT_ERROR.strip('\n').split('\n'):
+            self.log.error(' %  {}'.format(err_line))
+        return self.error_codes.TorchImportError
 
     def _dir_size(self, pathname, matching_pattern=""):
         """Description:
@@ -453,26 +473,33 @@ class mm_base_util:
 
         return nums, locs
 
-
-# class mm_env_util(
-#     mm_base_util
-# ):
-#     @staticmethod
-#     def _conda_info(
-#     ):
-#         """
-#         Returns the current os' installed conda environments, as well as the current env
-#         Returns empty list, None if conda is not installed.
-#         """
-#         conda_ret = [line.strip("\n").split() for line in os.popen("conda env list").readlines() if line[0] is not "#" and line is not "\n"]
-#         # handle uninstalled conda case
-#         if "bash: conda: command not found" in conda_ret:
-#             return [], None
-#         # grab all/current envs
-#         conda_envs = [line[0] for line in conda_ret]
-#         conda_env_current = conda_ret["*" in conda_ret][0]
-#         return conda_envs, conda_env_current
-
+    def _list_verbose_helper(self, list_type, file_list, verbose, criteria, name_parameter, include_info):
+        if verbose:
+            n = len(file_list)
+            if n > 0:
+                if criteria != '*': 
+                    self.log.info("Found {} {} with critera '{}':".format(n, list_type, criteria))
+                else:
+                    self.log.info("Found {} {}:".format(n, list_type))
+            else:
+                self.log.info("No {} found with critera '{}'!".format(list_type, criteria))
+        
+        files = []
+        for i, f in enumerate(file_list):
+            files.append((f, self._load_config(f)))
+            if verbose:
+                self.log.info(" - {}".format(files[i][1][name_parameter]))
+                if include_info:
+                    for elt in files[i][1]:
+                        if elt is not name_parameter:                        
+                            if type(files[i][1][elt]) == dict:
+                                self.log.info("    - {}:".format(elt))
+                                for subelt in files[i][1][elt]:
+                                    self.log.info("      - {}: {}".format(subelt, files[i][1][elt][subelt]))
+                            else:
+                                self.log.info("    - {}: {}".format(elt, files[i][1][elt]))
+        return files
+ 
 
 class mm_backend_util(mm_base_util):
 
@@ -503,7 +530,7 @@ class mm_backend_util(mm_base_util):
         # process backend file
         with open(self.backend_name) as f:
 
-            self.log.info(
+            self.log.debug(
                 "Attempting to load backend file at {}".format(self.backend_name)
             )
 
@@ -550,7 +577,7 @@ class mm_backend_util(mm_base_util):
         # verify required backend parameters in backend file
 
         if self._check_valid_backend() == self.error_codes.Success:
-            self.log.info(
+            self.log.debug(
                 "Loaded {} parameters for backend with name {}".format(
                     len(self.params), self.params["backend_name"]
                 )
@@ -1293,60 +1320,3 @@ class mm_util(mm_backend_util, mm_simulate_util, mm_train_util, mm_base_util):
     def _submit_flashy(self, arg_list, max_runtime=60 * 60):  # 1 hour
         raise NotImplementedError
         return self.error_codes.Success
-
-
-class arg_util:
-
-    DEFAULT_ARGS = [("samples", int, "s", 10000), ("benchmark", str, "b", "sm")]
-
-    def __init__(self, description="default parser"):
-        self.parser = argparse.ArgumentParser(description=description)
-        self.shortnames = set()
-        self.names = set()
-
-    def add(
-        self, name, argtype=str, shortname=None, default=None, help=None, action="store"
-    ):
-
-        if shortname is None:
-            shortname = ""
-            for word in name.split("_"):
-                shortname += word[0]
-
-        i = 0
-        newname = shortname
-        while newname in self.shortnames:
-            newname = "{}{}".format(shortname, i)
-            i += 1
-        shortname = newname
-        i = 0
-        newname = name
-        while newname in self.names:
-            newname = "{}{}".format(name, i)
-            i += 1
-        name = newname
-
-        self.shortnames.add(shortname)
-        self.names.add(name)
-
-        self.parser.add_argument(
-            "-" + shortname,
-            "--" + name,
-            action=action,
-            dest=name,
-            default=default,
-            type=argtype,
-            help=help,
-        )
-
-    def setup_default(self):
-        for arg in self.DEFAULT_ARGS:
-            self.add(*arg)
-
-    def parse(self, args=None):
-        if args is None:
-            args = sys.argv[1:]
-        return self.parser.parse_args(args)
-
-    def info(self):
-        return self.parser.print_help()
