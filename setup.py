@@ -14,6 +14,10 @@ EMAIL = 'luc.lepottier@cern.ch'
 URL = 'https://github.com/luclepot/'
 REQUIRES_PYTHON = '>=3.6.7'
 
+DEPENDENCY_LINKS = [
+    'http://github.com/luclepot/lucs_tools/tarball/master#egg=lucs_tools-0.0.1',
+]
+
 # What packages are required for this module to be executed?
 REQUIRED = [
     "numpy",
@@ -133,5 +137,5 @@ setup(
     cmdclass={
         'upload': UploadCommand,
     },
-    dependency_links=['http://github.com/luclepot/lucs_tools/tarball/master#egg=lucs_tools-0.0.1'],
+    dependency_links=DEPENDENCY_LINKS,
 )
