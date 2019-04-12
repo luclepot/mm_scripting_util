@@ -512,6 +512,9 @@ class miner(_mm_util):
         else:
             pythia_card = None
 
+        for param in [pythia_card, mg_dir, initial_command,]:
+            self.log.debug(" - {}".format(param))
+
         self.madminer_object.run_multiple(
             sample_benchmarks=[sample_benchmark],
             mg_directory=mg_dir,
