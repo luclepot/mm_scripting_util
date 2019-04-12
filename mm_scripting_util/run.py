@@ -35,7 +35,7 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
     for backend in full_av:
         desc_str += """ - {}\n""".format(backend)
 
-    desc_str = lucs_tools.header.fmt(desc_str, side='c')
+    desc_str = lucs_tools.formatting.header.fmt(desc_str, side='c')
 
     module_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -135,14 +135,14 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
                 sd['NUM'](int, False, '-b', '--bins', 40),
                 sd['RANGE'](False, '-r', '--ranges'),
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
-            ],
+                ],
             'aug': [
                 sd['STR'](True, '-s', '--sample-name'),
                 sd['STR'](False, '-n', '--image-save-name'),
                 sd['NUM'](int, False, '-b', '--bins', 40),
                 sd['RANGE'](False, '-r', '--ranges'),
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
-            ],
+                ],
             'comp': [
                 sd['STR'](True, '-s', '--sample-name'),
                 sd['STR'](False, '-n', '--image-save-name'),
@@ -151,17 +151,16 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
                 sd['RANGE'](False, '-r', '--ranges'),
                 sd['NUM'](float, False, '-t', '--threshold', 2.0),
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
-            ],
+                ],
             'eval': [
-                sd['STR'](True, '-e', '--eval-name'),
+                sd['STR'](True, '-e', '--evaluation-name'),
                 sd['STR'](False, '-t', '--training-name'),
                 sd['LIST'](False, '-z', '--z-contours', float),
                 sd['BOOL'](True, False, '-f', '--fill-contours')
-            ],
-
+                ],
             },
         'augment' : [
-
+            
             ],
         'train' : [
 
@@ -199,7 +198,6 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
                     command_subparsers[command][1][subcommand].add_argument(*argument[0], **argument[1])
     
     return parser
-
 
 def main():
 

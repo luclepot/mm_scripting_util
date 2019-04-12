@@ -33,7 +33,7 @@ except ImportError:
     TORCH_IMPORT_ERROR = traceback.format_exc()
     HAS_TORCH = False
 
-class mm_base_util:
+class _mm_base_util:
 
     """
     base functions and variables used in most other functions. 
@@ -501,7 +501,7 @@ class mm_base_util:
         return files
  
 
-class mm_backend_util(mm_base_util):
+class _mm_backend_util(_mm_base_util):
 
     _CONTAINS_BACKEND_UTIL = True
 
@@ -718,7 +718,7 @@ class mm_backend_util(mm_base_util):
         return self.error_codes.Success
 
 
-class mm_simulate_util(mm_base_util):
+class _mm_simulate_util(_mm_base_util):
     """
     Container class for simulation-related util functions.
     Seperation from other functions is purely for cleanliness
@@ -853,7 +853,7 @@ class mm_simulate_util(mm_base_util):
         return self.error_codes.Success
 
 
-class mm_train_util(mm_base_util):
+class _mm_train_util(_mm_base_util):
 
     _CONTAINS_TRAINING_UTIL = True
 
@@ -927,7 +927,7 @@ class mm_train_util(mm_base_util):
 
         rets = [
             self._check_valid_augmented_data(sample_name=sample_name),
-            mm_simulate_util._check_valid_mg5_process(self),
+            _mm_simulate_util._check_valid_mg5_process(self),
         ]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
@@ -1261,7 +1261,7 @@ class mm_train_util(mm_base_util):
         )
 
 
-class mm_util(mm_backend_util, mm_simulate_util, mm_train_util, mm_base_util):
+class _mm_util(_mm_backend_util, _mm_simulate_util, _mm_train_util, _mm_base_util):
 
     """
     Wrapper class for all tth utility related classes. 

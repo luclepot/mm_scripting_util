@@ -1,7 +1,7 @@
 from mm_scripting_util.util import * 
+from mm_scripting_util.util import _mm_util, _mm_backend_util, _mm_base_util
 
-
-class miner(mm_util):
+class miner(_mm_util):
     """
     Main container for the class. 
 
@@ -50,9 +50,9 @@ class miner(mm_util):
 
         # initialize helper classes
 
-        mm_base_util.__init__(self, name, path)
+        _mm_base_util.__init__(self, name, path)
 
-        mm_backend_util.__init__(self)
+        _mm_backend_util.__init__(self)
 
         self.autodestruct = autodestruct
         self.log = logging.getLogger(__name__)
