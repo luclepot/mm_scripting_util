@@ -741,10 +741,10 @@ class _mm_simulate_util(_mm_base_util):
             return size + 1
         return size
 
-    def _get_simulation_step(self, num_cards, samples):
+    def _get_simulation_step(self, samples):
         step = 0
         blist = [
-            self._check_valid_cards(num_cards),
+            self._check_valid_cards(),
             self._check_valid_morphing(),
             self._check_valid_mg5_scripts(samples),
             self._check_valid_mg5_run(),
@@ -755,7 +755,7 @@ class _mm_simulate_util(_mm_base_util):
 
         return step
 
-    def _check_valid_cards(self, num_cards):
+    def _check_valid_cards(self):
         """Description:
             Helper function to check validity of cards. 
 
@@ -767,13 +767,9 @@ class _mm_simulate_util(_mm_base_util):
             bool. number of cards in directory, or -1 if card dir does not exist.
         """
         cards = self._dir_size(pathname=self.dir + "/cards", matching_pattern="card")
-        if cards < 0:
+        if cards <= 0:
             self.log.error("No valid cards directory in " + self.dir)
             return self.error_codes.NoCardError
-        if cards != num_cards + 6:
-            self.log.error("Incorrect number of cards in directory " + self.dir)
-            self.log.error("expected {}, got {}".format(num_cards + 6, cards))
-            return self.error_codes.IncorrectCardNumberError
         return self.error_codes.Success
 
     def _check_valid_morphing(self):

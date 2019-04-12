@@ -6,7 +6,7 @@ class miner(_mm_util):
     Main container for the class. 
 
     This class should handle all necessary interfacing with
-    madminer and madgraph. Nice! 
+    madminer and madgraph. 
 
     """
 
@@ -206,7 +206,7 @@ class miner(_mm_util):
                 self.SIMULATION_STEP = override_step
             else:
                 self.SIMULATION_STEP = self._get_simulation_step(
-                    self._number_of_cards(samples, 100000), samples
+                    samples
                 )
 
             if self.SIMULATION_STEP < 1 or force:
@@ -455,7 +455,7 @@ class miner(_mm_util):
 
         rets = [
             self._check_valid_init(),
-            self._check_valid_cards(len(sample_sizes)),
+            self._check_valid_cards(),
             self._check_valid_morphing(),
             self._check_valid_backend(),
         ]
@@ -541,11 +541,9 @@ class miner(_mm_util):
 
     def run_mg5_script(self, platform, samples, force=False):
 
-        sample_sizes = self._equal_sample_sizes(samples=samples, sample_limit=100000)
-
         rets = [
             self._check_valid_init(),
-            self._check_valid_cards(len(sample_sizes)),
+            self._check_valid_cards(),
             self._check_valid_morphing(),
             self._check_valid_mg5_scripts(samples),
             self._check_valid_backend(),
