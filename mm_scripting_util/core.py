@@ -542,7 +542,7 @@ class miner(_mm_util):
         self.log.debug("Successfully setup mg5 scripts. Ready for execution")
         return [self.error_codes.Success]
 
-    def run_mg5_script(self, platform, samples, force=False):
+    def run_mg5_script(self, run_command, samples, force=False):
 
         rets = [
             self._check_valid_init(),
@@ -561,21 +561,28 @@ class miner(_mm_util):
             local_pathname="mg_processes/signal/Events", force=force, pattern="run_"
         )
 
-        if platform == "lxplus7":
-            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh; source {}/mg_processes/signal/madminer/run.sh'".format(
-                self.dir
-            )
-        elif platform == "pheno":
+        if run_command == "lxplus7":
+            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh"
+        elif run_command == "pheno":
             self.log.warning("'pheno' platform case selected.")
             self.log.warning(
                 "Please note that this platform has not yet been tested with this code."
             )
             cmd = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
+        elif run_command == 'ubc':
+            cmd = 'env -i bash -l -c conda deactivate'
         else:
-            self.log.warning("Platform not recognized. Canceling mg5 script setup.")
-            self.log.warning("(note: use name 'pheno' for the default belgian server)")
-            self.log.warning("((I didn't know the proper name, sorry))")
-            failed.append(self.error_codes.InvalidPlatformError)
+            cmd = run_command
+
+        if cmd.strip()[-1] != ';':
+            cmd += ';'
+
+        cmd += "source '{}/mg_processes/signal/madminer/run.sh'".format(self.dir)
+        
+        # self.log.warning("Platform not recognized. Canceling mg5 script setup.")
+        # self.log.warning("(note: use name 'pheno' for the default belgian server)")
+        # self.log.warning("((I didn't know the proper name, sorry))")
+        # failed.append(self.error_codes.InvalidPlatformError)
 
         if len(failed) > 0:
             return failed
