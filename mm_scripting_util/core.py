@@ -605,7 +605,7 @@ class miner(_mm_util):
             )
             cmd = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         elif mg_environment_cmd == 'ubc':
-            cmd = "exec env -i bash -l -c 'which python; source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
+            cmd = "exec env -i bash -l -c 'source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
         else:
             cmd = mg_environment_cmd
 
