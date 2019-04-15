@@ -330,7 +330,7 @@ class miner(_mm_util):
         files = os.listdir(self.card_directory)
         filenames = {}
 
-        for f in files:
+        for f in files if not os.path.isdir(f):
             shutil.copyfile(
                 src=self.card_directory + "/" + f, dst=self.dir + "/cards/" + f
             )
