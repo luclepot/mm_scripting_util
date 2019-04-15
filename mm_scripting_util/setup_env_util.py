@@ -143,8 +143,7 @@ def write_environment_setup_script(
             f.write("tar -xzvf MG5_aMC_v2*.tar.gz > mginstallout.txt")
             f.write("rm MG5_aMC_v2*.tar.gz")
             f.write("cd MG5_aMC_v2*")
-            mg5_path = glob.glob('../MG5_aMC_v2*')[0]
-            print(mg5_path)
+            mg5_path = os.path.abspath(glob.glob('../MG5_*')[0])
             with open('{}/cmds.dat'.format(mg5_path), 'w+') as fcmds:
                 fcmds.write('install pythia8\n')
                 fcmds.write('y\ny\ny\n')
