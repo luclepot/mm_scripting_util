@@ -534,7 +534,7 @@ class miner(_mm_util):
                     f.write("install {}\n".format(module))
                     f.write("\n\n\n\n\n")
                 f.write("quit")
-            os.system('env -i "$BASH" -l -c \'./{}/bin/mg5_aMC < {}/temp.dat; rm {}/temp.dat\''.format(mg_dir, mg_dir, mg_dir))
+            os.system('env -i "$BASH" -l -c \'.{}/bin/mg5_aMC < {}/temp.dat; rm {}/temp.dat\''.format(mg_dir, mg_dir, mg_dir))
             self.log.info("successfully installed modules {}".format(modules_to_install))
         else:
             self.log.info("None found.")
