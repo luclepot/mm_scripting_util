@@ -609,10 +609,13 @@ class miner(_mm_util):
         else:
             cmd = mg_environment_cmd
 
-        if cmd.strip()[-1] != ';':
-            cmd += ';'
+        if cmd.strip()[-1] == "'":
+            cmd = cmd.strip()[0:-1]
 
-        cmd += "'source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
+        if cmd.strip() == ";":
+            cmd += " ; "
+
+        cmd += " source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
        
         self.log.debug('mg env command: {}'.format(cmd))
         # self.log.warning("Platform not recognized. Canceling mg5 script setup.")
