@@ -524,7 +524,7 @@ class miner(_mm_util):
 
         self.log.debug("mg_dir set to '{}'".format(mg_dir))
 
-        required_mg5_modules = ['pythia8', 'lhapdf6', 'mg5amc_py8_interface', 'lhapdf5', 'pythia-pgs']
+        required_mg5_modules = ['pythia8', 'lhapdf6', 'mg5amc_py8_interface', 'lhapdf5']
         self.log.info("checking for installations of required mg5 modules...")
         modules_to_install = [module for module in required_mg5_modules if module.lower() not in map(lambda x: x.lower(), os.listdir('{}/HEPTools'.format(mg_dir)))]
         if len(modules_to_install) > 0: 
