@@ -120,7 +120,11 @@ class miner(_mm_util):
         self.log.log(init_loglevel, "Using card directory '{}',".format(self.card_directory))
         self.log.log(init_loglevel, "with {} files".format(len(os.listdir(self.card_directory))))
 
-    def set_loglevel(self, loglevel, module=None):
+    def set_loglevel(
+        self,
+        loglevel,
+        module=None
+    ):
 
         logging.basicConfig(
             format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
@@ -135,7 +139,9 @@ class miner(_mm_util):
 
         return loglevel
 
-    def destroy_sample(self):
+    def destroy_sample(
+        self
+    ):
         rets = [self._check_valid_init()]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
@@ -146,7 +152,12 @@ class miner(_mm_util):
 
         return [self.error_codes.Success]
 
-    def list_samples(self, verbose=False, criteria='*', include_info=False,):
+    def list_samples(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
 
         sample_list = glob.glob(
             "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, criteria)
@@ -154,13 +165,23 @@ class miner(_mm_util):
 
         return self._list_verbose_helper('augmented samples', sample_list, verbose, criteria, 'sample_name', include_info)
         
-    def list_models(self, verbose=False, criteria='*', include_info=False,):
+    def list_models(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
         
         model_list = glob.glob("{}/models/*/{}/training_model.mmconfig".format(self.dir, criteria))
 
         return self._list_verbose_helper('trained models', model_list, verbose, criteria, 'training_name', include_info)
 
-    def list_evaluations(self, verbose=False, criteria='*', include_info=False,):
+    def list_evaluations(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
 
         evaluation_list = glob.glob(
             "{}/evaluations/*/{}/evaluation.mmconfig".format(self.dir, criteria)
@@ -387,7 +408,11 @@ class miner(_mm_util):
 
         return [self.error_codes.Success]
 
-    def run_morphing(self, morphing_trials=2500, force=False):
+    def run_morphing(
+        self,
+        morphing_trials=2500,
+        force=False
+    ):
         rets = [self._check_valid_backend()]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
         if len(failed) > 0:
@@ -481,6 +506,7 @@ class miner(_mm_util):
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         else:
             initial_command = mg_environment_cmd
+            self.log.debug('mg env command: {}'.format(initial_command))
 
         # init mg_dir
         if mg_dir is not None:
@@ -542,7 +568,13 @@ class miner(_mm_util):
         self.log.debug("Successfully setup mg5 scripts. Ready for execution")
         return [self.error_codes.Success]
 
-    def run_mg5_script(self, mg_environment_cmd, samples, force=False):
+    def run_mg5_script(
+        self,
+        mg_environment_cmd,
+        samples,
+        force=False
+    ):
+
 
         rets = [
             self._check_valid_init(),
@@ -573,6 +605,7 @@ class miner(_mm_util):
             cmd = 'env -i "$BASH$ -l -c \'which python; printenv > env.txt\''
         else:
             cmd = mg_environment_cmd
+            self.log.debug('mg env command: {}'.format(cmd))
 
         if cmd.strip()[-1] != ';':
             cmd += ';'
@@ -608,7 +641,9 @@ class miner(_mm_util):
 
         return [self.error_codes.Success]
 
-    def process_mg5_data(self):
+    def process_mg5_data(
+        self
+    ):
 
         rets = [self._check_valid_mg5_run()]
 
