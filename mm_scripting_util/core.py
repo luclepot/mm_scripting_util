@@ -612,7 +612,7 @@ class miner(_mm_util):
         if cmd.strip()[-1] == "'":
             cmd = cmd.strip()[0:-1]
 
-        if cmd.strip() == ";":
+        if cmd.strip() != ";":
             cmd += " ; "
 
         cmd += " source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
