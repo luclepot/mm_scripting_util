@@ -517,18 +517,34 @@ class miner(_mm_util):
             )
             failed.append(self.error_codes.NoDirectoryError)
 
+        mg_dir = os.path.abspath(mg_dir)
+
         if len(failed) > 0:
             return failed
 
         self.log.debug("mg_dir set to '{}'".format(mg_dir))
-        # setup pythia card
+
+        required_mg5_modules = ['pythia8', 'lhapdf6', 'mg5amc_py8_interface']
+        self.log.info("checking for installations of required mg5 modules...")
+        modules_to_install = [module for module in required_mg5_modules if module.lower() not in map(lambda x: x.lower(), os.listdir('{}/HEPTools'.format(mg_dir)))]
+        if len(modules_to_install) > 0: 
+            self.log.info("installing modules {}".format(modules_to_install))
+            with open('{}/temp.dat'.format(mg_dir), 'w+') as f:
+                for module in modules_to_install:
+                    f.write("install {}\n".format(module))
+                    f.write("\n\n\n\n\n")
+                f.write("quit")
+            os.system('env -i "$BASH" -l -c \'./{}/bin/mg5_aMC < {}/temp.dat; rm {}/temp.dat\''.format(mg_dir, mg_dir, mg_dir))
+            self.log.info("successfully installed modules {}".format(modules_to_install))
+        else:
+            self.log.info("None found.")
+        # setup pythia cards 
         if use_pythia_card:
             pythia_card = self.dir + "/cards/pythia8_card.dat"
         else:
             pythia_card = None
 
-        for param in [pythia_card, mg_dir, initial_command,]:
-            self.log.debug(" - {}".format(param))
+        self.log.debug("running mg5 scripts...")
 
         self.madminer_object.run_multiple(
             sample_benchmarks=[sample_benchmark],
@@ -555,7 +571,8 @@ class miner(_mm_util):
             },
             self._main_sample_config(),
         )
-        self.log.debug("Successfully setup mg5 scripts. Ready for execution")
+        
+        self.log.debug("Successfully ran mg5 scripts.")
         return [self.error_codes.Success]
 
     def process_mg5_data(

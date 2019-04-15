@@ -141,18 +141,9 @@ def write_environment_setup_script(
             f.write("cd ..")
             f.write("wget -c {0}".format(madgraph_link))
             f.write("tar -xzvf MG5_aMC_v2*.tar.gz > mginstallout.txt")
+            f.write("rm mginstallout.txt")
             f.write("rm MG5_aMC_v2*.tar.gz")
-            f.write("cd MG5_aMC_v2*")
-            mg5_path = os.path.abspath(glob.glob('../MG5_*')[0])
-            with open('{}/cmds.dat'.format(mg5_path), 'w+') as fcmds:
-                fcmds.write('install pythia8\n')
-                fcmds.write('y\ny\ny\n')
-                fcmds.write('install mg5amc_py8_interface\n')
-                fcmds.write('y\ny\ny\n')                
-                fcmds.write('quit')
-            f.write("./bin/mg5 < cmds.dat")      
-            f.write("rm cmds.dat")      
-            f.write("cd ../mm_scripting_util")
+            f.write("cd mm_scripting_util")
 
         # build everything, automatic
         if build_modules:
