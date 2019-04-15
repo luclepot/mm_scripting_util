@@ -597,7 +597,7 @@ class miner(_mm_util):
         )
 
         if mg_environment_cmd == "lxplus7":
-            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh"
+            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh; source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
         elif mg_environment_cmd == "pheno":
             self.log.warning("'pheno' platform case selected.")
             self.log.warning(
@@ -605,17 +605,13 @@ class miner(_mm_util):
             )
             cmd = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         elif mg_environment_cmd == 'ubc':
-            cmd = "exec env -i bash -l -c 'which python; printenv"
+            cmd = "exec env -i bash -l -c 'which python; source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
         else:
             cmd = mg_environment_cmd
 
-        if cmd.strip()[-1] == "'":
-            cmd = cmd.strip()[0:-1]
+        # if cmd.strip()[-1] == "'":
+        #     cmd = cmd.strip()[0:-1]
 
-        if cmd.strip() != ";":
-            cmd += " ; "
-
-        cmd += " source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
        
         self.log.debug('mg env command: {}'.format(cmd))
         # self.log.warning("Platform not recognized. Canceling mg5 script setup.")
