@@ -124,10 +124,11 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
             ],
         'simulate' : [
             # sd['STR'](True),
-            sd['NUM'](sname='-n'),
-            sd['STR'](True, '-b', '--benchmark'),
+            sd['NUM'](int, True, '-s', '--samples'),
+            sd['STR'](True, '-b', '--sample-benchmark'),
             sd['STR'](False, '-mg', '--mg-dir'),
-            sd['STR'](False, '-e', '--env-command', default='lxplus7')
+            sd['STR'](True, '-c', '--mg-environment-cmd', _help='Enter an environment setup command; otherwise choose default options ( lxplus7 | ubc )'),
+            sd['BOOL'](name='--force'),
             ],
         'plot' : {
             'mg': [
@@ -223,6 +224,7 @@ def main():
         getattr(m, 'list_{}'.format(args.ls_type))(True, args.criteria, args.include_info)
     elif cmd=='simulate':
         args_to_pass = { var: vars(args)[var] for var in vars(args) if not var.isupper()}
+        m.simulate_data(**args_to_pass)
     elif cmd=='plot':
         args_to_pass = {var: vars(args)[var] for var in vars(args) if not var.isupper()}
         if args.PLOT_TYPE=='mg':
