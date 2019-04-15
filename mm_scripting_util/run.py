@@ -130,6 +130,7 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
             sd['STR'](True, '-ec', '--mg-environment-cmd', _help='Enter an environment setup command; otherwise choose default options ( lxplus7 | ubc )'),
             sd['STR'](True, '-rc', '--mg-run-cmd', _help='Enter an environment run command; otherwise choose default options ( lxplus7 | ubc )'),
             sd['BOOL'](name='--force'),
+            sd['NUM'](int, False, '-o', '--override-step', None)
             ],
         'plot' : {
             'mg': [
@@ -215,6 +216,7 @@ def main():
         backend=args.BACKEND,
         card_directory=args.CARD_DIRECTORY, 
         loglevel=args.LOG_LEVEL,
+        madminer_loglevel=args.MADMINER_LOG_LEVEL,
         init_loglevel=10,
         _cmd_line_origin=True
         )

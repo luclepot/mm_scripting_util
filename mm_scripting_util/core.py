@@ -77,7 +77,7 @@ class miner(_mm_util):
         self.log.log(init_loglevel, "- new miner object path at " + self.dir)
 
         self.madminer_object = madminer.core.MadMiner()
-        self.lhe_processor_object = None
+        lhe_processor_object = None
 
         self.log.log(init_loglevel, "Loading custom card directory... ")
         self.card_directory = None
@@ -558,7 +558,8 @@ class miner(_mm_util):
             pythia8_card_file=pythia_card,
             log_directory=self.dir + "/logs/signal",
             initial_command=initial_command,
-            only_prepare_script=True,
+            # only_prepare_script=True,
+            python2_override=True,
         )
 
         self._write_config(
@@ -653,6 +654,7 @@ class miner(_mm_util):
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
+            self.log.debug(failed)
             self.log.warning("Canceling mg5 data processing routine.")
             return failed
 
@@ -661,28 +663,28 @@ class miner(_mm_util):
         sample_benchmark = mg5_run_dict["sample_benchmark"]
 
         lhe_processor_object = madminer.lhe.LHEReader(
-            filename=self.dir + "/data/madminer_{}.h5".format(self.name)
+            filename='{}/data/madminer_{}.h5'.format(self.dir, self.name)
         )
         n_cards = self._number_of_cards(samples, 100000)
-        
+
         for i in range(n_cards):
             lhe_processor_object.add_sample(
-                self.dir
-                + "/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
-                    i + 1
+                "{}/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
+                    self.dir,
+                    i + 1,
                 ),
                 sampled_from_benchmark=sample_benchmark,
                 is_background=False,
             )
-
         for observable in self.params["observables"]:
+            print(self.params["observables"][observable])
             lhe_processor_object.add_observable(
-                observable, self.params["observables"][observable], required=True
+                observable, self.params["observables"][observable]
             )
 
         lhe_processor_object.analyse_samples()
         lhe_processor_object.save(
-            self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+            "{}/data/madminer_{}_with_data_parton.h5".format(self.dir, self.name)
         )
         return [self.error_codes.Success]
 
