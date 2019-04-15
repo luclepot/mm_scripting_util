@@ -664,6 +664,7 @@ class miner(_mm_util):
             filename=self.dir + "/data/madminer_{}.h5".format(self.name)
         )
         n_cards = self._number_of_cards(samples, 100000)
+        
         for i in range(n_cards):
             lhe_processor_object.add_sample(
                 self.dir

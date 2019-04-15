@@ -247,7 +247,8 @@ def main():
     else:
         raise argparse.ArgumentTypeError
 
-    return 0
+    return m
 
+m = None
 if run_main: 
-    main()
+    m = main()
