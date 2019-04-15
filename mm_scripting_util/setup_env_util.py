@@ -2,6 +2,7 @@ import os
 import sys
 import subprocess 
 import argparse
+import glob
 
 def _conda_info(
 ):
@@ -142,7 +143,8 @@ def write_environment_setup_script(
             f.write("tar -xzvf MG5_aMC_v2*.tar.gz")
             f.write("rm MG5_aMC_v2*.tar.gz")
             f.write("cd MG5_aMC_v2*")
-            with open('cmds.dat', 'w+') as fcmds:
+            mg5_path = glob.glob('../MG5_aMC_v2*')[0]
+            with open('{}/cmds.dat'.format(mg5_path), 'w+') as fcmds:
                 fcmds.write('install pythia8\n')
                 fcmds.write('y\ny\ny\n')
                 fcmds.write('install mg5amc_py8_interface\n')
