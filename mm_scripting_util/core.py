@@ -608,13 +608,13 @@ class miner(_mm_util):
             cmd = "exec env -i bash -l -c 'which python; printenv"
         else:
             cmd = mg_environment_cmd
-            self.log.debug('mg env command: {}'.format(cmd))
 
         if cmd.strip()[-1] != ';':
             cmd += ';'
 
         cmd += "'source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
        
+        self.log.debug('mg env command: {}'.format(cmd))
         # self.log.warning("Platform not recognized. Canceling mg5 script setup.")
         # self.log.warning("(note: use name 'pheno' for the default belgian server)")
         # self.log.warning("((I didn't know the proper name, sorry))")
