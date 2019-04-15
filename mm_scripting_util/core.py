@@ -490,7 +490,7 @@ class miner(_mm_util):
         elif mg_environment_cmd == "pheno":
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         elif mg_environment_cmd == "ubc":
-            initial_command = "PATH=$(getconf PATH)"
+            initial_command = "PATH=$(getconf PATH); source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh"
         else:
             initial_command = mg_environment_cmd
         
@@ -581,7 +581,7 @@ class miner(_mm_util):
 
         for i in range(n_cards):
             lhe_processor_object.add_sample(
-                "{}/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe".format(
+                "{}/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
                     self.dir,
                     i + 1,
                 ),
