@@ -788,10 +788,7 @@ class _mm_simulate_util(_mm_base_util):
         return self.error_codes.Success
 
     def _check_valid_mg5_scripts(self, samples):
-        size = self._dir_size(
-            pathname=self.dir + "/mg_processes/signal/madminer/scripts",
-            matching_pattern=".sh",
-        )
+        size = len(glob.glob('{}/mg_processes/signal/madminer/scripts/run*.sh'.format(self.dir)))
         expected = self._number_of_cards(samples=samples, sample_limit=100000)
         if size < 0:
             self.log.error(
