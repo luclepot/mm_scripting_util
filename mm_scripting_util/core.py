@@ -491,7 +491,7 @@ class miner(_mm_util):
         elif mg_environment_cmd == "pheno":
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         elif mg_environment_cmd == "ubc":
-            initial_command = "PATH=$(getconf PATH); export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase; source $ATLAS_LOCAL_ROOT_BASE/user/atlasLocalSetup.sh"
+            initial_command = "PATH=$(getconf PATH); export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase; source $ATLAS_LOCAL_ROOT_BASE/user/atlasLocalSetup.sh; lsetup root"
         else:
             initial_command = mg_environment_cmd
         
@@ -561,6 +561,7 @@ class miner(_mm_util):
             initial_command=initial_command,
             # only_prepare_script=True,
             python2_override=True,
+            is_background=False, 
         )
 
         self._write_config(
