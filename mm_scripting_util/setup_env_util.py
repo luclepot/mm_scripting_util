@@ -82,7 +82,7 @@ def write_environment_setup_script(
     creates a bash file which is run for setup. 
     """
 
-    madminer_link="https://github.com/johannbrehmer/madminer.git"
+    madminer_link="https://github.com/luclepot/madminer.git"
     anaconda_link="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh "
     madgraph_link="https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz"
 

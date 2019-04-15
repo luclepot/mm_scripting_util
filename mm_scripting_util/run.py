@@ -35,7 +35,7 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
     for backend in full_av:
         desc_str += """ - {}\n""".format(backend)
 
-    desc_str = lucs_tools.header.fmt(desc_str, side='c')
+    desc_str = lucs_tools.formatting.header.fmt(desc_str, side='c')
 
     module_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -124,10 +124,12 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
             ],
         'simulate' : [
             # sd['STR'](True),
-            sd['NUM'](sname='-n'),
-            sd['STR'](True, '-b', '--benchmark'),
+            sd['NUM'](int, True, '-s', '--samples'),
+            sd['STR'](True, '-b', '--sample-benchmark'),
             sd['STR'](False, '-mg', '--mg-dir'),
-            sd['STR'](False, '-e', '--env-command', default='lxplus7')
+            sd['STR'](True, '-e', '--mg-environment-cmd', _help='Enter an environment setup command; otherwise choose default options ( lxplus7 | ubc )'),
+            sd['BOOL'](name='--force'),
+            sd['NUM'](int, False, '-o', '--override-step', None)
             ],
         'plot' : {
             'mg': [
@@ -135,14 +137,14 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
                 sd['NUM'](int, False, '-b', '--bins', 40),
                 sd['RANGE'](False, '-r', '--ranges'),
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
-            ],
+                ],
             'aug': [
                 sd['STR'](True, '-s', '--sample-name'),
                 sd['STR'](False, '-n', '--image-save-name'),
                 sd['NUM'](int, False, '-b', '--bins', 40),
                 sd['RANGE'](False, '-r', '--ranges'),
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
-            ],
+                ],
             'comp': [
                 sd['STR'](True, '-s', '--sample-name'),
                 sd['STR'](False, '-n', '--image-save-name'),
@@ -151,17 +153,16 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
                 sd['RANGE'](False, '-r', '--ranges'),
                 sd['NUM'](float, False, '-t', '--threshold', 2.0),
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
-            ],
+                ],
             'eval': [
-                sd['STR'](True, '-e', '--eval-name'),
+                sd['STR'](True, '-e', '--evaluation-name'),
                 sd['STR'](False, '-t', '--training-name'),
                 sd['LIST'](False, '-z', '--z-contours', float),
                 sd['BOOL'](True, False, '-f', '--fill-contours')
-            ],
-
+                ],
             },
         'augment' : [
-
+            
             ],
         'train' : [
 
@@ -200,7 +201,6 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
     
     return parser
 
-
 def main():
 
     parser = write_parser()
@@ -215,6 +215,7 @@ def main():
         backend=args.BACKEND,
         card_directory=args.CARD_DIRECTORY, 
         loglevel=args.LOG_LEVEL,
+        madminer_loglevel=args.MADMINER_LOG_LEVEL,
         init_loglevel=10,
         _cmd_line_origin=True
         )
@@ -225,6 +226,7 @@ def main():
         getattr(m, 'list_{}'.format(args.ls_type))(True, args.criteria, args.include_info)
     elif cmd=='simulate':
         args_to_pass = { var: vars(args)[var] for var in vars(args) if not var.isupper()}
+        m.simulate_data(**args_to_pass)
     elif cmd=='plot':
         args_to_pass = {var: vars(args)[var] for var in vars(args) if not var.isupper()}
         if args.PLOT_TYPE=='mg':
@@ -246,7 +248,8 @@ def main():
     else:
         raise argparse.ArgumentTypeError
 
-    return 0
+    return m
 
+m = None
 if run_main: 
-    main()
+    m = main()

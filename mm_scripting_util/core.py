@@ -1,12 +1,12 @@
 from mm_scripting_util.util import * 
+from mm_scripting_util.util import _mm_util, _mm_backend_util, _mm_base_util
 
-
-class miner(mm_util):
+class miner(_mm_util):
     """
     Main container for the class. 
 
     This class should handle all necessary interfacing with
-    madminer and madgraph. Nice! 
+    madminer and madgraph. 
 
     """
 
@@ -50,9 +50,9 @@ class miner(mm_util):
 
         # initialize helper classes
 
-        mm_base_util.__init__(self, name, path)
+        _mm_base_util.__init__(self, name, path)
 
-        mm_backend_util.__init__(self)
+        _mm_backend_util.__init__(self)
 
         self.autodestruct = autodestruct
         self.log = logging.getLogger(__name__)
@@ -77,7 +77,7 @@ class miner(mm_util):
         self.log.log(init_loglevel, "- new miner object path at " + self.dir)
 
         self.madminer_object = madminer.core.MadMiner()
-        self.lhe_processor_object = None
+        lhe_processor_object = None
 
         self.log.log(init_loglevel, "Loading custom card directory... ")
         self.card_directory = None
@@ -120,7 +120,11 @@ class miner(mm_util):
         self.log.log(init_loglevel, "Using card directory '{}',".format(self.card_directory))
         self.log.log(init_loglevel, "with {} files".format(len(os.listdir(self.card_directory))))
 
-    def set_loglevel(self, loglevel, module=None):
+    def set_loglevel(
+        self,
+        loglevel,
+        module=None
+    ):
 
         logging.basicConfig(
             format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
@@ -135,7 +139,9 @@ class miner(mm_util):
 
         return loglevel
 
-    def destroy_sample(self):
+    def destroy_sample(
+        self
+    ):
         rets = [self._check_valid_init()]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
@@ -146,7 +152,12 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def list_samples(self, verbose=False, criteria='*', include_info=False,):
+    def list_samples(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
 
         sample_list = glob.glob(
             "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, criteria)
@@ -154,13 +165,23 @@ class miner(mm_util):
 
         return self._list_verbose_helper('augmented samples', sample_list, verbose, criteria, 'sample_name', include_info)
         
-    def list_models(self, verbose=False, criteria='*', include_info=False,):
+    def list_models(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
         
         model_list = glob.glob("{}/models/*/{}/training_model.mmconfig".format(self.dir, criteria))
 
         return self._list_verbose_helper('trained models', model_list, verbose, criteria, 'training_name', include_info)
 
-    def list_evaluations(self, verbose=False, criteria='*', include_info=False,):
+    def list_evaluations(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
 
         evaluation_list = glob.glob(
             "{}/evaluations/*/{}/evaluation.mmconfig".format(self.dir, criteria)
@@ -194,7 +215,7 @@ class miner(mm_util):
         force=True,
         mg_dir=None,
         use_pythia_card=False,
-        mg_environment_cmd="lxplus7",
+        mg_environment_cmd='ubc',
         morphing_trials=2500,
         override_step=None,
     ):
@@ -206,7 +227,7 @@ class miner(mm_util):
                 self.SIMULATION_STEP = override_step
             else:
                 self.SIMULATION_STEP = self._get_simulation_step(
-                    self._number_of_cards(samples, 100000), samples
+                    samples
                 )
 
             if self.SIMULATION_STEP < 1 or force:
@@ -239,9 +260,9 @@ class miner(mm_util):
 
             if self.SIMULATION_STEP < 3 or force:
                 self.log.debug("")
-                self.log.debug("RUNNING SETUP MG5 SCRIPTS, STEP 3")
+                self.log.debug("RUNNING MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
-                ret = self.setup_mg5_scripts(
+                ret = self.run_mg5_scripts(
                     samples=samples,
                     sample_benchmark=sample_benchmark,
                     force=force,
@@ -254,35 +275,20 @@ class miner(mm_util):
                     return ret
                 self.SIMULATION_STEP = 3
                 self.log.debug("")
-                self.log.debug("FINISHED SETUP MG5 SCRIPTS, STEP 3")
+                self.log.debug("FINISHED MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
 
             if self.SIMULATION_STEP < 4 or force:
                 self.log.debug("")
-                self.log.debug("RUNNING MG5 SCRIPTS, STEP 4")
-                self.log.debug("")
-                ret = self.run_mg5_script(
-                    platform=platform, samples=samples, force=force
-                )
-                if self.error_codes.Success not in ret:
-                    self.log.warning("Quitting simulation with errors.")
-                    return ret
-                self.SIMULATION_STEP = 4
-                self.log.debug("")
-                self.log.debug("FINISHED MG5 SCRIPTS, STEP 4")
-                self.log.debug("")
-
-            if self.SIMULATION_STEP < 5 or force:
-                self.log.debug("")
-                self.log.debug("RUNNING MG5 DATA PROCESS, STEP 5")
+                self.log.debug("RUNNING MG5 DATA PROCESS, STEP 4")
                 self.log.debug("")
                 ret = self.process_mg5_data()
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
-                self.SIMULATION_STEP = 5
+                self.SIMULATION_STEP = 4
                 self.log.debug("")
-                self.log.debug("FINISHED MG5 DATA PROCESS, STEP 5")
+                self.log.debug("FINISHED MG5 DATA PROCESS, STEP 4")
                 self.log.debug("")
 
         except:
@@ -325,10 +331,11 @@ class miner(mm_util):
         filenames = {}
 
         for f in files:
-            shutil.copyfile(
-                src=self.card_directory + "/" + f, dst=self.dir + "/cards/" + f
-            )
-            filenames[f] = "{}/cards/{}".format(self.card_directory, f)
+            if not os.path.isdir(f):
+                shutil.copyfile(
+                    src=self.card_directory + "/" + f, dst=self.dir + "/cards/" + f
+                )
+                filenames[f] = "{}/cards/{}".format(self.card_directory, f)
 
         self.log.info(
             "Copied {} card files from directory '{}'".format(
@@ -387,7 +394,11 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def run_morphing(self, morphing_trials=2500, force=False):
+    def run_morphing(
+        self,
+        morphing_trials=2500,
+        force=False
+    ):
         rets = [self._check_valid_backend()]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
         if len(failed) > 0:
@@ -441,7 +452,7 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def setup_mg5_scripts(
+    def run_mg5_scripts(
         self,
         samples,
         sample_benchmark,
@@ -455,7 +466,7 @@ class miner(mm_util):
 
         rets = [
             self._check_valid_init(),
-            self._check_valid_cards(len(sample_sizes)),
+            self._check_valid_cards(),
             self._check_valid_morphing(),
             self._check_valid_backend(),
         ]
@@ -479,8 +490,12 @@ class miner(mm_util):
             self.log.debug("Ran lxplus7 initial source cmd.")
         elif mg_environment_cmd == "pheno":
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
+        elif mg_environment_cmd == "ubc":
+            initial_command = "PATH=$(getconf PATH); export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase; source $ATLAS_LOCAL_ROOT_BASE/user/atlasLocalSetup.sh"
         else:
             initial_command = mg_environment_cmd
+        
+        self.log.debug('mg env command: {}'.format(initial_command))
 
         # init mg_dir
         if mg_dir is not None:
@@ -512,6 +527,9 @@ class miner(mm_util):
         else:
             pythia_card = None
 
+        for param in [pythia_card, mg_dir, initial_command,]:
+            self.log.debug(" - {}".format(param))
+
         self.madminer_object.run_multiple(
             sample_benchmarks=[sample_benchmark],
             mg_directory=mg_dir,
@@ -525,88 +543,31 @@ class miner(mm_util):
             pythia8_card_file=pythia_card,
             log_directory=self.dir + "/logs/signal",
             initial_command=initial_command,
-            only_prepare_script=True,
+            # only_prepare_script=True,
+            python2_override=True,
         )
 
         self._write_config(
             {
                 "samples": samples,
                 "sample_benchmark": sample_benchmark,
-                "run_bool": False,
+                "run_bool": True,
             },
             self._main_sample_config(),
         )
         self.log.debug("Successfully setup mg5 scripts. Ready for execution")
         return [self.error_codes.Success]
 
-    def run_mg5_script(self, platform, samples, force=False):
-
-        sample_sizes = self._equal_sample_sizes(samples=samples, sample_limit=100000)
-
-        rets = [
-            self._check_valid_init(),
-            self._check_valid_cards(len(sample_sizes)),
-            self._check_valid_morphing(),
-            self._check_valid_mg5_scripts(samples),
-            self._check_valid_backend(),
-        ]
-        failed = [ret for ret in rets if ret != self.error_codes.Success]
-
-        if len(failed) > 0:
-            self.log.warning("Canceling mg5 script run.")
-            return failed
-
-        self._check_directory(
-            local_pathname="mg_processes/signal/Events", force=force, pattern="run_"
-        )
-
-        if platform == "lxplus7":
-            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh; source {}/mg_processes/signal/madminer/run.sh'".format(
-                self.dir
-            )
-        elif platform == "pheno":
-            self.log.warning("'pheno' platform case selected.")
-            self.log.warning(
-                "Please note that this platform has not yet been tested with this code."
-            )
-            cmd = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
-        else:
-            self.log.warning("Platform not recognized. Canceling mg5 script setup.")
-            self.log.warning("(note: use name 'pheno' for the default belgian server)")
-            self.log.warning("((I didn't know the proper name, sorry))")
-            failed.append(self.error_codes.InvalidPlatformError)
-
-        if len(failed) > 0:
-            return failed
-
-        self.log.info("")
-        self.log.info("Running mg5 scripts.")
-        self.log.info("(This might take awhile - go grab a coffee.)")
-        self.log.info("")
-        self.log.info("")
-
-        os.system(cmd)
-
-        self.log.info("")
-        self.log.info("")
-        self.log.info("Finished with data simualtion.")
-        self.log.debug("Writing config dictionary and saving simulated parameters.")
-
-        # rewrite run config file with true run_bool
-        run_dict = self._load_config(self._main_sample_config())
-        run_dict["run_bool"] = True
-
-        self._write_config(run_dict, self._main_sample_config())
-
-        return [self.error_codes.Success]
-
-    def process_mg5_data(self):
+    def process_mg5_data(
+        self
+    ):
 
         rets = [self._check_valid_mg5_run()]
 
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
+            self.log.debug(failed)
             self.log.warning("Canceling mg5 data processing routine.")
             return failed
 
@@ -614,28 +575,35 @@ class miner(mm_util):
         samples = mg5_run_dict["samples"]
         sample_benchmark = mg5_run_dict["sample_benchmark"]
 
-        lhe_processor_object = madminer.lhe.LHEProcessor(
-            filename=self.dir + "/data/madminer_{}.h5".format(self.name)
+        self.lhe_processor_object = madminer.lhe.LHEReader(
+            filename='{}/data/madminer_{}.h5'.format(self.dir, self.name)
         )
+
+        # for benchmark in self.params["benchmarks"]:
+        #     self.lhe_processor_object.add_benchmark(
+        #         self.params["benchmarks"][benchmark], benchmark
+        #     )
+
         n_cards = self._number_of_cards(samples, 100000)
+
         for i in range(n_cards):
-            lhe_processor_object.add_sample(
-                self.dir
-                + "/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
-                    i + 1
+            self.lhe_processor_object.add_sample(
+                "{}/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
+                    self.dir,
+                    i + 1,
                 ),
                 sampled_from_benchmark=sample_benchmark,
                 is_background=False,
             )
-
         for observable in self.params["observables"]:
-            lhe_processor_object.add_observable(
-                observable, self.params["observables"][observable], required=True
+            print(self.params["observables"][observable])
+            self.lhe_processor_object.add_observable(
+                observable, self.params["observables"][observable]
             )
 
-        lhe_processor_object.analyse_samples()
-        lhe_processor_object.save(
-            self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        self.lhe_processor_object.analyse_samples()
+        self.lhe_processor_object.save(
+            "{}/data/madminer_{}_with_data_parton.h5".format(self.dir, self.name)
         )
         return [self.error_codes.Success]
 
@@ -890,14 +858,13 @@ class miner(mm_util):
         else:
             aug_dir = self.dir + "/data/samples/{}".format(sample_name)
             config_file = self._augmentation_config(sample_name)
-
         # train the ratio
-
-        sample_augmenter.extract_samples_train_ratio(
-            theta0=madminer.sampling.random_morphing_thetas(
+        sample_augmenter.sample_train_ratio(
+            theta0=madminer.sampling.random_morphing_points(
                 n_thetas=n_theta_samples, priors=priors
             ),
-            theta1=madminer.sampling.constant_benchmark_theta(augmentation_benchmark),
+
+            theta1=madminer.sampling.benchmark(augmentation_benchmark),
             n_samples=samples,
             folder=aug_dir,
             filename="augmented_sample_ratio",
@@ -905,12 +872,12 @@ class miner(mm_util):
 
         # extract samples at each benchmark
         for benchmark in sample_augmenter.benchmarks:
-            sample_augmenter.extract_samples_test(
-                theta=madminer.sampling.constant_benchmark_theta(benchmark),
+            sample_augmenter.sample_test(
+                theta=madminer.sampling.benchmark(benchmark),
                 n_samples=samples,
                 folder=aug_dir,
                 filename="augmented_samples_{}".format(benchmark),
-            )
+            )   
 
         # save augmentation config file
         self._write_config(
@@ -1271,7 +1238,8 @@ class miner(mm_util):
         # load madminer H5 file??
         # self.madminer_object.load()
 
-        forge = madminer.ml.MLForge()
+        forge = madminer.ml.Estimator()
+
         forge.train(
             method=training_method,
             theta0_filename="{}/data/samples/{}/theta0_augmented_sample_ratio.npy".format(
@@ -1405,7 +1373,7 @@ class miner(mm_util):
         for spec in sample_params:
             self.log.debug(" - {}: {}".format(spec, sample_params[spec]))
 
-        forge = madminer.ml.MLForge()
+        forge = madminer.ml.Estimator()
         sample_augmenter = madminer.sampling.SampleAugmenter(
             filename=self.dir
             + "/data/madminer_{}_with_data_parton.h5".format(self.name)

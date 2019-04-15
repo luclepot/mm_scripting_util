@@ -33,7 +33,7 @@ except ImportError:
     TORCH_IMPORT_ERROR = traceback.format_exc()
     HAS_TORCH = False
 
-class mm_base_util:
+class _mm_base_util:
 
     """
     base functions and variables used in most other functions. 
@@ -501,7 +501,7 @@ class mm_base_util:
         return files
  
 
-class mm_backend_util(mm_base_util):
+class _mm_backend_util(_mm_base_util):
 
     _CONTAINS_BACKEND_UTIL = True
 
@@ -718,7 +718,7 @@ class mm_backend_util(mm_base_util):
         return self.error_codes.Success
 
 
-class mm_simulate_util(mm_base_util):
+class _mm_simulate_util(_mm_base_util):
     """
     Container class for simulation-related util functions.
     Seperation from other functions is purely for cleanliness
@@ -741,10 +741,10 @@ class mm_simulate_util(mm_base_util):
             return size + 1
         return size
 
-    def _get_simulation_step(self, num_cards, samples):
+    def _get_simulation_step(self, samples):
         step = 0
         blist = [
-            self._check_valid_cards(num_cards),
+            self._check_valid_cards(),
             self._check_valid_morphing(),
             self._check_valid_mg5_scripts(samples),
             self._check_valid_mg5_run(),
@@ -755,7 +755,7 @@ class mm_simulate_util(mm_base_util):
 
         return step
 
-    def _check_valid_cards(self, num_cards):
+    def _check_valid_cards(self):
         """Description:
             Helper function to check validity of cards. 
 
@@ -767,13 +767,9 @@ class mm_simulate_util(mm_base_util):
             bool. number of cards in directory, or -1 if card dir does not exist.
         """
         cards = self._dir_size(pathname=self.dir + "/cards", matching_pattern="card")
-        if cards < 0:
+        if cards <= 0:
             self.log.error("No valid cards directory in " + self.dir)
             return self.error_codes.NoCardError
-        if cards != num_cards + 6:
-            self.log.error("Incorrect number of cards in directory " + self.dir)
-            self.log.error("expected {}, got {}".format(num_cards + 6, cards))
-            return self.error_codes.IncorrectCardNumberError
         return self.error_codes.Success
 
     def _check_valid_morphing(self):
@@ -792,10 +788,7 @@ class mm_simulate_util(mm_base_util):
         return self.error_codes.Success
 
     def _check_valid_mg5_scripts(self, samples):
-        size = self._dir_size(
-            pathname=self.dir + "/mg_processes/signal/madminer/scripts",
-            matching_pattern=".sh",
-        )
+        size = len(glob.glob('{}/mg_processes/signal/madminer/scripts/run*.sh'.format(self.dir)))
         expected = self._number_of_cards(samples=samples, sample_limit=100000)
         if size < 0:
             self.log.error(
@@ -853,7 +846,7 @@ class mm_simulate_util(mm_base_util):
         return self.error_codes.Success
 
 
-class mm_train_util(mm_base_util):
+class _mm_train_util(_mm_base_util):
 
     _CONTAINS_TRAINING_UTIL = True
 
@@ -927,7 +920,7 @@ class mm_train_util(mm_base_util):
 
         rets = [
             self._check_valid_augmented_data(sample_name=sample_name),
-            mm_simulate_util._check_valid_mg5_process(self),
+            _mm_simulate_util._check_valid_mg5_process(self),
         ]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
@@ -1261,7 +1254,7 @@ class mm_train_util(mm_base_util):
         )
 
 
-class mm_util(mm_backend_util, mm_simulate_util, mm_train_util, mm_base_util):
+class _mm_util(_mm_backend_util, _mm_simulate_util, _mm_train_util, _mm_base_util):
 
     """
     Wrapper class for all tth utility related classes. 
