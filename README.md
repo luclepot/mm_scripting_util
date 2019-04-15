@@ -5,7 +5,27 @@ Provides a python object in `mm_scripting_util.core.miner` with
   - quick addition/substitution of arbitrarily complex processes
   - setup and runtime wrappers for madminer and madgraph on various (frequently-used) servers
   - storage of multiple samples, augmented datasets, training models, and evaluation datasets within a single directory
+
 TODO:
   - implement/fix current command line interface for python object
   - provide examples of madminer processes wrapped with this class
   
+### General Usage
+```
+import mm_scripting_util as mm
+
+tth_miner = mm.core.miner(
+    name="unnamed",
+    backend="tth.dat"
+  )
+  
+tth_miner.simulate(
+    samples=100000,
+    benchmark='w',
+    augmented_samples=10000,
+    augmentation_benchmark='w'
+  )
+
+## etc, many more functions to add 
+
+```
