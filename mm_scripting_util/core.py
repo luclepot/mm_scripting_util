@@ -504,6 +504,8 @@ class miner(_mm_util):
             self.log.debug("Ran lxplus7 initial source cmd.")
         elif mg_environment_cmd == "pheno":
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
+        elif mg_environment_cmd == "ubc":
+            initial_command = ""
         else:
             initial_command = mg_environment_cmd
             self.log.debug('mg env command: {}'.format(initial_command))
@@ -575,7 +577,6 @@ class miner(_mm_util):
         force=False
     ):
 
-
         rets = [
             self._check_valid_init(),
             self._check_valid_cards(),
@@ -594,7 +595,7 @@ class miner(_mm_util):
         )
 
         if mg_environment_cmd == "lxplus7":
-            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh"
+            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh; source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
         elif mg_environment_cmd == "pheno":
             self.log.warning("'pheno' platform case selected.")
             self.log.warning(
@@ -602,7 +603,7 @@ class miner(_mm_util):
             )
             cmd = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         elif mg_environment_cmd == 'ubc':
-            cmd = 'env -i "$BASH$ -l -c \'which python; printenv > env.txt\''
+            cmd = 'env -i "$BASH$" -l -c \'which python; printenv > env.txt; source {}/mg_processes/signal/madminer/run.sh\''.format(self.dir)
         else:
             cmd = mg_environment_cmd
             self.log.debug('mg env command: {}'.format(cmd))
@@ -610,7 +611,6 @@ class miner(_mm_util):
         if cmd.strip()[-1] != ';':
             cmd += ';'
 
-        cmd += "source '{}/mg_processes/signal/madminer/run.sh'".format(self.dir)
        
         # self.log.warning("Platform not recognized. Canceling mg5 script setup.")
         # self.log.warning("(note: use name 'pheno' for the default belgian server)")
