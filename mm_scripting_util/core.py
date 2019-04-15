@@ -491,7 +491,7 @@ class miner(_mm_util):
         elif mg_environment_cmd == "pheno":
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         elif mg_environment_cmd == "ubc":
-            initial_command = "PATH=$(getconf PATH); source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh"
+            initial_command = "PATH=$(getconf PATH); export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase; source $ATLAS_LOCAL_ROOT_BASE/user/atlasLocalSetup.sh"
         else:
             initial_command = mg_environment_cmd
         
@@ -575,13 +575,19 @@ class miner(_mm_util):
         samples = mg5_run_dict["samples"]
         sample_benchmark = mg5_run_dict["sample_benchmark"]
 
-        lhe_processor_object = madminer.lhe.LHEReader(
+        self.lhe_processor_object = madminer.lhe.LHEReader(
             filename='{}/data/madminer_{}.h5'.format(self.dir, self.name)
         )
+
+        # for benchmark in self.params["benchmarks"]:
+        #     self.lhe_processor_object.add_benchmark(
+        #         self.params["benchmarks"][benchmark], benchmark
+        #     )
+
         n_cards = self._number_of_cards(samples, 100000)
 
         for i in range(n_cards):
-            lhe_processor_object.add_sample(
+            self.lhe_processor_object.add_sample(
                 "{}/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
                     self.dir,
                     i + 1,
@@ -591,12 +597,12 @@ class miner(_mm_util):
             )
         for observable in self.params["observables"]:
             print(self.params["observables"][observable])
-            lhe_processor_object.add_observable(
+            self.lhe_processor_object.add_observable(
                 observable, self.params["observables"][observable]
             )
 
-        lhe_processor_object.analyse_samples()
-        lhe_processor_object.save(
+        self.lhe_processor_object.analyse_samples()
+        self.lhe_processor_object.save(
             "{}/data/madminer_{}_with_data_parton.h5".format(self.dir, self.name)
         )
         return [self.error_codes.Success]
