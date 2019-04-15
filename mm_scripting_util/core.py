@@ -509,7 +509,8 @@ class miner(_mm_util):
             initial_command = ""
         else:
             initial_command = mg_environment_cmd
-            self.log.debug('mg env command: {}'.format(initial_command))
+        
+        self.log.debug('mg env command: {}'.format(initial_command))
 
         # init mg_dir
         if mg_dir is not None:
