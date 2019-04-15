@@ -127,8 +127,7 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
             sd['NUM'](int, True, '-s', '--samples'),
             sd['STR'](True, '-b', '--sample-benchmark'),
             sd['STR'](False, '-mg', '--mg-dir'),
-            sd['STR'](True, '-ec', '--mg-environment-cmd', _help='Enter an environment setup command; otherwise choose default options ( lxplus7 | ubc )'),
-            sd['STR'](True, '-rc', '--mg-run-cmd', _help='Enter an environment run command; otherwise choose default options ( lxplus7 | ubc )'),
+            sd['STR'](True, '-e', '--mg-environment-cmd', _help='Enter an environment setup command; otherwise choose default options ( lxplus7 | ubc )'),
             sd['BOOL'](name='--force'),
             sd['NUM'](int, False, '-o', '--override-step', None)
             ],

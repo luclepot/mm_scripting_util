@@ -216,7 +216,6 @@ class miner(_mm_util):
         mg_dir=None,
         use_pythia_card=False,
         mg_environment_cmd='ubc',
-        mg_run_cmd='ubc',
         morphing_trials=2500,
         override_step=None,
     ):
@@ -261,7 +260,7 @@ class miner(_mm_util):
 
             if self.SIMULATION_STEP < 3 or force:
                 self.log.debug("")
-                self.log.debug("RUNNING SETUP MG5 SCRIPTS, STEP 3")
+                self.log.debug("RUNNING MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
                 ret = self.setup_mg5_scripts(
                     samples=samples,
@@ -276,35 +275,20 @@ class miner(_mm_util):
                     return ret
                 self.SIMULATION_STEP = 3
                 self.log.debug("")
-                self.log.debug("FINISHED SETUP MG5 SCRIPTS, STEP 3")
+                self.log.debug("FINISHED MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
 
             if self.SIMULATION_STEP < 4 or force:
                 self.log.debug("")
-                self.log.debug("RUNNING MG5 SCRIPTS, STEP 4")
-                self.log.debug("")
-                ret = self.run_mg5_script(
-                    mg_environment_cmd=mg_run_cmd, samples=samples, force=force
-                )
-                if self.error_codes.Success not in ret:
-                    self.log.warning("Quitting simulation with errors.")
-                    return ret
-                self.SIMULATION_STEP = 4
-                self.log.debug("")
-                self.log.debug("FINISHED MG5 SCRIPTS, STEP 4")
-                self.log.debug("")
-
-            if self.SIMULATION_STEP < 5 or force:
-                self.log.debug("")
-                self.log.debug("RUNNING MG5 DATA PROCESS, STEP 5")
+                self.log.debug("RUNNING MG5 DATA PROCESS, STEP 4")
                 self.log.debug("")
                 ret = self.process_mg5_data()
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
-                self.SIMULATION_STEP = 5
+                self.SIMULATION_STEP = 4
                 self.log.debug("")
-                self.log.debug("FINISHED MG5 DATA PROCESS, STEP 5")
+                self.log.debug("FINISHED MG5 DATA PROCESS, STEP 4")
                 self.log.debug("")
 
         except:
@@ -467,7 +451,7 @@ class miner(_mm_util):
 
         return [self.error_codes.Success]
 
-    def setup_mg5_scripts(
+    def run_mg5_scripts(
         self,
         samples,
         sample_benchmark,
@@ -566,84 +550,13 @@ class miner(_mm_util):
             {
                 "samples": samples,
                 "sample_benchmark": sample_benchmark,
-                "run_bool": False,
+                "run_bool": True,
             },
             self._main_sample_config(),
         )
         self.log.debug("Successfully setup mg5 scripts. Ready for execution")
         return [self.error_codes.Success]
 
-    def run_mg5_script(
-        self,
-        mg_environment_cmd,
-        samples,
-        force=False
-    ):
-
-        rets = [
-            self._check_valid_init(),
-            self._check_valid_cards(),
-            self._check_valid_morphing(),
-            self._check_valid_mg5_scripts(samples),
-            self._check_valid_backend(),
-        ]
-        failed = [ret for ret in rets if ret != self.error_codes.Success]
-
-        if len(failed) > 0:
-            self.log.warning("Canceling mg5 script run.")
-            return failed
-
-        self._check_directory(
-            local_pathname="mg_processes/signal/Events", force=force, pattern="run_"
-        )
-
-        if mg_environment_cmd == "lxplus7":
-            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh; source {}/mg_processes/signal/madminer/run.sh'".format(self.dir)
-        elif mg_environment_cmd == "pheno":
-            self.log.warning("'pheno' platform case selected.")
-            self.log.warning(
-                "Please note that this platform has not yet been tested with this code."
-            )
-            cmd = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
-        elif mg_environment_cmd == 'ubc':
-
-            cmd = "PATH=$(getconf PATH); source {}/mg_processes/signal/madminer/run.sh".format(self.name)
-        else:
-            cmd = mg_environment_cmd
-
-        # if cmd.strip()[-1] == "'":
-        #     cmd = cmd.strip()[0:-1]
-
-       
-        self.log.debug('mg env command: {}'.format(cmd))
-        # self.log.warning("Platform not recognized. Canceling mg5 script setup.")
-        # self.log.warning("(note: use name 'pheno' for the default belgian server)")
-        # self.log.warning("((I didn't know the proper name, sorry))")
-        # failed.append(self.error_codes.InvalidPlatformError)
-
-        if len(failed) > 0:
-            return failed
-
-        self.log.info("")
-        self.log.info("Running mg5 scripts.")
-        self.log.info("(This might take awhile - go grab a coffee.)")
-        self.log.info("")
-        self.log.info("")
-
-        os.system(cmd)
-
-        self.log.info("")
-        self.log.info("")
-        self.log.info("Finished with data simualtion.")
-        self.log.debug("Writing config dictionary and saving simulated parameters.")
-
-        # rewrite run config file with true run_bool
-        run_dict = self._load_config(self._main_sample_config())
-        run_dict["run_bool"] = True
-
-        self._write_config(run_dict, self._main_sample_config())
-
-        return [self.error_codes.Success]
 
     def process_mg5_data(
         self
