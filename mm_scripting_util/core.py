@@ -262,7 +262,7 @@ class miner(_mm_util):
                 self.log.debug("")
                 self.log.debug("RUNNING MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
-                ret = self.setup_mg5_scripts(
+                ret = self.run_mg5_scripts(
                     samples=samples,
                     sample_benchmark=sample_benchmark,
                     force=force,
