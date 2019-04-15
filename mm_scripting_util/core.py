@@ -215,7 +215,8 @@ class miner(_mm_util):
         force=True,
         mg_dir=None,
         use_pythia_card=False,
-        mg_environment_cmd="lxplus7",
+        mg_environment_cmd='ubc',
+        mg_run_cmd='ubc',
         morphing_trials=2500,
         override_step=None,
     ):
@@ -283,7 +284,7 @@ class miner(_mm_util):
                 self.log.debug("RUNNING MG5 SCRIPTS, STEP 4")
                 self.log.debug("")
                 ret = self.run_mg5_script(
-                    mg_environment_cmd=mg_environment_cmd, samples=samples, force=force
+                    mg_environment_cmd=mg_run_cmd, samples=samples, force=force
                 )
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
