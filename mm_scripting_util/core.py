@@ -557,7 +557,6 @@ class miner(_mm_util):
         self.log.debug("Successfully setup mg5 scripts. Ready for execution")
         return [self.error_codes.Success]
 
-
     def process_mg5_data(
         self
     ):
@@ -582,7 +581,7 @@ class miner(_mm_util):
 
         for i in range(n_cards):
             lhe_processor_object.add_sample(
-                "{}/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
+                "{}/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe".format(
                     self.dir,
                     i + 1,
                 ),
