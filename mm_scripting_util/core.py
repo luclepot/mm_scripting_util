@@ -506,7 +506,7 @@ class miner(_mm_util):
         elif mg_environment_cmd == "pheno":
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         elif mg_environment_cmd == "ubc":
-            initial_command = "exec env -i bash -l -c 'echo \"running mg env setup\"'"
+            initial_command = "exec env -i bash -l" #-c 'echo \"running mg env setup\"'"
         else:
             initial_command = mg_environment_cmd
         
