@@ -936,14 +936,13 @@ class miner(_mm_util):
         else:
             aug_dir = self.dir + "/data/samples/{}".format(sample_name)
             config_file = self._augmentation_config(sample_name)
-
         # train the ratio
-
-        sample_augmenter.extract_samples_train_ratio(
-            theta0=madminer.sampling.random_morphing_thetas(
+        sample_augmenter.sample_train_ratio(
+            theta0=madminer.sampling.random_morphing_points(
                 n_thetas=n_theta_samples, priors=priors
             ),
-            theta1=madminer.sampling.constant_benchmark_theta(augmentation_benchmark),
+
+            theta1=madminer.sampling.benchmark(augmentation_benchmark),
             n_samples=samples,
             folder=aug_dir,
             filename="augmented_sample_ratio",
@@ -951,12 +950,12 @@ class miner(_mm_util):
 
         # extract samples at each benchmark
         for benchmark in sample_augmenter.benchmarks:
-            sample_augmenter.extract_samples_test(
-                theta=madminer.sampling.constant_benchmark_theta(benchmark),
+            sample_augmenter.sample_test(
+                theta=madminer.sampling.benchmark(benchmark),
                 n_samples=samples,
                 folder=aug_dir,
                 filename="augmented_samples_{}".format(benchmark),
-            )
+            )   
 
         # save augmentation config file
         self._write_config(
@@ -1317,7 +1316,8 @@ class miner(_mm_util):
         # load madminer H5 file??
         # self.madminer_object.load()
 
-        forge = madminer.ml.MLForge()
+        forge = madminer.ml.Estimator()
+
         forge.train(
             method=training_method,
             theta0_filename="{}/data/samples/{}/theta0_augmented_sample_ratio.npy".format(
@@ -1451,7 +1451,7 @@ class miner(_mm_util):
         for spec in sample_params:
             self.log.debug(" - {}: {}".format(spec, sample_params[spec]))
 
-        forge = madminer.ml.MLForge()
+        forge = madminer.ml.Estimator()
         sample_augmenter = madminer.sampling.SampleAugmenter(
             filename=self.dir
             + "/data/madminer_{}_with_data_parton.h5".format(self.name)
