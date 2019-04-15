@@ -606,7 +606,7 @@ class miner(_mm_util):
             cmd = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
         elif mg_environment_cmd == 'ubc':
 
-            cmd = "PATH=$(getconf PATH); source {}/mg_processes/signal/madminer/run.sh".format(self.dir)
+            cmd = "PATH=$(getconf PATH); source {}/mg_processes/signal/madminer/run.sh".format(self.name)
         else:
             cmd = mg_environment_cmd
 
@@ -660,7 +660,7 @@ class miner(_mm_util):
         samples = mg5_run_dict["samples"]
         sample_benchmark = mg5_run_dict["sample_benchmark"]
 
-        lhe_processor_object = madminer.lhe.LHEProcessor(
+        lhe_processor_object = madminer.lhe.LHEReader(
             filename=self.dir + "/data/madminer_{}.h5".format(self.name)
         )
         n_cards = self._number_of_cards(samples, 100000)
