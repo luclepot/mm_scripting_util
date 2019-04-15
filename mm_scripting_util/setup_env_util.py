@@ -140,7 +140,7 @@ def write_environment_setup_script(
             f.write("echo 'attempting to install madgraph'")
             f.write("cd ..")
             f.write("wget -c {0}".format(madgraph_link))
-            f.write("tar -xzvf MG5_aMC_v2*.tar.gz")
+            f.write("tar -xzvf MG5_aMC_v2*.tar.gz > mginstallout.txt")
             f.write("rm MG5_aMC_v2*.tar.gz")
             f.write("cd MG5_aMC_v2*")
             mg5_path = glob.glob('../MG5_aMC_v2*')[0]
