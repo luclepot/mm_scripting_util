@@ -566,7 +566,7 @@ class miner(_mm_util):
         )
 
         # run in a clean environment
-        os.system('env -i bash -l -c \'./{}/mg_processes/signal/madminer/run.sh\''.format(self.dir))
+        os.system('env -i bash -l -c \'source {}/mg_processes/signal/madminer/run.sh\''.format(self.dir))
 
         self._write_config(
             {
