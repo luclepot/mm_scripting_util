@@ -562,7 +562,10 @@ class miner(_mm_util):
             # only_prepare_script=True,
             python2_override=True,
             is_background=False, 
+            only_prepare_script=True,
         )
+
+        
 
         self._write_config(
             {
