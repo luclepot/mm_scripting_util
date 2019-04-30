@@ -592,7 +592,7 @@ class miner(_mm_util):
             },
             self._main_sample_config(),
         )
-
+        
         self.log.debug("Successfully ran mg5 scripts.")
         return [self.error_codes.Success]
 
