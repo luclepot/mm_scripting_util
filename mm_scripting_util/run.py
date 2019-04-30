@@ -197,7 +197,8 @@ def write_parser(
             sd['STR'](False,'-af','--activation-function', default='relu'),
             sd['STR'](False,'-t', '--trainer', default='adam'),
             sd['NUM'](float, False,'-ilr', '--initial-learning-rate', default=0.001),
-            sd['NUM'](float, False,'-flr', '--final-learning-rate', default=0.001)
+            sd['NUM'](float, False,'-flr', '--final-learning-rate', default=0.001),
+            sd['BOOL'](True, False, name='--force')
             ],
         'evaluate' : [
 

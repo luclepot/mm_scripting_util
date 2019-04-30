@@ -1263,10 +1263,13 @@ class miner(_mm_util):
             self.log.warning("There are trained models with this name!")
             for fname in existing_files:
                 self.log.warning(" - {}".format(fname))
-            self.log.warning(
-                "Rerun function with a different name, or delete previously trained models."
-            )
-            return self.error_codes.ExistingModelError
+
+            if not force:
+                self.log.warning(
+                    "Rerun function with a different name, or delete previously trained models."
+                )
+                return self.error_codes.ExistingModelError
+            self.log.warning('Force flag triggered; overwriting previous model.')
 
         # load madminer H5 file??
         # self.madminer_object.load()
