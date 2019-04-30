@@ -1233,6 +1233,7 @@ class miner(_mm_util):
         trainer="adam",
         initial_learning_rate=0.001,
         final_learning_rate=0.0001,
+        verbose=True
     ):
 
         known_training_methods = ["alices", "alice"]
@@ -1269,32 +1270,34 @@ class miner(_mm_util):
         # load madminer H5 file??
         # self.madminer_object.load()
 
-        forge = madminer.ml.Estimator()
+        forge = madminer.ml.ParameterizedRatioEstimator(
+            n_hidden=node_architecture,
+            activation=activation_function,
+            )
 
         forge.train(
             method=training_method,
-            theta0_filename="{}/data/samples/{}/theta0_augmented_sample_ratio.npy".format(
+            theta="{}/data/samples/{}/theta0_augmented_sample_ratio.npy".format(
                 self.dir, sample_name
             ),
-            x_filename="{}/data/samples/{}/x_augmented_sample_ratio.npy".format(
+            x="{}/data/samples/{}/x_augmented_sample_ratio.npy".format(
                 self.dir, sample_name
             ),
-            y_filename="{}/data/samples/{}/y_augmented_sample_ratio.npy".format(
+            y="{}/data/samples/{}/y_augmented_sample_ratio.npy".format(
                 self.dir, sample_name
             ),
-            r_xz_filename="{}/data/samples/{}/r_xz_augmented_sample_ratio.npy".format(
+            r_xz="{}/data/samples/{}/r_xz_augmented_sample_ratio.npy".format(
                 self.dir, sample_name
             ),
-            t_xz0_filename="{}/data/samples/{}/t_xz_augmented_sample_ratio.npy".format(
+            t_xz="{}/data/samples/{}/t_xz_augmented_sample_ratio.npy".format(
                 self.dir, sample_name
             ),
-            n_hidden=node_architecture,
-            activation=activation_function,
             n_epochs=n_epochs,
             batch_size=batch_size,
             optimizer=trainer,
             initial_lr=initial_learning_rate,
             final_lr=final_learning_rate,
+            verbose="all" if verbose else "some"
         )
 
         # size = self._dir_size(

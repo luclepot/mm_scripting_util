@@ -36,12 +36,17 @@ def rng(s):
         _min, _max = map(float, s.split(','))
         return _min, _max
     except: 
-        raise argparse.ArgumentTypeError
+        raise argparse.ArgumentTypeError(s)
+
+def tup(s, t):
+    try:
+        return tuple(map(t, s.split(',')))
+    except:
+        raise argparse.ArgumentTypeError(s)
 
 def write_parser(
     desc_str
 ):
-
     desc_str = lucs_tools.formatting.header.fmt(desc_str, side='c')
 
     module_directory = os.path.dirname(os.path.abspath(__file__))
@@ -111,6 +116,17 @@ def write_parser(
                     'nargs': '+'
                 }
             ],
+        'TUPLE' : lambda type_, req=True, sname='-t', name='--tuple', default=(None,), _help=None: [
+                (sname, name), {
+                    'action': 'store',
+                    'dest': name.strip('-').replace('-', '_'),
+                    'type': lambda s: tuple(s, type_),
+                    'required': req,
+                    'default': default,
+                    'help': _help,
+                    'nargs': '*'
+                }
+        ]
     }
 
     global_options = [
@@ -174,7 +190,15 @@ def write_parser(
             sd['BOOL'](True, False, name='--force')
             ],
         'train' : [
-
+            sd['STR'](True, '-s', '--sample-name'),
+            sd['STR'](True, '-n', '--training-name'),
+            sd['TUPLE'](int, False, '-na','--node-architecture', default=(100,100,100)),
+            sd['NUM'](int, False, '-e', '--n-epochs', default=30),
+            sd['NUM'](int, False, '-bs','--batch-size', default=128),
+            sd['STR'](False,'-af','--activation-function', default='relu'),
+            sd['STR'](False,'-t', '--trainer', default='adam'),
+            sd['NUM'](float, False,'-ilr', '--initial-learning-rate', default=0.001),
+            sd['NUM'](float, False,'-flr', '--final-learning-rate', default=0.001)
             ],
         'evaluate' : [
 
@@ -262,7 +286,7 @@ def main():
     elif cmd=='augment':
         m.augment_samples(**args_to_pass)
     elif cmd=='train':
-        pass
+        m.train_method(**args_to_pass)
     elif cmd=='evaluate':
         pass
     else:
