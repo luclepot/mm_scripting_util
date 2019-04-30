@@ -33,7 +33,7 @@ except ImportError:
     TORCH_IMPORT_ERROR = traceback.format_exc()
     HAS_TORCH = False
 
-class mm_base_util:
+class _mm_base_util:
 
     """
     base functions and variables used in most other functions. 
@@ -92,6 +92,7 @@ class mm_base_util:
         ExistingEvaluationError = 26
         NoEvaluatedModelError = 27
         TorchImportError = 28
+        ExistingAugmentedDataFileError = 29
 
     def __init__(self, name, path):
         self.HAS_TORCH = HAS_TORCH
@@ -437,12 +438,14 @@ class mm_base_util:
 
         return wrapper
 
-    def _write_config(self, dict_to_write, file_to_write):
+    @staticmethod
+    def _write_config(dict_to_write, file_to_write):
         with open(file_to_write, "w+") as config_file:
             json.dump(dict_to_write, fp=config_file)
             # config_file.write("{}\n".format(dict_to_write))
 
-    def _load_config(self, file_to_load):
+    @staticmethod
+    def _load_config(file_to_load):
         with open(file_to_load, "r") as config_file:
             # retdict = eval(config_file.readline().strip('\n'))
             retdict = json.load(config_file)
@@ -501,7 +504,7 @@ class mm_base_util:
         return files
  
 
-class mm_backend_util(mm_base_util):
+class _mm_backend_util(_mm_base_util):
 
     _CONTAINS_BACKEND_UTIL = True
 
@@ -718,7 +721,7 @@ class mm_backend_util(mm_base_util):
         return self.error_codes.Success
 
 
-class mm_simulate_util(mm_base_util):
+class _mm_simulate_util(_mm_base_util):
     """
     Container class for simulation-related util functions.
     Seperation from other functions is purely for cleanliness
@@ -741,10 +744,10 @@ class mm_simulate_util(mm_base_util):
             return size + 1
         return size
 
-    def _get_simulation_step(self, num_cards, samples):
+    def _get_simulation_step(self, samples):
         step = 0
         blist = [
-            self._check_valid_cards(num_cards),
+            self._check_valid_cards(),
             self._check_valid_morphing(),
             self._check_valid_mg5_scripts(samples),
             self._check_valid_mg5_run(),
@@ -755,7 +758,7 @@ class mm_simulate_util(mm_base_util):
 
         return step
 
-    def _check_valid_cards(self, num_cards):
+    def _check_valid_cards(self):
         """Description:
             Helper function to check validity of cards. 
 
@@ -767,13 +770,9 @@ class mm_simulate_util(mm_base_util):
             bool. number of cards in directory, or -1 if card dir does not exist.
         """
         cards = self._dir_size(pathname=self.dir + "/cards", matching_pattern="card")
-        if cards < 0:
+        if cards <= 0:
             self.log.error("No valid cards directory in " + self.dir)
             return self.error_codes.NoCardError
-        if cards != num_cards + 6:
-            self.log.error("Incorrect number of cards in directory " + self.dir)
-            self.log.error("expected {}, got {}".format(num_cards + 6, cards))
-            return self.error_codes.IncorrectCardNumberError
         return self.error_codes.Success
 
     def _check_valid_morphing(self):
@@ -792,10 +791,7 @@ class mm_simulate_util(mm_base_util):
         return self.error_codes.Success
 
     def _check_valid_mg5_scripts(self, samples):
-        size = self._dir_size(
-            pathname=self.dir + "/mg_processes/signal/madminer/scripts",
-            matching_pattern=".sh",
-        )
+        size = len(glob.glob('{}/mg_processes/signal/madminer/scripts/run*.sh'.format(self.dir)))
         expected = self._number_of_cards(samples=samples, sample_limit=100000)
         if size < 0:
             self.log.error(
@@ -813,10 +809,16 @@ class mm_simulate_util(mm_base_util):
 
     def _check_valid_mg5_run(self):
 
+        size = self._dir_size(
+            pathname=self.dir + "/mg_processes/signal/Events", matching_pattern="run_"
+        )        
+
         try:
             mg5_run_dict = self._load_config(self._main_sample_config())
         except FileNotFoundError:
-            return self.error_codes.NoDataFileError
+            if size < 1: return self.error_codes.NoDataFileError
+            mg5_run_dict = {'samples': 100000*size, 'run_bool': True}
+            self._write_config(mg5_run_dict, self._main_sample_config())
 
         samples = mg5_run_dict["samples"]
 
@@ -824,24 +826,20 @@ class mm_simulate_util(mm_base_util):
         size = self._dir_size(
             pathname=self.dir + "/mg_processes/signal/Events", matching_pattern="run_"
         )
-        if size < 0:
+        if size < 1:
             self.log.error("mg_processes/signal/Events directory does not exist!")
             self.log.error("mg5 run not completed (or detected)")
-            return self.error_codes.NoDataFileError
-        if size != expected:
-            self.log.error(
-                "Found {}/{} expected mg5 data files. Incorrect mg5 setup.".format(
-                    size, expected
-                )
-            )
-            return self.error_codes.IncorrectDataFileNumberError
+            
+        elif size != expected:
+            mg5_run_dict['samples'] = size
+            self._write_config(mg5_run_dict, self._main_sample_config())
+
         return self.error_codes.Success
 
     def _check_valid_mg5_process(self):
-        size = self._dir_size(
-            self.dir + "/data",
-            matching_pattern="madminer_{}_with_data_parton.h5".format(self.name),
-        )
+        filepath = "{}/data/madminer_{}_with_data_parton.h5".format(self.dir, self.name)
+        files = glob.glob(filepath)
+        size = len(files)
         if size < 0:
             self.log.error("/data/ directory does not exist")
             self.log.error("processed mg5 run not completed (or detected)")
@@ -853,7 +851,7 @@ class mm_simulate_util(mm_base_util):
         return self.error_codes.Success
 
 
-class mm_train_util(mm_base_util):
+class _mm_train_util(_mm_base_util):
 
     _CONTAINS_TRAINING_UTIL = True
 
@@ -927,7 +925,7 @@ class mm_train_util(mm_base_util):
 
         rets = [
             self._check_valid_augmented_data(sample_name=sample_name),
-            mm_simulate_util._check_valid_mg5_process(self),
+            _mm_simulate_util._check_valid_mg5_process(self),
         ]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
@@ -1261,7 +1259,7 @@ class mm_train_util(mm_base_util):
         )
 
 
-class mm_util(mm_backend_util, mm_simulate_util, mm_train_util, mm_base_util):
+class _mm_util(_mm_backend_util, _mm_simulate_util, _mm_train_util, _mm_base_util):
 
     """
     Wrapper class for all tth utility related classes. 

@@ -7,7 +7,6 @@ parameter CPWL2: lha_block=dim6, lha_id=5, morphing_max_power=2, parameter_range
 
 observable pt_j1: j[0].pt
 observable delta_phi_jj: j[0].deltaphi(j[1]) * (-1. + 2.*float(j[0].eta > j[1].eta))
-observable not_important: j[1].pt
 
 benchmark w: CWL2=10., CPWL2=0.
 benchmark sm: CWL2=0., CPWL2=0.

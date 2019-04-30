@@ -1,12 +1,12 @@
 from mm_scripting_util.util import * 
+from mm_scripting_util.util import _mm_util, _mm_backend_util, _mm_base_util
 
-
-class miner(mm_util):
+class miner(_mm_util):
     """
     Main container for the class. 
 
     This class should handle all necessary interfacing with
-    madminer and madgraph. Nice! 
+    madminer and madgraph. 
 
     """
 
@@ -43,24 +43,32 @@ class miner(mm_util):
                 string, path to a card directory from which to load template cards, if one desires to switch the current template cards out for new ones.
         """
 
-        self._cmd_line_origin = _cmd_line_origin
 
         if path is None:
             path = os.getcwd()
 
         # initialize helper classes
 
-        mm_base_util.__init__(self, name, path)
+        _mm_base_util.__init__(self, name, path)
 
-        mm_backend_util.__init__(self)
+        _mm_backend_util.__init__(self)
 
         self.autodestruct = autodestruct
         self.log = logging.getLogger(__name__)
         self.module_path = os.path.dirname(__file__)
 
-        self.set_loglevel(loglevel)
-        self.set_loglevel(madminer_loglevel, module="madminer")
         
+        self._cmd_line_origin = _cmd_line_origin
+        
+        if self._cmd_line_origin:
+            self.set_loglevel(30)
+            self.set_loglevel(30, module="madminer")
+        else:
+            self.set_loglevel(loglevel)
+            self.set_loglevel(madminer_loglevel, module="madminer")
+
+
+
         self.name = name
         self.dir = "{}/{}".format(self.path, self.name)
 
@@ -77,7 +85,7 @@ class miner(mm_util):
         self.log.log(init_loglevel, "- new miner object path at " + self.dir)
 
         self.madminer_object = madminer.core.MadMiner()
-        self.lhe_processor_object = None
+        lhe_processor_object = None
 
         self.log.log(init_loglevel, "Loading custom card directory... ")
         self.card_directory = None
@@ -85,6 +93,15 @@ class miner(mm_util):
         # backend param should refer to the name, not a specific backend filepath
         self.backend = backend.replace('.dat', '')
             
+        
+        self._write_config( {
+                'backend': self.backend,
+                'name': self.name,
+                'dir': self.dir,
+                'path': self.path,
+            },
+            '{}/config.mmconfig'.format(self.dir)
+        )
 
         # if card_directory is specified.. 
         if card_directory is not None:
@@ -120,7 +137,15 @@ class miner(mm_util):
         self.log.log(init_loglevel, "Using card directory '{}',".format(self.card_directory))
         self.log.log(init_loglevel, "with {} files".format(len(os.listdir(self.card_directory))))
 
-    def set_loglevel(self, loglevel, module=None):
+        self.set_loglevel(loglevel)
+        self.set_loglevel(madminer_loglevel, module="madminer")
+
+
+    def set_loglevel(
+        self,
+        loglevel,
+        module=None
+    ):
 
         logging.basicConfig(
             format="%(asctime)-5.5s %(name)-20.20s %(levelname)-7.7s %(message)s",
@@ -135,7 +160,9 @@ class miner(mm_util):
 
         return loglevel
 
-    def destroy_sample(self):
+    def destroy_sample(
+        self
+    ):
         rets = [self._check_valid_init()]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
@@ -146,7 +173,12 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def list_samples(self, verbose=False, criteria='*', include_info=False,):
+    def list_samples(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
 
         sample_list = glob.glob(
             "{}/data/samples/{}/augmented_sample.mmconfig".format(self.dir, criteria)
@@ -154,13 +186,23 @@ class miner(mm_util):
 
         return self._list_verbose_helper('augmented samples', sample_list, verbose, criteria, 'sample_name', include_info)
         
-    def list_models(self, verbose=False, criteria='*', include_info=False,):
+    def list_models(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
         
         model_list = glob.glob("{}/models/*/{}/training_model.mmconfig".format(self.dir, criteria))
 
         return self._list_verbose_helper('trained models', model_list, verbose, criteria, 'training_name', include_info)
 
-    def list_evaluations(self, verbose=False, criteria='*', include_info=False,):
+    def list_evaluations(
+        self, 
+        verbose=False, 
+        criteria='*', 
+        include_info=False,
+    ):
 
         evaluation_list = glob.glob(
             "{}/evaluations/*/{}/evaluation.mmconfig".format(self.dir, criteria)
@@ -181,11 +223,6 @@ class miner(mm_util):
         cards = [card.split('/')[-1].replace('cards_', '') for card in miner.list_cards()]
         return set(backends).intersection(cards)
 
-    @staticmethod
-    def list_existing_samples():
-        possible_folders = [f for f in os.listdir() if os.path.isdir(f) and f[0] != '.']
-    # simulation-related member functions
-
     def simulate_data(
         self,
         samples,
@@ -194,7 +231,7 @@ class miner(mm_util):
         force=True,
         mg_dir=None,
         use_pythia_card=False,
-        mg_environment_cmd="lxplus7",
+        mg_environment_cmd='ubc',
         morphing_trials=2500,
         override_step=None,
     ):
@@ -206,7 +243,7 @@ class miner(mm_util):
                 self.SIMULATION_STEP = override_step
             else:
                 self.SIMULATION_STEP = self._get_simulation_step(
-                    self._number_of_cards(samples, 100000), samples
+                    samples
                 )
 
             if self.SIMULATION_STEP < 1 or force:
@@ -239,9 +276,9 @@ class miner(mm_util):
 
             if self.SIMULATION_STEP < 3 or force:
                 self.log.debug("")
-                self.log.debug("RUNNING SETUP MG5 SCRIPTS, STEP 3")
+                self.log.debug("RUNNING MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
-                ret = self.setup_mg5_scripts(
+                ret = self.run_mg5_scripts(
                     samples=samples,
                     sample_benchmark=sample_benchmark,
                     force=force,
@@ -254,35 +291,20 @@ class miner(mm_util):
                     return ret
                 self.SIMULATION_STEP = 3
                 self.log.debug("")
-                self.log.debug("FINISHED SETUP MG5 SCRIPTS, STEP 3")
+                self.log.debug("FINISHED MG5 SCRIPTS, STEP 3")
                 self.log.debug("")
 
             if self.SIMULATION_STEP < 4 or force:
                 self.log.debug("")
-                self.log.debug("RUNNING MG5 SCRIPTS, STEP 4")
-                self.log.debug("")
-                ret = self.run_mg5_script(
-                    platform=platform, samples=samples, force=force
-                )
-                if self.error_codes.Success not in ret:
-                    self.log.warning("Quitting simulation with errors.")
-                    return ret
-                self.SIMULATION_STEP = 4
-                self.log.debug("")
-                self.log.debug("FINISHED MG5 SCRIPTS, STEP 4")
-                self.log.debug("")
-
-            if self.SIMULATION_STEP < 5 or force:
-                self.log.debug("")
-                self.log.debug("RUNNING MG5 DATA PROCESS, STEP 5")
+                self.log.debug("RUNNING MG5 DATA PROCESS, STEP 4")
                 self.log.debug("")
                 ret = self.process_mg5_data()
                 if self.error_codes.Success not in ret:
                     self.log.warning("Quitting simulation with errors.")
                     return ret
-                self.SIMULATION_STEP = 5
+                self.SIMULATION_STEP = 4
                 self.log.debug("")
-                self.log.debug("FINISHED MG5 DATA PROCESS, STEP 5")
+                self.log.debug("FINISHED MG5 DATA PROCESS, STEP 4")
                 self.log.debug("")
 
         except:
@@ -325,10 +347,11 @@ class miner(mm_util):
         filenames = {}
 
         for f in files:
-            shutil.copyfile(
-                src=self.card_directory + "/" + f, dst=self.dir + "/cards/" + f
-            )
-            filenames[f] = "{}/cards/{}".format(self.card_directory, f)
+            if not os.path.isdir(f):
+                shutil.copyfile(
+                    src=self.card_directory + "/" + f, dst=self.dir + "/cards/" + f
+                )
+                filenames[f] = "{}/cards/{}".format(self.card_directory, f)
 
         self.log.info(
             "Copied {} card files from directory '{}'".format(
@@ -387,7 +410,11 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def run_morphing(self, morphing_trials=2500, force=False):
+    def run_morphing(
+        self,
+        morphing_trials=2500,
+        force=False
+    ):
         rets = [self._check_valid_backend()]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
         if len(failed) > 0:
@@ -441,7 +468,7 @@ class miner(mm_util):
 
         return [self.error_codes.Success]
 
-    def setup_mg5_scripts(
+    def run_mg5_scripts(
         self,
         samples,
         sample_benchmark,
@@ -455,7 +482,7 @@ class miner(mm_util):
 
         rets = [
             self._check_valid_init(),
-            self._check_valid_cards(len(sample_sizes)),
+            self._check_valid_cards(),
             self._check_valid_morphing(),
             self._check_valid_backend(),
         ]
@@ -479,8 +506,12 @@ class miner(mm_util):
             self.log.debug("Ran lxplus7 initial source cmd.")
         elif mg_environment_cmd == "pheno":
             initial_command = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
+        elif mg_environment_cmd == "ubc":
+            initial_command = "PATH=$(getconf PATH); export ATLAS_LOCAL_ROOT_BASE=/cvmfs/atlas.cern.ch/repo/ATLASLocalRootBase; source $ATLAS_LOCAL_ROOT_BASE/user/atlasLocalSetup.sh; lsetup root"
         else:
             initial_command = mg_environment_cmd
+        
+        self.log.debug('mg env command: {}'.format(initial_command))
 
         # init mg_dir
         if mg_dir is not None:
@@ -502,15 +533,34 @@ class miner(mm_util):
             )
             failed.append(self.error_codes.NoDirectoryError)
 
+        mg_dir = os.path.abspath(mg_dir)
+
         if len(failed) > 0:
             return failed
 
         self.log.debug("mg_dir set to '{}'".format(mg_dir))
-        # setup pythia card
+
+        required_mg5_modules = ['pythia8', 'lhapdf6', 'mg5amc_py8_interface', 'lhapdf5']
+        self.log.info("checking for installations of required mg5 modules...")
+        modules_to_install = [module for module in required_mg5_modules if module.lower() not in map(lambda x: x.lower(), os.listdir('{}/HEPTools'.format(mg_dir)))]
+        if len(modules_to_install) > 0: 
+            self.log.info("installing modules {}".format(modules_to_install))
+            with open('{}/temp.dat'.format(mg_dir), 'w+') as f:
+                for module in modules_to_install:
+                    f.write("install {}\n".format(module))
+                    f.write("\n\n\n\n\n")
+                f.write("quit")
+            os.system('env -i "$BASH" -l -c \'cd {}/bin/; ./mg5_aMC < {}/temp.dat; rm {}/temp.dat\''.format(mg_dir, mg_dir, mg_dir))
+            self.log.info("successfully installed modules {}".format(modules_to_install))
+        else:
+            self.log.info("None found.")
+        # setup pythia cards 
         if use_pythia_card:
             pythia_card = self.dir + "/cards/pythia8_card.dat"
         else:
             pythia_card = None
+
+        self.log.debug("running mg5 scripts...")
 
         self.madminer_object.run_multiple(
             sample_benchmarks=[sample_benchmark],
@@ -525,95 +575,37 @@ class miner(mm_util):
             pythia8_card_file=pythia_card,
             log_directory=self.dir + "/logs/signal",
             initial_command=initial_command,
+            # only_prepare_script=True,
+            python2_override=True,
+            is_background=False, 
             only_prepare_script=True,
         )
+
+        # run in a clean environment
+        os.system('env -i bash -l -c \'source {}/mg_processes/signal/madminer/run.sh\''.format(self.dir))
 
         self._write_config(
             {
                 "samples": samples,
                 "sample_benchmark": sample_benchmark,
-                "run_bool": False,
+                "run_bool": True,
             },
             self._main_sample_config(),
         )
-        self.log.debug("Successfully setup mg5 scripts. Ready for execution")
-        return [self.error_codes.Success]
-
-    def run_mg5_script(self, run_command, samples, force=False):
-
-        sample_sizes = self._equal_sample_sizes(samples=samples, sample_limit=100000)
-
-        rets = [
-            self._check_valid_init(),
-            self._check_valid_cards(len(sample_sizes)),
-            self._check_valid_morphing(),
-            self._check_valid_mg5_scripts(samples),
-            self._check_valid_backend(),
-        ]
-        failed = [ret for ret in rets if ret != self.error_codes.Success]
-
-        if len(failed) > 0:
-            self.log.warning("Canceling mg5 script run.")
-            return failed
-
-        self._check_directory(
-            local_pathname="mg_processes/signal/Events", force=force, pattern="run_"
-        )
-
-        if run_command == "lxplus7":
-            cmd = "env -i bash -l -c 'source /cvmfs/sft.cern.ch/lcg/views/LCG_94/x86_64-centos7-gcc62-opt/setup.sh"
-        elif run_command == "pheno":
-            self.log.warning("'pheno' platform case selected.")
-            self.log.warning(
-                "Please note that this platform has not yet been tested with this code."
-            )
-            cmd = "module purge; module load pheno/pheno-sl7_gcc73; module load cmake/cmake-3.9.6"
-        elif run_command == 'ubc':
-            cmd = 'env -i bash -l -c conda deactivate'
-        else:
-            cmd = run_command
-
-        if cmd.strip()[-1] != ';':
-            cmd += ';'
-
-        cmd += "source '{}/mg_processes/signal/madminer/run.sh'".format(self.dir)
         
-        # self.log.warning("Platform not recognized. Canceling mg5 script setup.")
-        # self.log.warning("(note: use name 'pheno' for the default belgian server)")
-        # self.log.warning("((I didn't know the proper name, sorry))")
-        # failed.append(self.error_codes.InvalidPlatformError)
-
-        if len(failed) > 0:
-            return failed
-
-        self.log.info("")
-        self.log.info("Running mg5 scripts.")
-        self.log.info("(This might take awhile - go grab a coffee.)")
-        self.log.info("")
-        self.log.info("")
-
-        os.system(cmd)
-
-        self.log.info("")
-        self.log.info("")
-        self.log.info("Finished with data simualtion.")
-        self.log.debug("Writing config dictionary and saving simulated parameters.")
-
-        # rewrite run config file with true run_bool
-        run_dict = self._load_config(self._main_sample_config())
-        run_dict["run_bool"] = True
-
-        self._write_config(run_dict, self._main_sample_config())
-
+        self.log.debug("Successfully ran mg5 scripts.")
         return [self.error_codes.Success]
 
-    def process_mg5_data(self):
+    def process_mg5_data(
+        self
+    ):
 
         rets = [self._check_valid_mg5_run()]
 
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
+            self.log.debug(failed)
             self.log.warning("Canceling mg5 data processing routine.")
             return failed
 
@@ -621,28 +613,35 @@ class miner(mm_util):
         samples = mg5_run_dict["samples"]
         sample_benchmark = mg5_run_dict["sample_benchmark"]
 
-        lhe_processor_object = madminer.lhe.LHEProcessor(
-            filename=self.dir + "/data/madminer_{}.h5".format(self.name)
+        self.lhe_processor_object = madminer.lhe.LHEReader(
+            filename='{}/data/madminer_{}.h5'.format(self.dir, self.name)
         )
+
+        # for benchmark in self.params["benchmarks"]:
+        #     self.lhe_processor_object.add_benchmark(
+        #         self.params["benchmarks"][benchmark], benchmark
+        #     )
+
         n_cards = self._number_of_cards(samples, 100000)
+
         for i in range(n_cards):
-            lhe_processor_object.add_sample(
-                self.dir
-                + "/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
-                    i + 1
+            self.lhe_processor_object.add_sample(
+                "{}/mg_processes/signal/Events/run_{:02d}/unweighted_events.lhe.gz".format(
+                    self.dir,
+                    i + 1,
                 ),
                 sampled_from_benchmark=sample_benchmark,
                 is_background=False,
             )
-
         for observable in self.params["observables"]:
-            lhe_processor_object.add_observable(
-                observable, self.params["observables"][observable], required=True
+            print(self.params["observables"][observable])
+            self.lhe_processor_object.add_observable(
+                observable, self.params["observables"][observable]
             )
 
-        lhe_processor_object.analyse_samples()
-        lhe_processor_object.save(
-            self.dir + "/data/madminer_{}_with_data_parton.h5".format(self.name)
+        self.lhe_processor_object.analyse_samples()
+        self.lhe_processor_object.save(
+            "{}/data/madminer_{}_with_data_parton.h5".format(self.dir, self.name)
         )
         return [self.error_codes.Success]
 
@@ -810,6 +809,7 @@ class miner(mm_util):
         augmentation_benchmark,
         n_theta_samples=100,
         evaluation_aug_dir=None,
+        force=False, 
     ):
         """
         Augments sample data and saves to a new sample with name <sample_name>.
@@ -828,8 +828,12 @@ class miner(mm_util):
             int, error code. 0 is obviously good. 
 
         """
+
         # check for processed data
-        rets = [self._check_valid_mg5_process()]
+        rets = [
+            self._check_valid_mg5_process(),
+            self.error_codes.Success if (sample_name not in [d['sample_name'] for _,d in self.list_samples()] or force) else self.error_codes.ExistingAugmentedDataFileError
+            ]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
@@ -897,14 +901,13 @@ class miner(mm_util):
         else:
             aug_dir = self.dir + "/data/samples/{}".format(sample_name)
             config_file = self._augmentation_config(sample_name)
-
         # train the ratio
-
-        sample_augmenter.extract_samples_train_ratio(
-            theta0=madminer.sampling.random_morphing_thetas(
+        sample_augmenter.sample_train_ratio(
+            theta0=madminer.sampling.random_morphing_points(
                 n_thetas=n_theta_samples, priors=priors
             ),
-            theta1=madminer.sampling.constant_benchmark_theta(augmentation_benchmark),
+
+            theta1=madminer.sampling.benchmark(augmentation_benchmark),
             n_samples=samples,
             folder=aug_dir,
             filename="augmented_sample_ratio",
@@ -912,12 +915,12 @@ class miner(mm_util):
 
         # extract samples at each benchmark
         for benchmark in sample_augmenter.benchmarks:
-            sample_augmenter.extract_samples_test(
-                theta=madminer.sampling.constant_benchmark_theta(benchmark),
+            sample_augmenter.sample_test(
+                theta=madminer.sampling.benchmark(benchmark),
                 n_samples=samples,
                 folder=aug_dir,
                 filename="augmented_samples_{}".format(benchmark),
-            )
+            )   
 
         # save augmentation config file
         self._write_config(
@@ -1242,6 +1245,8 @@ class miner(mm_util):
         trainer="adam",
         initial_learning_rate=0.001,
         final_learning_rate=0.0001,
+        verbose=True,
+        force=False
     ):
 
         known_training_methods = ["alices", "alice"]
@@ -1262,47 +1267,53 @@ class miner(mm_util):
             return self.error_codes.UnknownTrainingModelError
 
         existing_files = glob.glob(
-            "{}/models/{}/{}_{}*".format(
-                self.dir, sample_name, training_name, training_method
+            "{}/models/{}/{}/*.mmconfig".format(
+                self.dir, sample_name, training_name
             )
         )
         if len(existing_files) > 0:
             self.log.warning("There are trained models with this name!")
             for fname in existing_files:
                 self.log.warning(" - {}".format(fname))
-            self.log.warning(
-                "Rerun function with a different name, or delete previously trained models."
-            )
-            return self.error_codes.ExistingModelError
+
+            if not force:
+                self.log.warning(
+                    "Rerun function with a different name, or delete previously trained models."
+                )
+                return self.error_codes.ExistingModelError
+            self.log.warning('Force flag triggered; overwriting previous model.')
 
         # load madminer H5 file??
         # self.madminer_object.load()
 
-        forge = madminer.ml.MLForge()
-        forge.train(
-            method=training_method,
-            theta0_filename="{}/data/samples/{}/theta0_augmented_sample_ratio.npy".format(
-                self.dir, sample_name
-            ),
-            x_filename="{}/data/samples/{}/x_augmented_sample_ratio.npy".format(
-                self.dir, sample_name
-            ),
-            y_filename="{}/data/samples/{}/y_augmented_sample_ratio.npy".format(
-                self.dir, sample_name
-            ),
-            r_xz_filename="{}/data/samples/{}/r_xz_augmented_sample_ratio.npy".format(
-                self.dir, sample_name
-            ),
-            t_xz0_filename="{}/data/samples/{}/t_xz_augmented_sample_ratio.npy".format(
-                self.dir, sample_name
-            ),
+        forge = madminer.ml.ParameterizedRatioEstimator(
             n_hidden=node_architecture,
             activation=activation_function,
+            )
+
+        forge.train(
+            method=training_method,
+            theta="{}/data/samples/{}/theta0_augmented_sample_ratio.npy".format(
+                self.dir, sample_name
+            ),
+            x="{}/data/samples/{}/x_augmented_sample_ratio.npy".format(
+                self.dir, sample_name
+            ),
+            y="{}/data/samples/{}/y_augmented_sample_ratio.npy".format(
+                self.dir, sample_name
+            ),
+            r_xz="{}/data/samples/{}/r_xz_augmented_sample_ratio.npy".format(
+                self.dir, sample_name
+            ),
+            t_xz="{}/data/samples/{}/t_xz_augmented_sample_ratio.npy".format(
+                self.dir, sample_name
+            ),
             n_epochs=n_epochs,
             batch_size=batch_size,
             optimizer=trainer,
             initial_lr=initial_learning_rate,
             final_lr=final_learning_rate,
+            verbose="all" if verbose else "some"
         )
 
         # size = self._dir_size(
@@ -1341,6 +1352,7 @@ class miner(mm_util):
         theta_grid_spacing=40,
         evaluation_benchmark=None,
         sample_name="*",
+        force=False,
     ):
         params = locals()
         for parameter in params:
@@ -1388,10 +1400,11 @@ class miner(mm_util):
 
         evaluation_dir = "{}/evaluations/{}/{}/".format(
             self.dir, model_params["training_name"], evaluation_name
-        )
+        ).rstrip('/').rstrip('\\')
+        clean_dir = evaluation_dir.split(self.name)[-1].lstrip('/').lstrip('\\')
 
         if os.path.exists(evaluation_dir):
-            if len([f for f in os.listdir(evaluation_dir) if "log_r_hat" in f]) > 0:
+            if len([f for f in os.listdir(evaluation_dir) if "log_r_hat" in f]) > 0 and not force:
                 self.log.error(
                     "Identically sampled, trained, and named evaluation instance already exists!! Pick another."
                 )
@@ -1412,7 +1425,8 @@ class miner(mm_util):
         for spec in sample_params:
             self.log.debug(" - {}: {}".format(spec, sample_params[spec]))
 
-        forge = madminer.ml.MLForge()
+        forge = madminer.ml.ParameterizedRatioEstimator()
+
         sample_augmenter = madminer.sampling.SampleAugmenter(
             filename=self.dir
             + "/data/madminer_{}_with_data_parton.h5".format(self.name)
@@ -1467,7 +1481,7 @@ class miner(mm_util):
 
         for benchmark in sample_augmenter.benchmarks:
             ret = forge.evaluate(
-                theta0_filename="{}/theta_grid.npy".format(evaluation_dir),
+                theta="{}/theta_grid.npy".format(evaluation_dir),
                 x="{}/x_augmented_samples_{}.npy".format(
                     os.path.dirname(evaluation_sample_config), benchmark
                 ),
@@ -1492,7 +1506,7 @@ class miner(mm_util):
                 "evaluation_samples": evaluation_samples,
                 "evaluation_benchmark": evaluation_benchmark,
                 "evaluation_datasets": {
-                    key: "{}/{}/log_r_hat_{}.npy".format(self.name, evaluation_dir.split("{}/".format(self.name))[-1], key)
+                    key: "{}/log_r_hat_{}.npy".format(clean_dir, key)
                     for key in log_r_hat_dict
                 },
             },
@@ -1510,6 +1524,11 @@ class miner(mm_util):
         bb_b=1.16,
         bb_m=0.05,
     ):
+        
+        #TODO: implement plotting for more than one parameter!!!!!
+        #TODO: Maybe n-dimensional, or theta selection??
+
+        assert(len(list(self.params['parameters'].keys())) < 2)
         self.log.info(
             "Plotting evaluation results for evaluation instance '{}'".format(
                 evaluation_name
@@ -1522,6 +1541,7 @@ class miner(mm_util):
             for evaluation in evaluations
             if evaluation[1]["evaluation_name"] == evaluation_name
         ]
+
 
         if training_name is not None:
             evaluation_tuples = list(
@@ -1552,10 +1572,11 @@ class miner(mm_util):
         # else tuple is CLEAN, with len 1
         evaluation_tuple = evaluation_tuples[0]
         evaluation_dir = os.path.dirname(evaluation_tuple[0])
-        self.log.debug(evaluation_tuple)
+        self.log.debug(evaluation_dir)
+        self.log.debug('')
         theta_grid = np.load("{}/theta_grid.npy".format(evaluation_dir))
         log_r_hat_dict = {
-            key: np.load(evaluation_tuple[1]["evaluation_datasets"][key].replace('//', '/'))
+            key: np.load('{}/{}'.format(self.dir, evaluation_tuple[1]["evaluation_datasets"][key].replace('//', '/').lstrip(self.name)))
             for key in evaluation_tuple[1]["evaluation_datasets"]
         }
 
@@ -1616,4 +1637,4 @@ class miner(mm_util):
                 bbox_inches="tight",
             )
             plt.show()
-        return self.error_codes.Success
+        return log_r_hat_dict, theta_grid
