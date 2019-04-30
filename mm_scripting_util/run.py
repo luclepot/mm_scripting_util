@@ -133,7 +133,7 @@ def write_parser(
         sd['POS']('NAME', None, 'name for overall sample (required ONLY if pwd is NOT a sample)'),
         sd['POS']('BACKEND', None, 'backend; default choices of {} (required ONLY if pwd is NOT a sample)'.format(list(full_av))),
         sd['STR'](False, '-CD', '--CARD-DIRECTORY'),
-        sd['NUM'](int, False, '-LL', '--LOG-LEVEL', 20),
+        sd['NUM'](int, False, '-LL', '--LOG-LEVEL', 10),
         sd['NUM'](int, False, '-MLL', '--MADMINER-LOG-LEVEL', 20),
         ]
     
@@ -160,14 +160,14 @@ def write_parser(
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
                 ],
             'aug': [
-                sd['STR'](True, '-s', '--sample-name'),
+                sd['POS']('sample_name', 'SAMPLE_NAME'),
                 sd['STR'](False, '-n', '--image-save-name'),
                 sd['NUM'](int, False, '-b', '--bins', 40),
                 sd['RANGE'](False, '-r', '--ranges'),
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
                 ],
             'comp': [
-                sd['STR'](True, '-s', '--sample-name'),
+                sd['POS']('sample_name', 'SAMPLE_NAME'),
                 sd['STR'](False, '-n', '--image-save-name'),
                 sd['BOOL'](True, False, '-o', '--mark-outlier-bins'),
                 sd['NUM'](int, False, '-b', '--bins', 40),
@@ -176,9 +176,9 @@ def write_parser(
                 sd['BOOL'](True, False, '-a', '--include-automatic-benchmarks', 'display automatically selected benchmarks'),
                 ],
             'eval': [
-                sd['STR'](True, '-e', '--evaluation-name'),
+                sd['POS']('evaluation_name', 'EVALUATION_NAME'),
                 sd['STR'](False, '-t', '--training-name'),
-                sd['LIST'](False, '-z', '--z-contours', float),
+                sd['LIST'](False, '-z', '--z-contours', float, default=[1.]),
                 sd['BOOL'](True, False, '-f', '--fill-contours')
                 ],
             },
@@ -189,7 +189,7 @@ def write_parser(
             sd['BOOL'](True, False, name='--force')
             ],
         'train' : [
-            sd['STR'](True, '-s', '--sample-name'),
+            sd['POS']('sample_name', 'SAMPLE_NAME'),
             sd['STR'](True, '-n', '--training-name'),
             sd['TUPLE'](int, False, '-na','--node-architecture', default=(100,100,100)),
             sd['NUM'](int, False, '-e', '--n-epochs', default=30),
@@ -201,7 +201,12 @@ def write_parser(
             sd['BOOL'](True, False, name='--force')
             ],
         'evaluate' : [
-
+            sd['POS']('training_name', 'TRAINING_NAME'),
+            sd['STR'](True, '-n', '--evaluation-name'), 
+            sd['NUM'](int, True, '-s', '--evaluation-samples'),
+            sd['STR'](False, '-b', '--evaluation-benchmark'),
+            sd['STR'](False, '-sn', '--sample-name', default='*'),
+            sd['BOOL'](True, False, name='--force'),
             ]
     }
 
@@ -288,7 +293,7 @@ def main():
     elif cmd=='train':
         m.train_method(**args_to_pass)
     elif cmd=='evaluate':
-        pass
+        m.evaluate_method(**args_to_pass)
     else:
         raise argparse.ArgumentTypeError
 

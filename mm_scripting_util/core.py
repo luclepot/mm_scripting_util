@@ -43,7 +43,6 @@ class miner(_mm_util):
                 string, path to a card directory from which to load template cards, if one desires to switch the current template cards out for new ones.
         """
 
-        self._cmd_line_origin = _cmd_line_origin
 
         if path is None:
             path = os.getcwd()
@@ -58,9 +57,18 @@ class miner(_mm_util):
         self.log = logging.getLogger(__name__)
         self.module_path = os.path.dirname(__file__)
 
-        self.set_loglevel(loglevel)
-        self.set_loglevel(madminer_loglevel, module="madminer")
         
+        self._cmd_line_origin = _cmd_line_origin
+        
+        if self._cmd_line_origin:
+            self.set_loglevel(30)
+            self.set_loglevel(30, module="madminer")
+        else:
+            self.set_loglevel(loglevel)
+            self.set_loglevel(madminer_loglevel, module="madminer")
+
+
+
         self.name = name
         self.dir = "{}/{}".format(self.path, self.name)
 
@@ -128,6 +136,10 @@ class miner(_mm_util):
 
         self.log.log(init_loglevel, "Using card directory '{}',".format(self.card_directory))
         self.log.log(init_loglevel, "with {} files".format(len(os.listdir(self.card_directory))))
+
+        self.set_loglevel(loglevel)
+        self.set_loglevel(madminer_loglevel, module="madminer")
+
 
     def set_loglevel(
         self,
@@ -1340,6 +1352,7 @@ class miner(_mm_util):
         theta_grid_spacing=40,
         evaluation_benchmark=None,
         sample_name="*",
+        force=False,
     ):
         params = locals()
         for parameter in params:
@@ -1387,10 +1400,11 @@ class miner(_mm_util):
 
         evaluation_dir = "{}/evaluations/{}/{}/".format(
             self.dir, model_params["training_name"], evaluation_name
-        )
+        ).rstrip('/').rstrip('\\')
+        clean_dir = evaluation_dir.split(self.name)[-1].lstrip('/').lstrip('\\')
 
         if os.path.exists(evaluation_dir):
-            if len([f for f in os.listdir(evaluation_dir) if "log_r_hat" in f]) > 0:
+            if len([f for f in os.listdir(evaluation_dir) if "log_r_hat" in f]) > 0 and not force:
                 self.log.error(
                     "Identically sampled, trained, and named evaluation instance already exists!! Pick another."
                 )
@@ -1411,7 +1425,8 @@ class miner(_mm_util):
         for spec in sample_params:
             self.log.debug(" - {}: {}".format(spec, sample_params[spec]))
 
-        forge = madminer.ml.Estimator()
+        forge = madminer.ml.ParameterizedRatioEstimator()
+
         sample_augmenter = madminer.sampling.SampleAugmenter(
             filename=self.dir
             + "/data/madminer_{}_with_data_parton.h5".format(self.name)
@@ -1466,7 +1481,7 @@ class miner(_mm_util):
 
         for benchmark in sample_augmenter.benchmarks:
             ret = forge.evaluate(
-                theta0_filename="{}/theta_grid.npy".format(evaluation_dir),
+                theta="{}/theta_grid.npy".format(evaluation_dir),
                 x="{}/x_augmented_samples_{}.npy".format(
                     os.path.dirname(evaluation_sample_config), benchmark
                 ),
@@ -1491,7 +1506,7 @@ class miner(_mm_util):
                 "evaluation_samples": evaluation_samples,
                 "evaluation_benchmark": evaluation_benchmark,
                 "evaluation_datasets": {
-                    key: "{}/{}/log_r_hat_{}.npy".format(self.name, evaluation_dir.split("{}/".format(self.name))[-1], key)
+                    key: "{}/log_r_hat_{}.npy".format(clean_dir, key)
                     for key in log_r_hat_dict
                 },
             },
@@ -1522,6 +1537,7 @@ class miner(_mm_util):
             if evaluation[1]["evaluation_name"] == evaluation_name
         ]
 
+
         if training_name is not None:
             evaluation_tuples = list(
                 filter(
@@ -1551,10 +1567,11 @@ class miner(_mm_util):
         # else tuple is CLEAN, with len 1
         evaluation_tuple = evaluation_tuples[0]
         evaluation_dir = os.path.dirname(evaluation_tuple[0])
-        self.log.debug(evaluation_tuple)
+        self.log.debug(evaluation_dir)
+        self.log.debug('')
         theta_grid = np.load("{}/theta_grid.npy".format(evaluation_dir))
         log_r_hat_dict = {
-            key: np.load(evaluation_tuple[1]["evaluation_datasets"][key].replace('//', '/'))
+            key: np.load('{}/{}'.format(self.dir, evaluation_tuple[1]["evaluation_datasets"][key].replace('//', '/').lstrip(self.name)))
             for key in evaluation_tuple[1]["evaluation_datasets"]
         }
 
@@ -1615,4 +1632,4 @@ class miner(_mm_util):
                 bbox_inches="tight",
             )
             plt.show()
-        return self.error_codes.Success
+        return log_r_hat_dict, theta_grid
