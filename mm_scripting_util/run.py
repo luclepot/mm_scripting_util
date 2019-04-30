@@ -120,11 +120,10 @@ def write_parser(
                 (sname, name), {
                     'action': 'store',
                     'dest': name.strip('-').replace('-', '_'),
-                    'type': lambda s: tuple(s, type_),
+                    'type': lambda s: tup(s, t=type_),
                     'required': req,
                     'default': default,
                     'help': _help,
-                    'nargs': '*'
                 }
         ]
     }

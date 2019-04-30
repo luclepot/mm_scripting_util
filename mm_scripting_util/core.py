@@ -1233,7 +1233,8 @@ class miner(_mm_util):
         trainer="adam",
         initial_learning_rate=0.001,
         final_learning_rate=0.0001,
-        verbose=True
+        verbose=True,
+        force=False
     ):
 
         known_training_methods = ["alices", "alice"]
@@ -1254,8 +1255,8 @@ class miner(_mm_util):
             return self.error_codes.UnknownTrainingModelError
 
         existing_files = glob.glob(
-            "{}/models/{}/{}_{}*".format(
-                self.dir, sample_name, training_name, training_method
+            "{}/models/{}/{}/*.mmconfig".format(
+                self.dir, sample_name, training_name
             )
         )
         if len(existing_files) > 0:
