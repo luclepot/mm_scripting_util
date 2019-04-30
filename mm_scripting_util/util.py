@@ -92,6 +92,7 @@ class _mm_base_util:
         ExistingEvaluationError = 26
         NoEvaluatedModelError = 27
         TorchImportError = 28
+        ExistingAugmentedDataFileError = 29
 
     def __init__(self, name, path):
         self.HAS_TORCH = HAS_TORCH
@@ -437,12 +438,14 @@ class _mm_base_util:
 
         return wrapper
 
-    def _write_config(self, dict_to_write, file_to_write):
+    @staticmethod
+    def _write_config(dict_to_write, file_to_write):
         with open(file_to_write, "w+") as config_file:
             json.dump(dict_to_write, fp=config_file)
             # config_file.write("{}\n".format(dict_to_write))
 
-    def _load_config(self, file_to_load):
+    @staticmethod
+    def _load_config(file_to_load):
         with open(file_to_load, "r") as config_file:
             # retdict = eval(config_file.readline().strip('\n'))
             retdict = json.load(config_file)
@@ -806,10 +809,16 @@ class _mm_simulate_util(_mm_base_util):
 
     def _check_valid_mg5_run(self):
 
+        size = self._dir_size(
+            pathname=self.dir + "/mg_processes/signal/Events", matching_pattern="run_"
+        )        
+
         try:
             mg5_run_dict = self._load_config(self._main_sample_config())
         except FileNotFoundError:
-            return self.error_codes.NoDataFileError
+            if size < 1: return self.error_codes.NoDataFileError
+            mg5_run_dict = {'samples': 100000*size, 'run_bool': True}
+            self._write_config(mg5_run_dict, self._main_sample_config())
 
         samples = mg5_run_dict["samples"]
 
@@ -817,24 +826,20 @@ class _mm_simulate_util(_mm_base_util):
         size = self._dir_size(
             pathname=self.dir + "/mg_processes/signal/Events", matching_pattern="run_"
         )
-        if size < 0:
+        if size < 1:
             self.log.error("mg_processes/signal/Events directory does not exist!")
             self.log.error("mg5 run not completed (or detected)")
-            return self.error_codes.NoDataFileError
-        if size != expected:
-            self.log.error(
-                "Found {}/{} expected mg5 data files. Incorrect mg5 setup.".format(
-                    size, expected
-                )
-            )
-            return self.error_codes.IncorrectDataFileNumberError
+            
+        elif size != expected:
+            mg5_run_dict['samples'] = size
+            self._write_config(mg5_run_dict, self._main_sample_config())
+
         return self.error_codes.Success
 
     def _check_valid_mg5_process(self):
-        size = self._dir_size(
-            self.dir + "/data",
-            matching_pattern="madminer_{}_with_data_parton.h5".format(self.name),
-        )
+        filepath = "{}/data/madminer_{}_with_data_parton.h5".format(self.dir, self.name)
+        files = glob.glob(filepath)
+        size = len(files)
         if size < 0:
             self.log.error("/data/ directory does not exist")
             self.log.error("processed mg5 run not completed (or detected)")

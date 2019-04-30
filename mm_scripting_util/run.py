@@ -10,6 +10,27 @@ import lucs_tools
 
 run_main = True
 
+desc_str = \
+"""MM_SCRIPTING_UTIL COMMAND LINE PROGRAM\n
+The cmd line program for the mm_scripting_util class.
+Gives (almost) all of the functionality of the base class,
+in a single (great) command line program.
+Tips:
+ - if creating a NEW sample, make sure to specify NAME and BACKEND
+   as the first parameters to the program. 
+ - If the sample already exists, you may select it by default by 
+   running the utility within the top directory of the sample.
+   example: with a sample at ~/sample, cd ~/sample and run the
+       utility without the NAME or BACKEND specs (automatic!!)
+ - For more in-depth documentation, see the python code itself
+   (which you definitely have if you're running this)\n
+Fully avaliable BACKEND specifications in your current directory:\n"""
+
+full_av = miner.list_full_backends()
+
+for backend in full_av:
+    desc_str += """ - {}\n""".format(backend)
+
 def rng(s):
     try:
         _min, _max = map(float, s.split(','))
@@ -17,43 +38,29 @@ def rng(s):
     except: 
         raise argparse.ArgumentTypeError
 
-def write_parser():
-
-    full_av = miner.list_full_backends()
-
-    desc_str = """MM_SCRIPTING_UTIL COMMAND LINE PROGRAM\n
-The cmd line program for the mm_scripting_util class.
-Gives (almost) all of the functionality of the base class,
-in a single (great) command line program.
-Tips:
- - always specify NAME, BACKEND, and then the command you'd
-   like to run, otherwise you'll have a bad time
- - For more in-depth documentation, see the python code itself
-   (which you definitely have documented if you're running this)\n
-Fully avaliable BACKEND specifications in your current directory:\n"""
-    
-    for backend in full_av:
-        desc_str += """ - {}\n""".format(backend)
+def write_parser(
+    desc_str
+):
 
     desc_str = lucs_tools.formatting.header.fmt(desc_str, side='c')
 
     module_directory = os.path.dirname(os.path.abspath(__file__))
 
     sd = {
-        'STR' : lambda req, sname='-n', name='--name', _help=None, default=None: [
+        'STR' : lambda req, sname='-n', name='--name', _help=None, default=None, dest=None: [
                 (sname, name), {
                     'action': 'store',
-                    'dest': name.strip('-').replace('-', '_'),
+                    'dest': name.strip('-').replace('-', '_') if dest is None else dest,
                     'type': str,
                     'help': _help,
                     'required': bool(req),
                     'default': default
                 }
             ],
-        'NUM' : lambda ntype=int, req=True, sname='-n', name='--num', default=None, _help=None: [
+        'NUM' : lambda ntype=int, req=True, sname='-n', name='--num', default=None, _help=None, dest=None: [
                 (sname, name), {
                     'action': 'store', 
-                    'dest': name.strip('-').replace('-', '_'),
+                    'dest': name.strip('-').replace('-', '_') if dest is None else dest,
                     'type': ntype,
                     'required': bool(req),
                     'default': default,
@@ -107,15 +114,14 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
     }
 
     global_options = [
-        sd['POS']('NAME', None, 'name for overall sample'),
-        # sd['STR'](False, '-N', '--NAME'),
-        sd['POS']('BACKEND', None, 'backend; default choices'),
         # sd['STR'](False, '-B', '--BACKEND'),
+        sd['POS']('NAME', None, 'name for overall sample (required ONLY if pwd is NOT a sample)'),
+        sd['POS']('BACKEND', None, 'backend; default choices of {} (required ONLY if pwd is NOT a sample)'.format(list(full_av))),
         sd['STR'](False, '-CD', '--CARD-DIRECTORY'),
         sd['NUM'](int, False, '-LL', '--LOG-LEVEL', 20),
         sd['NUM'](int, False, '-MLL', '--MADMINER-LOG-LEVEL', 20),
         ]
-
+    
     commands = {
         'ls' : [
             sd['TYPE'](['samples', 'models', 'evaluations'], 'ls_type', 'type for ls command'),
@@ -162,7 +168,10 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
                 ],
             },
         'augment' : [
-            
+            sd['STR'](True, '-n', '--sample-name'),
+            sd['NUM'](int, True, '-s', '--samples', dest='n_or_frac_augmented_samples', ),
+            sd['STR'](True, '-b', '--augmentation-benchmark'),
+            sd['BOOL'](True, False, name='--force')
             ],
         'train' : [
 
@@ -203,9 +212,20 @@ Fully avaliable BACKEND specifications in your current directory:\n"""
 
 def main():
 
-    parser = write_parser()
-    if len(sys.argv[1:]) > 0:
-        args = parser.parse_args(sys.argv[1:])
+    parser = write_parser(desc_str)
+
+    argv = sys.argv[1:]
+
+    # if we are IN a sample directory, automatically select
+    prepend = []
+    in_dir = False
+    if os.path.exists('config.mmconfig'):
+        d = miner._load_config(os.path.abspath('config.mmconfig'))
+        prepend = [d['name'], d['backend']]
+        in_dir = True
+
+    if len(argv) > 0:
+        args = parser.parse_args(prepend + argv)
     else:
         parser.print_help()
         exit(0)
@@ -213,6 +233,7 @@ def main():
     m = miner(
         name=args.NAME,
         backend=args.BACKEND,
+        path=os.path.dirname(os.path.abspath(os.getcwd())) if in_dir else None, 
         card_directory=args.CARD_DIRECTORY, 
         loglevel=args.LOG_LEVEL,
         madminer_loglevel=args.MADMINER_LOG_LEVEL,
@@ -222,13 +243,12 @@ def main():
 
     cmd = args.COMMAND
 
+    args_to_pass = { var: vars(args)[var] for var in vars(args) if var.islower()}
     if cmd=='ls':
         getattr(m, 'list_{}'.format(args.ls_type))(True, args.criteria, args.include_info)
     elif cmd=='simulate':
-        args_to_pass = { var: vars(args)[var] for var in vars(args) if not var.isupper()}
         m.simulate_data(**args_to_pass)
     elif cmd=='plot':
-        args_to_pass = {var: vars(args)[var] for var in vars(args) if not var.isupper()}
         if args.PLOT_TYPE=='mg':
             m.plot_mg5_data_corner(**args_to_pass)
         elif args.PLOT_TYPE=='aug':
@@ -240,7 +260,7 @@ def main():
         else:
             raise argparse.ArgumentTypeError 
     elif cmd=='augment':
-        pass
+        m.augment_samples(**args_to_pass)
     elif cmd=='train':
         pass
     elif cmd=='evaluate':

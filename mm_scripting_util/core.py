@@ -85,6 +85,15 @@ class miner(_mm_util):
         # backend param should refer to the name, not a specific backend filepath
         self.backend = backend.replace('.dat', '')
             
+        
+        self._write_config( {
+                'backend': self.backend,
+                'name': self.name,
+                'dir': self.dir,
+                'path': self.path,
+            },
+            '{}/config.mmconfig'.format(self.dir)
+        )
 
         # if card_directory is specified.. 
         if card_directory is not None:
@@ -201,11 +210,6 @@ class miner(_mm_util):
         backends = [w.replace('.dat', '') for w in miner.list_backends()]
         cards = [card.split('/')[-1].replace('cards_', '') for card in miner.list_cards()]
         return set(backends).intersection(cards)
-
-    @staticmethod
-    def list_existing_samples():
-        possible_folders = [f for f in os.listdir() if os.path.isdir(f) and f[0] != '.']
-    # simulation-related member functions
 
     def simulate_data(
         self,
@@ -793,6 +797,7 @@ class miner(_mm_util):
         augmentation_benchmark,
         n_theta_samples=100,
         evaluation_aug_dir=None,
+        force=False, 
     ):
         """
         Augments sample data and saves to a new sample with name <sample_name>.
@@ -811,8 +816,12 @@ class miner(_mm_util):
             int, error code. 0 is obviously good. 
 
         """
+
         # check for processed data
-        rets = [self._check_valid_mg5_process()]
+        rets = [
+            self._check_valid_mg5_process(),
+            self.error_codes.Success if (sample_name not in [d['sample_name'] for _,d in self.list_samples()] or force) else self.error_codes.ExistingAugmentedDataFileError
+            ]
         failed = [ret for ret in rets if ret != self.error_codes.Success]
 
         if len(failed) > 0:
