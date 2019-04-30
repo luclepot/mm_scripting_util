@@ -1524,6 +1524,11 @@ class miner(_mm_util):
         bb_b=1.16,
         bb_m=0.05,
     ):
+        
+        #TODO: implement plotting for more than one parameter!!!!!
+        #TODO: Maybe n-dimensional, or theta selection??
+
+        assert(len(list(self.params['parameters'].keys())) < 2)
         self.log.info(
             "Plotting evaluation results for evaluation instance '{}'".format(
                 evaluation_name
