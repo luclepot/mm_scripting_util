@@ -72,7 +72,6 @@ def write_environment_setup_script(
     madgraph_install, 
     conda_install, 
     conda_env_install,
-    conda_env_activate,
     build_modules,
     installation_directory='',
     run_all=False,
@@ -83,7 +82,6 @@ def write_environment_setup_script(
     creates a bash file which is run for setup. 
     """
 
-    madminer_link="https://github.com/luclepot/madminer.git"
     anaconda_link="https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh "
     madgraph_link="https://launchpad.net/mg5amcnlo/2.0/2.6.x/+download/MG5_aMC_v2.6.5.tar.gz"
 
@@ -99,8 +97,8 @@ def write_environment_setup_script(
         madminer_install = True
         conda_install = True
         conda_env_install = True
-        conda_env_activate = True
         build_modules = True
+        setup_alias = True
 
     # conda_envs, current_env = _conda_info()
     
@@ -124,9 +122,6 @@ def write_environment_setup_script(
         if conda_env_install:
             f.write("echo 'attempting to create anaconda environment from file'")
             f.write("conda env create -n {0} -f \"{1}/environment.yml\"".format(new_env_name, module_directory))
-
-        if conda_env_activate:
-            f.write("echo 'attempting to activate anaconda env'")
             f.write("conda activate {0}".format(new_env_name))
         
         if madminer_install:
@@ -135,7 +130,7 @@ def write_environment_setup_script(
             #     f.write("git clone {0} \"{1}/madminer\"".format(madminer_link, installation_directory))
             f.write("pip install madminer")
 
-        if madgraph_install: 
+        if madgraph_install:
             f.write("echo 'attempting to install madgraph'")
             f.write("cd ..")
             f.write("wget -c {0}".format(madgraph_link))
@@ -154,15 +149,13 @@ def write_environment_setup_script(
 
 if __name__== "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('-mm', '--madminer', dest='install_madminer', action='store_true', default=False)
-    parser.add_argument('-mg', '--madgraph', dest='install_madgraph', action='store_true', default=False)
-    parser.add_argument('-c', '--conda', dest='install_conda', action='store_true', default=False)
-    parser.add_argument('-e', '--env-install', dest='install_env', action='store_true', default=False)
-    parser.add_argument('-ea', '--activate-env', dest='activate_env', action='store_true')
-    parser.add_argument('-ed', '--no-activate-env', dest='activate_env', action='store_false')
-    parser.add_argument('-d', '--install-dir', dest='install_directory', action='store', default='', type=str)
-    parser.add_argument('-b', '--build', dest='build_modules', action='store_true', default=False)
-    parser.add_argument('-a', '--run-all', dest='run_all', action='store_true', default=False)
+    parser.add_argument('-mg', '--madgraph', dest='install_madgraph', action='store_true', default=False, help='download and install the latest version of madgraph to the home directory (or install-dir if specified)')
+    parser.add_argument('-c', '--conda', dest='install_conda', action='store_true', default=False, help='installs miniconda to the home directory (or install-dir if specified)')
+    parser.add_argument('-e', '--env', dest='install_env', action='store_true', default=False, help='installs and activates a conda environment supporting this module')
+    parser.add_argument('-d', '--dir', dest='install_directory', action='store', default='', type=str, help='directory to put all installed objects')
+    parser.add_argument('-b', '--build', dest='build_modules', action='store_true', default=False, help='attempts to build this module')
+    parser.add_argument('-a', '--alias', dest='write_alias', action='store_true', default=False, help='associates an alias in this current shell such that running `mmsc` or `mm_scripting_util` is equivalent to python mm_scripting_util/run.py')
+    parser.add_argument('-all', '--all', dest='run_all', action='store_true', default=False, help='runs all of the above commands with the exception installing madgraph.')
 
     if len(sys.argv[1:]) == 0:
         write_environment_setup_script(
@@ -172,7 +165,8 @@ if __name__== "__main__":
             False, 
             False, 
             False,
-            setup_alias=True
+            False,
+            False,
         )
         exit(1)
     else:
@@ -182,11 +176,10 @@ if __name__== "__main__":
             args.install_madgraph,
             args.install_conda,
             args.install_env,
-            args.activate_env,
             args.build_modules,
             args.install_directory,
             args.run_all,
-            True
+            args.write_alias,
         )
         exit(0)
     
