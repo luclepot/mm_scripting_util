@@ -32,6 +32,7 @@ REQUIRED = [
     "tabulate",
     "madminer",
     "torch",
+    "lucs_tools"
 ]
 
 package_data={'': [

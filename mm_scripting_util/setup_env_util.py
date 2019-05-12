@@ -166,7 +166,7 @@ def write_environment_setup_script(
         # build everything, automatic
         if build_modules:
             f.log("BUILD: attempting to buildmodule")
-            f.write("python setup.py develop")
+            f.write("python setup.py install --force")
             f.log("BUILD: built mm_scripting_util")
 
             # f.write("cd \"{0}/madminer/\"".format(installation_directory))
