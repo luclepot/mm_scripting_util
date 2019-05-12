@@ -30,9 +30,8 @@ REQUIRED = [
     "corner",
     "argparse",
     "tabulate",
-    "lucs_tools",
-    "pytorch",
     "madminer",
+    "torch",
 ]
 
 package_data={'': ['mm_scripting_util/data/*']}
