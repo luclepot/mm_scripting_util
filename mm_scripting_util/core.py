@@ -1443,7 +1443,7 @@ class miner(_mm_util):
 
         theta_grid = np.mgrid[
             [
-                slice(*tup, theta_grid_spacing * 1.0j)
+                slice(*(tup + [theta_grid_spacing * 1.0j]))
                 for tup in [
                     self.params["parameters"][parameter]["parameter_range"]
                     for parameter in self.params["parameters"]
