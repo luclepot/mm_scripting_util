@@ -35,12 +35,11 @@ REQUIRED = [
 ]
 
 package_data={'': [
-    'mm_scripting_util/data/backends/*.dat',
-    'mm_scripting_util/data/cards*/*.dat',
+    'data/backends/*.dat',
+    'data/cards*/*.dat',
     ]
 }
 
-package_dir={'': 'mm_scripting_util'}
 include_package_data=True
 
 # What packages are optional?
