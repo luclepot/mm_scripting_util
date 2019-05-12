@@ -40,7 +40,7 @@ package_data={'': [
     ]
 }
 
-package_dir={'': ['mm_scripting_util']}
+package_dir={'': 'mm_scripting_util'}
 include_package_data=True
 
 # What packages are optional?
