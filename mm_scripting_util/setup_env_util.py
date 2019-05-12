@@ -121,8 +121,8 @@ def write_environment_setup_script(
 
         if setup_alias:
             f.log("ALIASES: starting...")
-            f.write("alias mm_scripting_util='python \"{0}/run.py\" \"$@\"'".format(os.path.dirname(os.path.abspath(__file__))))
-            f.write("alias mmsc='python \"{0}/run.py\" \"$@\"'".format(os.path.dirname(os.path.abspath(__file__))))
+            f.write("alias mm_scripting_util='python3 \"{0}/run.py\" \"$@\" || python \"{0}/run.py\" \"$@\"'".format(os.path.dirname(os.path.abspath(__file__))))
+            f.write("alias mmsc='python3 \"{0}/run.py\" \"$@\" || python \"{0}/run.py\" \"$@\"'".format(os.path.dirname(os.path.abspath(__file__))))
             f.log("ALIASES: setup aliases mmsc, mm_scripting_util")
             
         if conda_install:
@@ -166,7 +166,7 @@ def write_environment_setup_script(
         # build everything, automatic
         if build_modules:
             f.log("BUILD: attempting to buildmodule")
-            f.write("python setup.py install --force")
+            f.write("pip3 install . || pip install .")
             f.log("BUILD: built mm_scripting_util")
 
             # f.write("cd \"{0}/madminer/\"".format(installation_directory))
