@@ -12,7 +12,7 @@ VERSION = '0.0.1'
 AUTHOR = 'Luc Le Pottier'
 EMAIL = 'luc.lepottier@cern.ch'
 URL = 'https://github.com/luclepot/'
-REQUIRES_PYTHON = '>=3.6.7'
+REQUIRES_PYTHON = '>=3.5'
 
 DEPENDENCY_LINKS = [
     'http://github.com/luclepot/lucs_tools/tarball/master#egg=lucs_tools-0.0.1',
