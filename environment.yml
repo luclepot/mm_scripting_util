@@ -19,3 +19,4 @@ dependencies:
   - argparse
   - tabulate
   - ipython
+  - madminer

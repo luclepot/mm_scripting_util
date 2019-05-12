@@ -130,11 +130,10 @@ def write_environment_setup_script(
             f.write("conda activate {0}".format(new_env_name))
         
         if madminer_install:
-            f.write("echo 'attempting to install madminer'")
-            if len(madminer_link) > 0:
-                f.write("git clone {0} \"{1}/madminer\"".format(madminer_link, installation_directory))
-            else:
-                f.write("pip install madminer")
+            # f.write("echo 'attempting to install madminer'")
+            # if len(madminer_link) > 0:
+            #     f.write("git clone {0} \"{1}/madminer\"".format(madminer_link, installation_directory))
+            f.write("pip install madminer")
 
         if madgraph_install: 
             f.write("echo 'attempting to install madgraph'")
@@ -149,9 +148,9 @@ def write_environment_setup_script(
         if build_modules:
             f.write("echo 'attempting to build madminer and mm_scripting_util modules'")
             f.write("python setup.py develop")
-            f.write("cd \"{0}/madminer/\"".format(installation_directory))
-            f.write("python setup.py develop")
-            f.write(" cd \"{0}\"".format(module_directory))
+            # f.write("cd \"{0}/madminer/\"".format(installation_directory))
+            # f.write("python setup.py develop")
+            # f.write(" cd \"{0}\"".format(module_directory))
 
 if __name__== "__main__":
     parser = argparse.ArgumentParser()
