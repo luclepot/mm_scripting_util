@@ -68,7 +68,6 @@ class bash_file_wrapper(
         self.f.write(to_write)
 
 def write_environment_setup_script(
-    madminer_install,
     madgraph_install, 
     conda_install, 
     conda_env_install,
@@ -124,11 +123,11 @@ def write_environment_setup_script(
             f.write("conda env create -n {0} -f \"{1}/environment.yml\"".format(new_env_name, module_directory))
             f.write("conda activate {0}".format(new_env_name))
         
-        if madminer_install:
-            # f.write("echo 'attempting to install madminer'")
-            # if len(madminer_link) > 0:
-            #     f.write("git clone {0} \"{1}/madminer\"".format(madminer_link, installation_directory))
-            f.write("pip install madminer")
+        # if madminer_install:
+        #     # f.write("echo 'attempting to install madminer'")
+        #     # if len(madminer_link) > 0:
+        #     #     f.write("git clone {0} \"{1}/madminer\"".format(madminer_link, installation_directory))
+        #     f.write("pip install madminer")
 
         if madgraph_install:
             f.write("echo 'attempting to install madgraph'")
@@ -161,7 +160,6 @@ if __name__== "__main__":
         write_environment_setup_script(
             False,
             False,
-            False,
             False, 
             False, 
             False,
@@ -172,7 +170,6 @@ if __name__== "__main__":
     else:
         args = parser.parse_args(sys.argv[1:])
         write_environment_setup_script(
-            args.install_madminer,
             args.install_madgraph,
             args.install_conda,
             args.install_env,
