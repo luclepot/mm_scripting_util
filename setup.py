@@ -34,7 +34,11 @@ REQUIRED = [
     "torch",
 ]
 
-package_data={'': ['mm_scripting_util/data/*']}
+package_data={'': [
+    'mm_scripting_util/data/backends/*.dat',
+    'mm_scripting_util/data/cards*/*.dat',
+    ]
+}
 include_package_data=True
 
 # What packages are optional?
