@@ -526,6 +526,7 @@ class _mm_backend_util(_mm_base_util):
     def _load_backend(self, backend):
 
         self.backend_name = self._search_for_paths(pathname=backend)
+        
         if self.backend_name is None:
             self.log.warning("No backend found, and none loaded.")
             return 1
